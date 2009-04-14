@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- definition of simple types (contain only text) and 
+	can contain extensions or restrictions of simplecontent-->
+
+<xs:simpleType name="stringtype">
+	<xs:restriction base="xs:string"/>
+</xs:simpleType>
+
+<xs:simpleType name="tokenstringtype">
+	<xs:restriction base="xs:token"/>
+</xs:simpleType>
+
+<xs:simpleType name="inttype">
+	<xs:restriction base="xs:positiveInteger"/>
+</xs:simpleType>
+
+<xs:simpleType name="dectype">
+	<xs:restriction base="xs:decimal"/>
+</xs:simpleType>
+
+<xs:simpleType name="booltype">
+	<xs:restriction base="xs:boolean"/>
+</xs:simpleType>
+
+<xs:simpleType name="datetype">
+	<xs:restriction base="xs:date"/>
+</xs:simpleType>
+
+<xs:simpleType name="datetimetype">
+	<xs:restriction base="xs:dateTime"/>
+</xs:simpleType>
+
+<xs:simpleType name="handednesstype">
+  <xs:restriction base="tokenstringtype">
+    <xs:enumeration value="right"/>
+    <xs:enumeration value="left"/>
+    <xs:enumeration value="ambidextrous"/>
+    <xs:enumeration value="mixed"/>
+    <xs:enumeration value="unknown"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- definition of complex types (contain other elements and/or attributes) and 
+	can contain extensions or restrictions of complexcontent (elements)
+-->
+
+<xs:complexType name="setuptype">
+	<xs:attribute name="serial_number_monitor" type="stringtype"/>
+	<xs:attribute name="serial_number_visage" type="stringtype"/>	
+	<xs:attribute name="software" type="stringtype"/>	
+	<xs:attribute name="hardware" type="stringtype"/>
+	<xs:attribute name="calibration_file" type="stringtype"/>
+	<xs:attribute name="frame_rate" type="inttype"/>
+	<xs:anyAttribute/>
+</xs:complexType>
+
+<xs:complexType name="observertype">
+	<xs:attribute name="birthday" type="datetype"/>	
+	<xs:attribute name="initials" type="tokenstringtype" use="required"/>
+	<xs:attribute name="glasses" type="booltype"/>	
+	<xs:attribute name="handedness" type="handednesstype"/>
+	<xs:attribute name="name" type="tokenstringtype"/>
+	<xs:anyAttribute/>
+</xs:complexType>
+
+<xs:complexType name="feedbacktype">
+    <xs:simpleContent>
+		<xs:extension base="datetimetype">
+			<xs:attribute name="sound" type="stringtype"/>
+		</xs:extension>
+	</xs:simpleContent>
+</xs:complexType>
+
+<xs:complexType name="responsetype">
+    <xs:simpleContent>
+		<xs:extension base="datetimetype">
+			<xs:attribute name="button" type="stringtype"/>
+			<xs:attribute name="microseconds" type="dectype"/>
+		</xs:extension>
+	</xs:simpleContent>
+</xs:complexType>
+
+<xs:complexType name="stimulustype">
+	<xs:simpleContent>
+		<xs:extension base="datetimetype">
+			<xs:attribute name="stimulus" type="inttype"/>
+			<xs:attribute name="contrast" type="inttype"/>	
+			<xs:attribute name="interleaved" type="booltype"/>
+			<xs:anyAttribute/>
+		</xs:extension>
+	</xs:simpleContent>
+</xs:complexType>
+
+<xs:complexType name="trialtype"> 
+	<xs:sequence>
+		<xs:element name="feedback" type="feedbacktype" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="response" type="responsetype" minOccurs="0" maxOccurs="unbounded"/>
+		<xs:element name="start" type="datetimetype" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="stimulus" type="stimulustype" minOccurs="0" maxOccurs="unbounded"/>
+	</xs:sequence>
+	<xs:attribute name="count" type="inttype"/>
+	<xs:attribute name="valid" type="stringtype"/>	
+	<xs:attribute name="note" type="stringtype" />
+	<xs:anyAttribute/>
+</xs:complexType>
+
+<xs:complexType name="sessiontype">
+    <xs:sequence>
+    	<xs:element name="observer" type="observertype" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="setup" type="setuptype" minOccurs="1" maxOccurs="1"/>
+    	<xs:element name="trial" type="trialtype" minOccurs="0" maxOccurs="unbounded"/>
+	</xs:sequence>
+	<xs:attribute name="count" type="inttype" use="required"/>
+	<xs:attribute name="date" type="datetype" use="required"/>
+	<xs:attribute name="data_file" type="stringtype" use="required"/>
+	<xs:anyAttribute/>
+</xs:complexType>
+
+<xs:complexType name="experimenttype">
+	<xs:sequence>
+    	<xs:element name="session" type="sessiontype" minOccurs="0" maxOccurs="unbounded"/>
+	</xs:sequence>
+	<xs:attribute name="data_directory" type="stringtype" use="required"/>
+	<xs:attribute name="experimenter" type="stringtype" use="required"/>
+	<xs:attribute name="keywords" type="stringtype" use="required"/>
+	<xs:attribute name="project" type="stringtype" use="required"/>
+	<xs:attribute name="reference" type="stringtype"/>
+	<xs:attribute name="source_directory" type="stringtype" use="required"/>
+	<xs:attribute name="source_file" type="stringtype" use="required"/>
+	<xs:attribute name="stimulus_file" type="stringtype"/>
+	<xs:anyAttribute/>
+</xs:complexType>
+
+<!-- definition of elements -->
+<xs:element name="experiment" type="experimenttype"/>
+
+</xs:schema>
+
