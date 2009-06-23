@@ -1,4 +1,4 @@
-"""Provides the exceptions used in this module.
+"""Provides exceptions used in this module.
 
 Created on Jun 23, 2009
 
