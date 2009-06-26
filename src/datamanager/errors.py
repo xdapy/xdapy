@@ -18,3 +18,9 @@ class AmbiguousObjectError(Error):
     single object is allowed.
     """
     pass
+
+class RequestObjectError(Error):
+    """Raised when an operation attempts to load an object that does not exist 
+    in the database. 
+    """
+    pass

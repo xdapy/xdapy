@@ -13,7 +13,8 @@ from sqlalchemy.orm import sessionmaker
 from datamanager.views import *
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.exceptions import InvalidRequestError
-from datamanager.errors import AmbiguousObjectError
+from datamanager.errors import AmbiguousObjectError, RequestObjectError
+from datamanager.objects import *
 
 class Proxy(object):
     """Handle database access and sessions
@@ -28,7 +29,7 @@ class Proxy(object):
         
         Creates the engine for a specific database and a session factory
         '''
-        self.engine = create_engine('sqlite:///:memory:', echo=True)
+        self.engine = create_engine('sqlite:///:memory:', echo=False)
         self.Session = sessionmaker(bind=self.engine)
     
     def createTables(self):
@@ -45,6 +46,10 @@ class Proxy(object):
         TypeError -- If the type of an object's attribute is not supported.
         """
         """TODO:Disinguish between wrong attribute types and missing attributes"""
+        
+        if not isinstance(object_,ObjectTemplate):
+            raise TypeError("Argument must be instance derived from ObjectTemplate")
+        
         session = self.Session()
         entity = Entity(object_.__class__.__name__)
         
@@ -60,16 +65,64 @@ class Proxy(object):
         session.save(entity)
         session.commit()
         session.close()
-        
     
-    def loadObject(self,object_):
+    #overload the method loadObject
+    def loadObject(self, argument):
+        """Load instance inherited from ObjectTemplate from the database
+        
+        Issue the corresponding function call depending on the input argument.
+        
+        Attribute:
+        argument -- The unique id stored with an object in the database or
+            an object derived from datamanager.objects.ObjectTemplate 
+            
+        Raises:
+        TypeError -- If the argument does not match the requirements.
+        RequestObjectError -- If the request does not yield a single objects 
+        """   
+        if isinstance(argument,ObjectTemplate):
+            return self._load_object_by_template(argument)
+        elif isinstance(argument,int):
+            return self._load_object_by_id(argument)
+        else:
+            raise TypeError
+        
+    def _load_object_by_id(self,id):
+        """Load instances inherited from ObjectTemplate from the database
+        
+        Attribute:
+        id -- The unique id stored with an object in the database  
+        
+        Raises:
+        RequestObjectError -- If no object is returned from the
+            database, when a single object was expected.
+        """        
+        session = self.Session()
+        try:
+            entity = session.query(Entity).filter(Entity.id==id).one()
+        except InvalidRequestError:
+            raise RequestObjectError("Found no object with id: %d"%id)
+                
+        # Get the experimental object class
+        exp_obj_class = globals()[entity.name]
+        # Create the object
+        object_ = exp_obj_class()
+        
+        parameters = session.query(Parameter).filter(Parameter.entities.any(Entity.id==id)).all()
+        for par in parameters:
+            object_.__dict__[par.name]=par.value
+       
+        session.close()  
+        return object_
+    
+    def _load_object_by_template(self,object_):
         """Load instances inherited from ObjectTemplate from the database
         
         Attribute:
         object_ -- An object derived from datamanager.objects.ObjectTemplate 
         
         Raises:
-        AmbiguousObjectError -- If multiple objects are returned from the
+        RequestObjectError -- If multiple objects are returned from the
             database, when a single object was expected 
         """
         
@@ -91,7 +144,7 @@ class Proxy(object):
             else:
                 entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).one()
         except InvalidRequestError:
-            raise AmbiguousObjectError("Found multiple %s that match requirements"%object_.__class__.__name__)
+            raise RequestObjectError("Found no or multiple %s that match requirements"%object_.__class__.__name__)
                 
         
         parameters = session.query(Parameter).filter(Parameter.entities.any(Entity.id==entity.id)).all()
@@ -100,8 +153,8 @@ class Proxy(object):
        
         session.close()  
         return object_
-    
-      
+
+ 
 if __name__ == "__main__":
     p = Proxy()
     p.createTables()
@@ -110,5 +163,5 @@ if __name__ == "__main__":
     p.saveObject(o)
     o = Observer(name='Max Muster',handedness='left',age=39)
     p.saveObject(o)
-    print p.loadObject(Observer(name='Max Muster',handedness='left'))
-    
+    #print p.loadObject(Observer(name='Max Muster',handedness='left'))
+    print p.loadObject(1)
