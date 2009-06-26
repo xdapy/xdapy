@@ -7,11 +7,11 @@ database through a object-relational-mapper (ORM).
     StringParameter:
     IntegerParameter:
     Entity:
-    
-    TODO(Hannah): Add mapper for entities referencing themselves
-    TODO(Hannah): Figure out what to do with global variable base 
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+""" TODO:(Hannah) Add mapper for entities referencing themselves
+    TODO:(Hannah) Figure out what to do with global variable base """
+
 
 
 from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey
@@ -24,7 +24,10 @@ class Parameter(base):
     '''
     The class 'Parameter' is mapped on the table 'parameters' and forms the 
     superclass of all possible parameter types (e.g. for string, integer...). 
-    The name assigned to a Parameter must be a string 
+    The name assigned to a Parameter must be a string.
+    Each Parameter is connected to at least one entity through the 
+    adjacency list 'parameterlist'. The corresponding entities can be accessed via
+    the entities attribute of the Parameter class.
     '''
     __tablename__ = 'parameters'
      
@@ -32,7 +35,7 @@ class Parameter(base):
     name = Column('name',String(40))
     type = Column('type',String(20),nullable=False)
     
-    join = 'parameters.outerjoin(stringparameters).outerjoin(integerparameters)'
+    #join = 'parameters.outerjoin(stringparameters).outerjoin(integerparameters)'
     __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
     def __init__(self, name):
@@ -55,16 +58,15 @@ class Parameter(base):
 class StringParameter(Parameter):
     '''
     The class 'StringParameter' is mapped on the table 'stringparameters' and 
-    is derived from Parameter. The value assigned to a StringParameter must be a
-    string. 
+    is derived from 'Parameter'. The value assigned to a StringParameter must be 
+    a string. 
     '''
     __tablename__ = 'stringparameters'
-    
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'string'}
+
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value',String(4))
     
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'string'}
-
     def __init__(self, name, value):
         '''Initialize a parameter with the given name and string value.
         
@@ -79,7 +81,9 @@ class StringParameter(Parameter):
             self.name = name
             self.value = value
         else:
-            raise TypeError()
+            raise TypeError("Both attributes must be of %s. Received %s and %s."%
+                            (type("string"),type(name), type(value)))
+            
         
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
@@ -92,12 +96,11 @@ class IntegerParameter(Parameter):
     an integer. 
     '''
     __tablename__ = 'integerparameters'
-    
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'integer'}
+
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value',Integer)
     
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'integer'}
-
     def __init__(self, name, value):
         '''Initialize a parameter with the given name and integer value.
         
@@ -112,10 +115,12 @@ class IntegerParameter(Parameter):
             self.name = name
             self.value = value
         else:
-            raise TypeError()
+            raise TypeError("Attributes must be of %s and %s. Received %s and %s."%
+                            (type("string"), type(1),type(name), type(value)))
                 
     def __repr__(self):
         return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
+
 
 '''
 The parameterlist is an association table. It relates an Entity and a Parameter 
@@ -125,30 +130,45 @@ parameterlist = Table('parameterlist', base.metadata,
      Column('entity_id', Integer, ForeignKey('entities.id')),
      Column('parameter_id', Integer, ForeignKey('parameters.id')))
 
+'''
+relations is an association table. It relates an Entity and another Entity 
+using their ids as foreign keys.
+'''
+relations = Table('relations', base.metadata,     
+     Column('entity_id', Integer, ForeignKey('entities.id')),
+     Column('entity_id', Integer, ForeignKey('entities.id')))
 
 class Entity(base):
     '''
     The class 'Entity' is mapped on the table 'entities'. The name column 
     contains unique information about the object type (e.g. 'Observer', 
-    'Experiment')
+    'Experiment'). Each Entity is connected to a set of parameters through the 
+    adjacency list parameterlist. Those parameters can be accessed via the 
+    parameters attribute of the Entity class. Additionally entities can build a 
+    hierarchical structure (represented in a flat table!)
     '''
     __tablename__ = 'entities'
     
     id = Column('id',Integer,primary_key=True)
     name = Column('name',String(40)) 
-
     # many to many Entity<->Parameter
-    parameters = relation('Parameter', secondary=parameterlist, backref='entities')
-    #children = relation('Entity', backref=backref('children', remote_side=['Entity.id']))
+    parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
+    children = relation('Entity', secondary=relations, backref=backref('parents'))#, remote_side=['Entity.id']))
+    
     def __init__(self, name):
         '''Initialize an entity corresponding to an experimental object.
         
         Argument:
         name -- A one-word-description of the experimental object
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no an integer.
         '''
         if isinstance(name,str):
             self.name = name
-        
+        else:
+            raise TypeError("Argument must be a string")
+                
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id,self.name)
 
