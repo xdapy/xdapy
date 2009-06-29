@@ -99,7 +99,7 @@ class TestIntegerParameter(unittest.TestCase):
             self.assertEqual(parameter,parameter_reloaded)
             parameter_reloaded =  self.session.query(IntegerParameter).filter(Parameter.name==name).one()
             self.assertEqual(parameter,parameter_reloaded)
-            
+          
 class TestEntity(unittest.TestCase):
     """Testcase for Entity class
 
@@ -137,27 +137,47 @@ class TestEntity(unittest.TestCase):
         for name in self.invalid_input_types:
             self.assertRaises(TypeError, Entity, name)
     
-    def testChildrenAttribute(self):
+    def testParametersAttribute(self):
+        intparam = IntegerParameter('intname',1)
+        strparam = StringParameter('strname', 'string')
         exp = Entity('experiment')
-        obs1 = Entity('observer')
-        obs2 = Entity('observer')
-        sess = Entity('session')
-        exp.children.append(obs1)
-        exp.children.append(obs2)
-        obs1.children.append(sess)
         
         self.session.save(exp)
+        self.session.save(intparam)
+        self.session.save(strparam)
+        exp.parameters.append(intparam)
         self.session.commit()
         
         exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
-        self.assertEqual(exp_reloaded.children[0], obs1)
-        self.assertEqual(exp_reloaded.children[1], obs2)
-        self.assertEqual(exp_reloaded.children, [obs1,obs2])
+        ip_reloaded = self.session.query(Parameter).filter(Parameter.name=='intname').one()
+        sp_reloaded = self.session.query(Parameter).filter(Parameter.name=='strname').one()
         
-        sess_reloaded =  self.session.query(Entity).filter(Entity.name=='session').one()
-        self.assertEqual(sess_reloaded.parents[0], obs1)
+        self.assertEqual(exp_reloaded.parameters, [intparam])
+        self.assertEqual(ip_reloaded.entities,[exp])
+        self.assertEqual(sp_reloaded.entities,[])
         
+    def testChildrenAttribute(self):
+        exp = Entity('experiment')
+        obs1 = Entity('observer1')
+        obs2 = Entity('observer2')
+        exp.children.append(obs1)
         
+        self.session.save(exp)
+        self.session.save(obs2)
+        self.session.commit()
+        
+        exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
+        self.assertEqual(exp_reloaded.children, [obs1])
+        self.assertEqual(exp_reloaded.parents,[])
+        
+        obs1_reloaded =  self.session.query(Entity).filter(Entity.name=='observer1').one()
+        self.assertEqual(obs1_reloaded.parents, [exp])
+        self.assertEqual(obs1_reloaded.children, [])
+
+        obs2_reloaded =  self.session.query(Entity).filter(Entity.name=='observer2').one()
+        self.assertEqual(obs2_reloaded.parents, [])
+        self.assertEqual(obs2_reloaded.children, [])
+
     
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

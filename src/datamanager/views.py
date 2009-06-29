@@ -9,8 +9,7 @@ database through a object-relational-mapper (ORM).
     Entity:
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
-""" TODO:(Hannah) Add mapper for entities referencing themselves
-    TODO:(Hannah) Figure out what to do with global variable base """
+""" TODO:(Hannah) Figure out what to do with global variable base """
 
 
 
@@ -127,16 +126,16 @@ The parameterlist is an association table. It relates an Entity and a Parameter
 using their ids as foreign keys.
 '''
 parameterlist = Table('parameterlist', base.metadata,     
-     Column('entity_id', Integer, ForeignKey('entities.id')),
-     Column('parameter_id', Integer, ForeignKey('parameters.id')))
+     Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True),
+     Column('parameter_id', Integer, ForeignKey('parameters.id'), primary_key=True))
 
 '''
 relations is an association table. It relates an Entity and another Entity 
 using their ids as foreign keys.
 '''
 relations = Table('relations', base.metadata,     
-     Column('entity_id', Integer, ForeignKey('entities.id')),
-     Column('entity_id', Integer, ForeignKey('entities.id')))
+     Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
+     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True))
 
 class Entity(base):
     '''
@@ -145,7 +144,8 @@ class Entity(base):
     'Experiment'). Each Entity is connected to a set of parameters through the 
     adjacency list parameterlist. Those parameters can be accessed via the 
     parameters attribute of the Entity class. Additionally entities can build a 
-    hierarchical structure (represented in a flat table!)
+    hierarchical structure (represented in a flat table!) via the children and 
+    parents attributes.
     '''
     __tablename__ = 'entities'
     
@@ -153,8 +153,14 @@ class Entity(base):
     name = Column('name',String(40)) 
     # many to many Entity<->Parameter
     parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
-    children = relation('Entity', secondary=relations, backref=backref('parents'))#, remote_side=['Entity.id']))
-    
+    # many to many Entity<->Entity
+    children = relation('Entity',
+                        secondary = relations,
+                        primaryjoin = id == relations.c.id,
+                        secondaryjoin = relations.c.child_id == id,
+                        backref=backref('parents',primaryjoin = id == relations.c.child_id,
+                                        secondaryjoin= relations.c.id == id))
+
     def __init__(self, name):
         '''Initialize an entity corresponding to an experimental object.
         
@@ -172,8 +178,6 @@ class Entity(base):
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id,self.name)
 
-#mapper(Entity, Entity.__table__, properties={
-#    'children': relation(Entity, backref=backref('children', remote_side=[Entity.__table__.c.id]))},non_primary=True)
 
 if __name__ == "__main__":
     from sqlalchemy import create_engine
