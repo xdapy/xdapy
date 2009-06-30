@@ -13,13 +13,14 @@ provided.
         registerParameter() Allow a new parameter description for this container
         show()              Visualize experimental object instance
         getChildren()       Return the children connected to this instance
-    Observer:               Observer class to store information about an observer
-    Experiment:             Experiment class to store information about an experiment
-
+    Observer:               Observer class contains information about an observer
+    Experiment:             Experiment class contains information about an experiment
+"""
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+"""
 TODO(Hannah): Have a look at NetworkX and its possible use in querying and visualization
 TODO(Hannah): Change template to behave like a dictionary
 """
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy.orm import mapper, sessionmaker, relation, backref
 
@@ -43,7 +44,23 @@ class ObjectTemplate(object):
     def __repr__(self):
         par = ", ".join([key+":"+ str(value) for key,value in self.__dict__.items()])
         return "<%s(%s)>" % (self.__class__.__name__, par)
+    
+    def __eq__(self,other):
+        """ Compare Object classes with parameters and if the same return True"""
+        if self.__class__.__name__ is other.__class__.__name__:
+            equal = True
+        else:
+            equal = False
+            
+        for par in self._parameters_:
+            equal = equal and (self.__dict__[par] == other.__dict__[par])
+         
+        return equal
         
+    def __ne__(self,other):
+        """ Compare Object classes with parameters and if different return True"""
+        return not self.__eq__(other)
+    
     def save(self, proxy, check=False):
         """Save class instance in database"""
         #add node to graph
@@ -79,7 +96,7 @@ class ObjectTemplate(object):
 
 class Observer(ObjectTemplate):
     """Observer class to store information about an observer"""
-    _parameters_ = {'name':'string', 'handedness':'string','age':'integer','glasses':'boolean'}
+    _parameters_ = {'name':'string', 'handedness':'string','age':'integer'}
     
     def __init__(self, name=None, handedness=None, age=None):
         self.name = name
@@ -95,7 +112,7 @@ class Experiment(ObjectTemplate):
         self.experimenter=experimenter
 
 if __name__ == "__main__":
-    from dataManager.proxy import *
+    from datamanager.proxy import *
     p = Proxy()
     p.createTables()
     o = Observer()
