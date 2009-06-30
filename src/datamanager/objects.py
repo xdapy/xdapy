@@ -114,7 +114,7 @@ class Experiment(ObjectTemplate):
 if __name__ == "__main__":
     from datamanager.proxy import *
     p = Proxy()
-    p.createTables()
+    p.create_tables()
     o = Observer()
     
     o = Observer(name='Max Muster', handedness = 'right',age=26)

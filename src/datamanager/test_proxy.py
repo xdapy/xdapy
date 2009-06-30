@@ -23,13 +23,13 @@ class TestProxy(unittest.TestCase):
 
     def setUp(self):
         self.p = Proxy()
-        self.p.createTables()
+        self.p.create_tables()
         
     def tearDown(self):
         pass
 
     def testCreateTables(self):
-        self.p.createTables()
+        self.p.create_tables()
 
     def testSaveObject(self):
         valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
@@ -42,27 +42,40 @@ class TestProxy(unittest.TestCase):
                        #'justastring')
         
         for obj in valid_objects:
-            self.p.saveObject(obj)
+            self.p.save(obj)
         for obj in invalid_objects:
-            self.assertRaises(TypeError, self.p.saveObject, obj)    
-        self.assertRaises(TypeError,self.p.saveObject,
+            self.assertRaises(TypeError, self.p.save, obj)    
+        self.assertRaises(TypeError,self.p.save,
                           InvalidObserverClass(name="Max Mustermann", 
                                                handedness="right", age=26))
             
     def testLoadObject(self):
         #AmbiguousObjects
-        self.p.saveObject(Observer(name="Max Mustermann", handedness="right", age=26))
-        self.p.loadObject(Observer(name="Max Mustermann"))           
-        self.p.saveObject(Observer(name="Max Mustermann", handedness="left", age=29))
-        self.assertRaises(RequestObjectError,self.p.loadObject,Observer(name="Max Mustermann"))                  
-        #Input
-        self.assertRaises(RequestObjectError,self.p.loadObject,3)
+        self.p.save(Observer(name="Max Mustermann", handedness="right", age=26))
+        self.p.load(Observer(name="Max Mustermann"))           
+        self.p.save(Observer(name="Max Mustermann", handedness="left", age=29))
+        self.assertRaises(RequestObjectError,self.p.load,Observer(name="Max Mustermann"))                  
+        self.assertRaises(RequestObjectError,self.p.load,3)
                     
+    def testConnectObjects(self):
+        #Test add_child and get_children
+        e = Experiment(project='MyProject',experimenter="John Doe")
+        o = Observer(name="Max Mustermann", handedness="right", age=26)
+        self.p.save(e)
+        self.p.save(o)
+        self.p.add_child(e,o)
         
+        s = self.p.Session()
+        exp_reloaded = self.p.viewhandler.get_entity(s,1)
+        obs_reloaded = self.p.viewhandler.get_entity(s,2)
         
+        self.assertEqual(exp_reloaded.children, [obs_reloaded])
+        self.assertEqual(exp_reloaded.parents,[])
+        self.assertEqual(obs_reloaded.children, [])
+        self.assertEqual(obs_reloaded.parents,[exp_reloaded])
         
-
-
+        exp_children = self.p.get_children(e)
+        self.assertEqual(exp_children,[o])
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
