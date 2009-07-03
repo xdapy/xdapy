@@ -1,7 +1,9 @@
 '''
 Created on Jun 17, 2009
 
-@author: hannah
+@author: Hannah
+
+Unittest for the views
 '''
 import unittest
 from dataManager.views import *
@@ -18,7 +20,7 @@ class TestStringParameter(unittest.TestCase):
                     #,('Name','value'))
     
     invalidInputLength = (('*****************************************','Value'),
-                    ('name','*****************************************************************************************************'))
+                    ('name','******************************************************************************************************'))
     
     def testValidInput(self):
         for name,value in self.validInput:
@@ -30,20 +32,28 @@ class TestStringParameter(unittest.TestCase):
         for name,value in self.invalidInputTypes:
             self.assertRaises(TypeError, StringParameter, name, value)
     
-    def testInvalidInputType(self):
+    
+    def setUp(self):
         from sqlalchemy import create_engine
         engine = create_engine('sqlite:///:memory:', echo=True)
         Base.metadata.create_all(engine)
         from sqlalchemy.orm import sessionmaker
         Session = sessionmaker(bind=engine)
-        session = Session()
+        self.session = Session()
+
+
+    def tearDown(self):
+        self.session.close()
+    
+    def testInvalidInputType(self):
+        
         from sqlalchemy.sql import and_
     
         for name,value in self.invalidInputLength:
             sp = StringParameter(name,value)
-            session.save(sp)
-            session.commit()
-            sp2 =  session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).one()
+            self.session.save(sp)
+            self.session.commit()
+            sp2 =  self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).one()
             self.assertEqual(sp.name,sp2.name)
             self.assertEqual(sp.value,sp2.value)
         
@@ -57,7 +67,8 @@ class TestIntegerParameter(unittest.TestCase):
                     ('name',None))
                     #,('Name','0'))
     
-    invalidInputLength = (('*****************************************',0))
+    invalidInputLength = (('*****************************************',0),
+                          ('******************************************',0))
     
     def testValidInput(self):
         for name,value in self.validInput:
@@ -67,7 +78,7 @@ class TestIntegerParameter(unittest.TestCase):
         
     def testInvalidInputType(self):
         for name,value in self.invalidInputTypes:
-            self.assertRaises(TypeError, StringParameter, name, value)
+            self.assertRaises(TypeError, IntegerParameter, name, value)
     
     def testInvalidInputType(self):
         from sqlalchemy import create_engine

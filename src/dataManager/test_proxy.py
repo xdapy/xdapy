@@ -1,7 +1,10 @@
 '''
 Created on Jun 17, 2009
 
-@author: hannah
+@author: Hannah
+
+Unittest for the proxy class
+TODO: all
 '''
 import unittest
 from dataManager.proxy import *
@@ -10,8 +13,8 @@ class Test(unittest.TestCase):
 
 
     def setUp(self):
-        proxy = Proxy()
-
+        p = Proxy()
+        p.createTables()
 
     def tearDown(self):
         pass
