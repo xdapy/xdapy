@@ -1,10 +1,9 @@
-'''
+'''Example file to demonstrate the package
+
 Created on Jun 17, 2009
-
-@author: Hannah
-
-Example file to demonstrate the package
 '''
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+
 from dataManager.objects import *
 from dataManager.proxy import *
 
