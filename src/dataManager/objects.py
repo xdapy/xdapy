@@ -18,8 +18,8 @@ provided.
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """
-TODO(Hannah): Have a look at NetworkX and its possible use in querying and visualization
-TODO(Hannah): Change template to behave like a dictionary
+TODO: Have a look at NetworkX and its possible use in querying and visualization
+TODO: Change template to behave like a dictionary
 """
 
 from sqlalchemy.orm import mapper, sessionmaker, relation, backref
@@ -35,7 +35,7 @@ class ObjectTemplate(object):
         a specific experimental object 
     """
     _parameters_ = {}
-    
+    _children_ = {}
     def __init__(self):
         """Abstract Constructor"""
         pass
@@ -65,15 +65,15 @@ class ObjectTemplate(object):
         """Save class instance in database"""
         #add node to graph
         #check if object is insertable
-        proxy.saveObject(self)
+        proxy.save(self)
     
     def addChild(self,proxy,child):
         """Add direct connection between two container classes"""
-        pass#elf.proxy.saveConnection(self,)
+        proxy.add_child(self,child)
     
     def load(self,proxy):
         """Load instance information from database and return self"""
-        proxy.loadObject(self)
+        proxy.load(self)
         return self
     
     def update(self, check=False):
@@ -88,12 +88,20 @@ class ObjectTemplate(object):
         """Visualize experimental object instance"""
         pass
     
-    def getChildren(self,level=1):
+    def getChildren(self, proxy, level=1):
         """Return the children connected to this instance"""
         #fill graph with children
-        pass
-    
-
+        return self._getChildren(proxy, self)
+        #for i in arange(level):
+        
+    def _getChildren(self,proxy, parent):
+        tree = {}
+        children = proxy.get_children(parent)
+        for child in children:
+            grandchildren = self._getChildren(proxy,child)
+            tree[child]=grandchildren
+        return tree
+      
 class Observer(ObjectTemplate):
     """Observer class to store information about an observer"""
     _parameters_ = {'name':'string', 'handedness':'string','age':'integer'}

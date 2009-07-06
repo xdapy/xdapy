@@ -3,12 +3,12 @@ Created on Jul 2, 2009
 
 '''
 import networkx as nx 
-#import xml.sax.saxutils
+import xml.sax.saxutils
 from mpl_toolkits.basemap import Basemap as Basemap 
 #from pylab import title, show
 import matplotlib.pyplot as plt 
 
-__author__=["Hannah Dold"]
+__author__=['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 if __name__ == '__main__':
     m = Basemap(llcrnrlon=-125.5,llcrnrlat=20., 
                 urcrnrlon=-50.566,urcrnrlat=40.0, 

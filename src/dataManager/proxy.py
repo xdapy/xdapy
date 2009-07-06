@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datamanager.views import *
 from sqlalchemy.sql import and_, or_
-from sqlalchemy.exceptions import InvalidRequestError
+from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from datamanager.errors import AmbiguousObjectError, RequestObjectError
 from datamanager.objects import *
 
@@ -122,7 +122,7 @@ class Proxy(object):
         
         Creates the engine for a specific database and a session factory
         '''
-        self.engine = create_engine('sqlite:///:memory:', echo=True)
+        self.engine = create_engine('sqlite:///:memory:', echo=False)
         self.Session = sessionmaker(bind=self.engine)
         self.viewhandler = self.ViewHandler(self.Session)
     
@@ -288,8 +288,8 @@ class Proxy(object):
         try:
             parent_entity = self.viewhandler.get_entity(session,parent)
             child_entity = self.viewhandler.get_entity(session,child)
-        except RequestObjectError:
-            RequestObjectError("objects must be saved before they can be loaded")
+        except OperationalError:
+            raise RequestObjectError("objects must be saved before they can be loaded")
         parent_entity.children.append(child_entity)
         session.commit()
         #print parent_entity.children
