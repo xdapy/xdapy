@@ -22,7 +22,9 @@ TODO: Have a look at NetworkX and its possible use in querying and visualization
 TODO: Change template to behave like a dictionary
 """
 
-from sqlalchemy.orm import mapper, sessionmaker, relation, backref
+import networkx as nx 
+import matplotlib.pyplot as plt 
+from numpy import linspace
 
 class ObjectTemplate(object):
     """Template class for container classes
@@ -35,12 +37,14 @@ class ObjectTemplate(object):
         a specific experimental object 
     """
     _parameters_ = {}
-    _children_ = {}
+    
     def __init__(self):
         """Abstract Constructor"""
-        pass
-      #self._graph=Graph()
-     
+        #self.id = id
+    
+   # def __hash__(self):
+   #     return self.id
+         
     def __repr__(self):
         par = ", ".join([key+":"+ str(value) for key,value in self.__dict__.items()])
         return "<%s(%s)>" % (self.__class__.__name__, par)
@@ -66,7 +70,7 @@ class ObjectTemplate(object):
         #add node to graph
         #check if object is insertable
         proxy.save(self)
-    
+     
     def addChild(self,proxy,child):
         """Add direct connection between two container classes"""
         proxy.add_child(self,child)
@@ -84,23 +88,49 @@ class ObjectTemplate(object):
         """Allow a new parameter description for this container"""
         pass
     
-    def show(self):
-        """Visualize experimental object instance"""
-        pass
-    
     def getChildren(self, proxy, level=1):
         """Return the children connected to this instance"""
         #fill graph with children
+        self.graph = nx.Graph()
+        self.graph.labels = {}
+        self.graph.position ={}
+        self.graph.position[self]=(0,0)
         return self._getChildren(proxy, self)
-        #for i in arange(level):
         
     def _getChildren(self,proxy, parent):
         tree = {}
         children = proxy.get_children(parent)
+        i = 0
         for child in children:
+            z = linspace(-2,2,len(children))
+            #print z
+            #print len(children)
+            
+            self.graph.add_edge(parent, child)
+            self.graph.labels[parent]=parent.__class__.__name__
+            self.graph.labels[child]=child.__class__.__name__
+            a =self.graph.position[parent][0]+1 #+z[i]
+            b =self.graph.position[parent][1]+z[i]#-1
+            self.graph.position[child]=(a,b)
+            i=i+1
             grandchildren = self._getChildren(proxy,child)
-            tree[child]=grandchildren
+            tree[child]=grandchildren  
+            
+            
         return tree
+    
+    def show(self):
+        """Visualize experimental object instance"""
+        if self.graph:
+             pos = nx.spring_layout(self.graph)
+             pos = self.graph.position
+             nx.draw_networkx_edges(self.graph, pos)
+             nx.draw_networkx_labels(self.graph, pos, labels=self.graph.labels)
+             nx.draw_networkx_nodes(self.graph, pos, node_color='white', linewidths=0)#, node_colnode_size=2000)
+             print pos
+             print self.graph.position
+             plt.show()
+
       
 class Observer(ObjectTemplate):
     """Observer class to store information about an observer"""
@@ -110,6 +140,7 @@ class Observer(ObjectTemplate):
         self.name = name
         self.handedness=handedness
         self.age=age
+    
            
 class Experiment(ObjectTemplate):
     """Experiment class to store information about an experiment"""
@@ -118,6 +149,7 @@ class Experiment(ObjectTemplate):
     def __init__(self, project=None, experimenter=None):
         self.project=project
         self.experimenter=experimenter
+        
 
 if __name__ == "__main__":
     from datamanager.proxy import *
@@ -135,3 +167,5 @@ if __name__ == "__main__":
     print w
     print w.load(p)
    # print w
+    from datamanager.test_objects import *
+    unittest.main()
