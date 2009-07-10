@@ -4,7 +4,9 @@ Created on Jun 17, 2009
 This module provides the template class for all container classes to be stored 
 in the database. Two exemplary container classes "observer" and "experiment" are
 provided.
-                                
+    
+    ObjectDict
+        
     ObjectTemplate:         Template class for container classes
         save()              Save class instance in database
         addChild()          Add direct connection between two container classes   
@@ -25,7 +27,58 @@ TODO: Change template to behave like a dictionary
 import networkx as nx 
 import matplotlib.pyplot as plt 
 from numpy import linspace
+from utils.decorators import require
 
+class ObjectDict(dict):
+    """Template class for container classes
+    
+    The super class provides functionality common to all experimental object 
+    classes. 
+    """  
+            
+    def __init__(self):
+        """Constructor"""
+        dict.__init__(self)
+        
+    def _set_items_from_arguments(self,d):
+        """Insert function arguments as items""" 
+        self = d.pop('self')
+        for n, v in d.iteritems( ):
+            self[n]=v#setattr(self, n, v)
+        
+    def __setitem__(self, key, item):
+        """Set dictionary item and update _concurrent attribute"""
+        if not self.has_key(key) or self[key] is not item:
+            dict.__setitem__(self, key, item)
+            self._concurrent = False
+    
+    @require('boolean', bool)
+    def set_concurrent(self, boolean):
+        """Set _concurrent attribute to a boolean value"""
+        self._concurrent =  boolean
+        
+    def get_concurrent(self):
+        """Return _cuncurrent attribute"""
+        return self._concurrent
+        
+class ExperimentDict(ObjectDict):
+    """Concrete class for experiments
+    """
+    
+    def __init__(self, experimenter=None, project=None):
+        """Constructor"""
+        ObjectDict.__init__(self)
+        self._set_items_from_arguments(locals())
+
+class ObserverDict(ObjectDict):
+    """Concrete class for observers
+    """
+    
+    def __init__(self, name=None, age=None, handendness=None):
+        ObjectDict.__init__(self)
+        self._set_items_from_arguments(locals())
+    
+        
 class ObjectTemplate(object):
     """Template class for container classes
     
@@ -116,7 +169,6 @@ class ObjectTemplate(object):
             grandchildren = self._getChildren(proxy,child)
             tree[child]=grandchildren  
             
-            
         return tree
     
     def show(self):
@@ -127,8 +179,8 @@ class ObjectTemplate(object):
              nx.draw_networkx_edges(self.graph, pos)
              nx.draw_networkx_labels(self.graph, pos, labels=self.graph.labels)
              nx.draw_networkx_nodes(self.graph, pos, node_color='white', linewidths=0)#, node_colnode_size=2000)
-             print pos
-             print self.graph.position
+             #print pos
+             #print self.graph.position
              plt.show()
 
       
@@ -149,23 +201,26 @@ class Experiment(ObjectTemplate):
     def __init__(self, project=None, experimenter=None):
         self.project=project
         self.experimenter=experimenter
-        
 
 if __name__ == "__main__":
-    from datamanager.proxy import *
-    p = Proxy()
-    p.create_tables()
-    o = Observer()
     
-    o = Observer(name='Max Muster', handedness = 'right',age=26)
-    o.save(p)
-    #p.saveObject(o)
-    e = Experiment()
-    
-    w =  Observer(name='Max Muster')
-    #e.addChild(w)
-    print w
-    print w.load(p)
-   # print w
     from datamanager.test_objects import *
-    unittest.main()
+    unittest.main() 
+    
+#===============================================================================
+#    from datamanager.proxy import *
+#    p = Proxy()
+#    p.create_tables()
+#    o = Observer()
+#    
+#    o = Observer(name='Max Muster', handedness = 'right',age=26)
+#    o.save(p)
+#    #p.saveObject(o)
+#    e = Experiment()
+#    
+#    w =  Observer(name='Max Muster')
+#    #e.addChild(w)
+#    print w
+#    print w.load(p)
+#   # print w
+#===============================================================================

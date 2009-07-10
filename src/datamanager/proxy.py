@@ -5,6 +5,9 @@ Created on Jun 17, 2009
     createTables()  Create tables in database (Do not overwrite existing tables)
     saveObject()    Save instances inherited from ObjectTemplate into database
     loadObject()    Load instances inherited from ObjectTemplate from database
+
+TODO:The template has a method to register a new parameter description for 
+        a specific experimental object 
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -16,13 +19,16 @@ from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from datamanager.errors import AmbiguousObjectError, RequestObjectError
 from datamanager.objects import *
 
-class Proxy(object):
+
+
+class ProxyForObjectTemplates(object):
     """Handle database access and sessions
     
     Attributes:
     engine -- a database engine
     Session -- a session factory
     """
+    __entity_parameter={}
     
     class ViewHandler(object):
         
@@ -298,7 +304,8 @@ class Proxy(object):
        
         
 if __name__ == "__main__":
-    p = Proxy()
+    p = ProxyForObjectTemplates()
+
     p.create_tables()
     from datamanager.objects import *
     o = Observer(name='Max Muster',handedness='right',age=99)

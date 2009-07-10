@@ -6,8 +6,8 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
                
 import unittest
-from datamanager.objects import ObjectTemplate, Observer, Experiment
-from datamanager.proxy import Proxy
+from datamanager.objects import ObjectTemplate, ObjectDict, Observer, Experiment
+from datamanager.proxy import ProxyForObjectTemplates
         
 class TestObjectTemplate(unittest.TestCase):
 
@@ -61,7 +61,7 @@ class TestObjectTemplate(unittest.TestCase):
             self.assertEqual(ob1!=ob2,True)
             
     def testChild(self):
-        p = Proxy()
+        p = ProxyForObjectTemplates()
         p.create_tables()
         
         e = Experiment(project='Project',experimenter='I')
@@ -89,12 +89,64 @@ class TestObjectTemplate(unittest.TestCase):
         
         res = e.getChildren(p)
         
-        e.show()
+        #e.show()
         
         #self.assertEqual(res[o]==x,True)
         
 
+class TestObjectDict(unittest.TestCase):
+    
+    def testConstructor(self):
+        """Test functionality of constructor"""
+        dic = ObjectDict()
+        dic['default']=2
+        dic['input']=1
+        self.assertEqual(dic['default'],2)
+        self.assertEqual(dic['input'],1)
+        
+    def testConcurrent(self):
+        """Test functionality of set/get_concurrent()"""
+        dic = ObjectDict()
+        dic['default']=2
+        dic['input']=1
+        self.assertEqual(dic.get_concurrent(), False)
+        dic.set_concurrent(True)
+        self.assertEqual(dic.get_concurrent(), True)
+        dic.set_concurrent(False)
+        self.assertEqual(dic.get_concurrent(), False)
+        
+    def testSetItem(self):
+        """Test functionality of __setItem__()"""
+        dic = ObjectDict()
+        dic['default']=2
+        dic['input']=1
+        dic.set_concurrent(True)
+        dic['default']=3
+        self.assertEqual(dic.get_concurrent(), False)
+        self.assertEqual(dic['default'],3)
+        dic.set_concurrent(True)
+        dic['default']=3
+        self.assertEqual(dic.get_concurrent(),True)
+        self.assertEqual(dic['default'],3)
+        dic.y = 1
+        self.assertEqual(dic.get_concurrent(),True)
 
+class _ExperimentDict(ObjectDict):
+    
+    def __init__(self, experimenter, project=None):
+        #ObjectDict.__init__(self)
+        self._set_items_from_arguments(locals())     
+        
+class TestExperimentDict(unittest.TestCase):
+    
+    def testConstructor(self):
+        expdic = _ExperimentDict(8,project=5)
+        expdic['reference']='reference of this experiment'
+        self.assertEqual(expdic['project'],5)
+        self.assertEqual(expdic['experimenter'],8)
+        self.assertEqual(expdic['reference'],'reference of this experiment')
+        self.assertEqual(expdic.get_concurrent(),False)
+    
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

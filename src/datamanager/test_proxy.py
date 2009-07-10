@@ -6,7 +6,7 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.proxy import Proxy
+from datamanager.proxy import ProxyForObjectTemplates
 from datamanager.objects import ObjectTemplate, Observer, Experiment
 from datamanager.errors import RequestObjectError
 
@@ -19,10 +19,10 @@ class InvalidObserverClass(ObjectTemplate):
         self.handedness=handedness
         self.age=age
         
-class TestProxy(unittest.TestCase):
+class TestProxyForObjectTemplates(unittest.TestCase):
 
     def setUp(self):
-        self.p = Proxy()
+        self.p = ProxyForObjectTemplates()
         self.p.create_tables()
         
     def tearDown(self):
