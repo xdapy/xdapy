@@ -7,6 +7,7 @@ database through a object-relational-mapper (ORM).
     StringParameter:
     IntegerParameter:
     Entity:
+    ParameterOption:
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """ TODO:(Hannah) Figure out what to do with global variable base """
@@ -15,8 +16,11 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import mapper, relation, backref
-#from sqlalchemy.orm.util.Validator import validates
+from sqlalchemy.orm import mapper, relation, backref, validates
+from sqlalchemy.sql import select
+from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
+
+#from sqlalchemy.orm.validates
 base = declarative_base()
         
 class Parameter(base):
@@ -34,6 +38,13 @@ class Parameter(base):
     name = Column('name',String(40))
     type = Column('type',String(20),nullable=False)
     
+    
+    @validates('name')
+    def validate_name(self, key, parameter):
+        if not isinstance(parameter, str):
+            raise TypeError("Argument must be a string")
+        return parameter 
+    
     #join = 'parameters.outerjoin(stringparameters).outerjoin(integerparameters)'
     __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
@@ -46,10 +57,10 @@ class Parameter(base):
         Raises:
         TypeError -- Occurs if name is not a string
         '''
-        if isinstance(name,str):
-            self.name = name
-        else:
-            raise TypeError()
+        #if isinstance(name,str):
+        self.name = name
+        #else:
+         #   raise TypeError()
     
     def __repr__(self):
         return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
@@ -64,8 +75,14 @@ class StringParameter(Parameter):
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'string'}
 
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
-    value = Column('value',String(4))
+    value = Column('value',String(40))
     
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, str):
+            raise TypeError("Argument must be a string")
+        return parameter 
+            
     def __init__(self, name, value):
         '''Initialize a parameter with the given name and string value.
         
@@ -76,13 +93,8 @@ class StringParameter(Parameter):
         Raises:
         TypeError -- Occurs if name is not a string or value is no a string.
         '''
-        if isinstance(value,str) and isinstance(name,str):
-            self.name = name
-            self.value = value
-        else:
-            raise TypeError("Both attributes must be of %s. Received %s and %s."%
-                            (type("string"),type(name), type(value)))
-            
+        self.name = name
+        self.value = value
         
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
@@ -100,6 +112,12 @@ class IntegerParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value',Integer)
     
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, int):
+            raise TypeError("Argument must be an integer")
+        return parameter 
+    
     def __init__(self, name, value):
         '''Initialize a parameter with the given name and integer value.
         
@@ -110,13 +128,9 @@ class IntegerParameter(Parameter):
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
         '''
-        if isinstance(value,int) and isinstance(name,str):
-            self.name = name
-            self.value = value
-        else:
-            raise TypeError("Attributes must be of %s and %s. Received %s and %s."%
-                            (type("string"), type(1),type(name), type(value)))
-                
+        self.name = name
+        self.value = value
+            
     def __repr__(self):
         return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
 
@@ -136,6 +150,7 @@ using their ids as foreign keys.
 relations = Table('relations', base.metadata,     
      Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
      Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True))
+
 
 class Entity(base):
     '''
@@ -161,11 +176,12 @@ class Entity(base):
                         backref=backref('parents',primaryjoin = id == relations.c.child_id,
                                         secondaryjoin= relations.c.id == id))
     
-##    @validates('name')
-##    def validate_name(self, entity):
-##        assert isinstance(entity.name, str)
-##        return entity 
-##    
+    @validates('name')
+    def validate_name(self, key, e_name):
+        if not isinstance(e_name, str):
+            raise TypeError("Argument must be a string")
+        return e_name 
+    
     def __init__(self, name):
         '''Initialize an entity corresponding to an experimental object.
         
@@ -175,10 +191,7 @@ class Entity(base):
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
         '''
-        if isinstance(name,str):
-            self.name = name
-        else:
-            raise TypeError("Argument must be a string")
+        self.name = name
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id,self.name)
@@ -195,11 +208,30 @@ class ParameterOption(base):
     '''
     __tablename__ = 'parameteroptions'
     
-    #id = Column('id',Integer,primary_key=True)
     parameter_name = Column('parameter_name',String(40), primary_key=True)
     entity_name = Column('entity_name',String(40), primary_key=True)
     parameter_type = Column('parameter_type',String(40), primary_key=True)
   
+    @validates('parameter_name')
+    def validate_parameter_name(self, key, p_name):
+        if not isinstance(p_name, str):
+            raise TypeError("Argument 'parameter_name' must be a string")
+        return p_name 
+    
+    @validates('entity_name')
+    def validate_entity_name(self, key, e_name):
+        if not isinstance(e_name, str):
+            raise TypeError("Argument 'entity_name' must be a string")
+        return e_name 
+    
+    @validates('parameter_type')
+    def validate_parameter_type(self, key, p_type):
+        if not isinstance(p_type, str) or p_type not in ('integer', 'string'):
+            raise TypeError(("Argument 'parameter_type' must one of the ",
+                             "following strings: ",
+                             "'string' or 'integer'"))
+        return p_type 
+    
     def __init__(self, entity_name, parameter_name, parameter_type):
         '''Initialize an entity - parameter pair 
         
@@ -209,18 +241,11 @@ class ParameterOption(base):
         parameter_value -- The polimorphic type of the parameter (integer, string)
         
         Raises:
-        TypeError -- Occurs if arguments aren't strings or type nodt in list.
+        TypeError -- Occurs if arguments aren't strings or type not in list.
         '''
-        __polimorphic_types = ('integer','string') 
-        if (isinstance(entity_name,str) and 
-            isinstance(parameter_name,str) and
-            isinstance(parameter_type,str) and 
-            parameter_type in __polimorphic_types):
-            self.entity_name = entity_name
-            self.parameter_name = parameter_name
-            self.parameter_type = parameter_type
-        else:
-            raise TypeError("Argument are ill-defined.")
+        self.entity_name = entity_name
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
                 
     def __repr__(self):
         return "<ParameterOption('%s','%s', '%s')>" % (self.entity_name,
@@ -229,19 +254,4 @@ class ParameterOption(base):
 
 
 if __name__ == "__main__":
-    from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///:memory:', echo=True)
-    base.metadata.create_all(engine)
-    from sqlalchemy.orm import sessionmaker
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    
-
-    sp = StringParameter('******************************************','Value')
-    session.save(sp)
-    session.commit()
-    from sqlalchemy.sql import and_
-    sp2 =  session.query(StringParameter).filter(and_(StringParameter.name=='******************************************',StringParameter.value=='Value')).one()
-    print sp == sp2
-    e  =Entity('observer')
-    print e
+    pass

@@ -23,7 +23,8 @@ class TestStringParameter(unittest.TestCase):
                   ('name','****************************************************************************************************'))
     invalid_input_types = (('name',0),
                     ('name',0.0),
-                    ('name',None))
+                    ('name',None),
+                    (0,None))
                     #,('Name','value'))
     
     invalid_input_length = (('*****************************************','Value'),
