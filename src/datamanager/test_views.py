@@ -4,16 +4,17 @@ Created on Jun 17, 2009
     TestStringParameter:    Testcase for StringParameter class
     TestIntegerParameter:   Testcase for IntegerParameter class
     TestEntity:             Testcase for Entity class
+    TestParameterOption:    Testcase for ParameterOption class
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.views import Parameter, StringParameter, IntegerParameter, Entity
+from datamanager.views import Parameter, StringParameter, IntegerParameter, Entity, ParameterOption
 from datamanager.views import base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import and_
-                 
+from sqlalchemy.exceptions import IntegrityError                 
 
 class TestStringParameter(unittest.TestCase):
     valid_input = (('name','Value'),
@@ -51,7 +52,7 @@ class TestStringParameter(unittest.TestCase):
     def testInvalidInputLength(self):
         for name,value in self.invalid_input_length:
             parameter = StringParameter(name,value)
-            self.session.save(parameter)
+            self.session.add(parameter)
             self.session.commit()
             parameter_reloaded =  self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).one()
             self.assertEqual(parameter,parameter_reloaded)
@@ -93,7 +94,7 @@ class TestIntegerParameter(unittest.TestCase):
     def testInvalidInputLength(self):
         for name,value in self.invalid_input_length:
             parameter = IntegerParameter(name,value)
-            self.session.save(parameter)
+            self.session.add(parameter)
             self.session.commit()
             parameter_reloaded =  self.session.query(IntegerParameter).filter(and_(IntegerParameter.name==name,IntegerParameter.value==value)).one()
             self.assertEqual(parameter,parameter_reloaded)
@@ -128,7 +129,7 @@ class TestEntity(unittest.TestCase):
         for name in self.valid_input:
             entity = Entity(name)
             self.assertEqual(entity.name, name)
-            self.session.save(entity)
+            self.session.add(entity)
             self.session.commit()
             entity_reloaded =  self.session.query(Entity).filter(and_(Entity.name==name,Entity.id==entity.id)).one()
             self.assertEqual(entity,entity_reloaded)
@@ -142,9 +143,9 @@ class TestEntity(unittest.TestCase):
         strparam = StringParameter('strname', 'string')
         exp = Entity('experiment')
         
-        self.session.save(exp)
-        self.session.save(intparam)
-        self.session.save(strparam)
+        self.session.add(exp)
+        self.session.add(intparam)
+        self.session.add(strparam)
         exp.parameters.append(intparam)
         self.session.commit()
         
@@ -162,8 +163,8 @@ class TestEntity(unittest.TestCase):
         obs2 = Entity('observer2')
         exp.children.append(obs1)
         
-        self.session.save(exp)
-        self.session.save(obs2)
+        self.session.add(exp)
+        self.session.add(obs2)
         self.session.commit()
         
         exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
@@ -178,7 +179,56 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(obs2_reloaded.parents, [])
         self.assertEqual(obs2_reloaded.children, [])
 
+
+          
+class TestParameterOption(unittest.TestCase):
+    """Testcase for ParameterOption class"""
     
+    valid_input=(('observer', 'name', 'string'),
+                 ('experiment', 'project', 'string'),
+                 ('observer', 'age', 'integer'))
+    
+    invalid_input=((26, 'name', 'string'),
+                   ('experiment', 2.3, 'string'),
+                   ('observer', 'age', 90),
+                   ('observer', 'age', 'int'))
+    
+
+    def setUp(self):
+        """Create test database in memory"""
+        engine = create_engine('sqlite:///:memory:', echo=False)
+        base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+
+    def tearDown(self):
+        self.session.close()
+
+    def testValidInput(self):
+        for e_name, p_name, p_type in self.valid_input:
+            parameter_option = ParameterOption(e_name, p_name, p_type)
+            #self.assertEqual(parameter_option.name, name)
+            self.session.add(parameter_option)
+            self.session.commit()
+            parameter_option_reloaded =  self.session.query(ParameterOption).filter(
+                and_(ParameterOption.entity_name==e_name,
+                     ParameterOption.parameter_name==p_name,
+                     ParameterOption.parameter_type==p_type)).one()
+            self.assertEqual(parameter_option,parameter_option_reloaded)
+            
+    def testInvalidInput(self):
+        for e_name, p_name, p_type in self.invalid_input:
+            self.assertRaises(TypeError, ParameterOption, e_name, p_name, p_type)
+
+    def testPrimaryKeyConstrain(self):
+        parameter_option1 = ParameterOption('observer', 'parameter', 'integer')
+        parameter_option2 = ParameterOption('observer', 'parameter', 'integer')
+        self.session.add(parameter_option1)
+        self.session.add(parameter_option2)
+        self.assertRaises(IntegrityError, self.session.commit)
+        
+     
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

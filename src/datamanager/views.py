@@ -16,7 +16,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relation, backref
-
+#from sqlalchemy.orm.util.Validator import validates
 base = declarative_base()
         
 class Parameter(base):
@@ -160,7 +160,12 @@ class Entity(base):
                         secondaryjoin = relations.c.child_id == id,
                         backref=backref('parents',primaryjoin = id == relations.c.child_id,
                                         secondaryjoin= relations.c.id == id))
-
+    
+##    @validates('name')
+##    def validate_name(self, entity):
+##        assert isinstance(entity.name, str)
+##        return entity 
+##    
     def __init__(self, name):
         '''Initialize an entity corresponding to an experimental object.
         
@@ -177,6 +182,50 @@ class Entity(base):
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id,self.name)
+
+class ParameterOption(base):
+    '''
+    The class 'Entity' is mapped on the table 'entities'. The name column 
+    contains unique information about the object type (e.g. 'Observer', 
+    'Experiment'). Each Entity is connected to a set of parameters through the 
+    adjacency list parameterlist. Those parameters can be accessed via the 
+    parameters attribute of the Entity class. Additionally entities can build a 
+    hierarchical structure (represented in a flat table!) via the children and 
+    parents attributes.
+    '''
+    __tablename__ = 'parameteroptions'
+    
+    #id = Column('id',Integer,primary_key=True)
+    parameter_name = Column('parameter_name',String(40), primary_key=True)
+    entity_name = Column('entity_name',String(40), primary_key=True)
+    parameter_type = Column('parameter_type',String(40), primary_key=True)
+  
+    def __init__(self, entity_name, parameter_name, parameter_type):
+        '''Initialize an entity - parameter pair 
+        
+        Argument:
+        entity_name -- A one-word-description of the experimental object
+        parameter_name -- A one-word-description of the parameter 
+        parameter_value -- The polimorphic type of the parameter (integer, string)
+        
+        Raises:
+        TypeError -- Occurs if arguments aren't strings or type nodt in list.
+        '''
+        __polimorphic_types = ('integer','string') 
+        if (isinstance(entity_name,str) and 
+            isinstance(parameter_name,str) and
+            isinstance(parameter_type,str) and 
+            parameter_type in __polimorphic_types):
+            self.entity_name = entity_name
+            self.parameter_name = parameter_name
+            self.parameter_type = parameter_type
+        else:
+            raise TypeError("Argument are ill-defined.")
+                
+    def __repr__(self):
+        return "<ParameterOption('%s','%s', '%s')>" % (self.entity_name,
+                                                       self.parameter_name,
+                                                       self.parameter_type)
 
 
 if __name__ == "__main__":

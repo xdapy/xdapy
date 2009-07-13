@@ -58,7 +58,7 @@ class Proxy(object):
                 else:        
                     raise TypeError("Attribute can not be None")     
                 
-            session.save(entity)
+            session.add(entity)
             session.commit()
             
         def select_entity(self,session,argument):
