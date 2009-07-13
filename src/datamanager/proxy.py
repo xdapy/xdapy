@@ -2,13 +2,13 @@
 
 Created on Jun 17, 2009
     Proxy:          Handle database access and sessions
-    createTables()  Create tables in database (Do not overwrite existing tables)
-    saveObject()    Save instances inherited from ObjectTemplate into database
-    loadObject()    Load instances inherited from ObjectTemplate from database
+    create_tables()  Create tables in database (Do not overwrite existing tables)
+    save()    Save instances inherited from ObjectTemplate into database
+    load()    Load instances inherited from ObjectTemplate from database
+    register_parameter() Register a new parameter description for 
+        a specific experimental object
 
-TODO:The template has a method to register a new parameter description for 
-        a specific experimental object 
-TODO: Load what happens if more attributes given as saved in database
+TODO: Load: what happens if more attributes given as saved in database
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -45,18 +45,26 @@ class Proxy(object):
             Raises:
             TypeError: An error occurred inserting
             """
+            
+            s = select([ParameterOption.parameter_name,
+                        ParameterOption.parameter_type], 
+                       ParameterOption.entity_name==object_.__class__.__name__)
+            d={}
+            for key, type in session.execute(s).fetchall():
+                d[key]=type
+
             entity = Entity(object_.__class__.__name__)
             for key,value in  object_.items():
-                if value is not None:
-                    if isinstance(value,str):
+                if key is not None and d.has_key(key): 
+                    if isinstance(value,str) and d[key] == 'string':
                         entity.parameters.append(StringParameter(key,value))
-                    elif isinstance(value, int):
+                    elif isinstance(value, int) and d[key] == 'integer':
                         entity.parameters.append(IntegerParameter(key,value))
                     else:
-                        raise TypeError("Attribute type '%s' is not supported" %
-                                             type(value))
-                else:        
-                    raise TypeError("Attribute can not be None")     
+                        raise TypeError("Attribute %s must be of type %s" %
+                                         (key, d[key]))
+                else:
+                    print "addparameter"
                 
             session.add(entity)
             session.commit()
@@ -109,7 +117,12 @@ class Proxy(object):
             except InvalidRequestError:
                 raise RequestObjectError("Found no object with id: %d"%id)
             return entity            
-
+        
+        def insert_parameter_option(self, session, e_name, p_name, p_type):
+            parameter_option = ParameterOption(e_name,p_name,p_type)
+            session.add(parameter_option)
+            session.commit()
+            
     def __init__(self):
         '''Constructor
         
@@ -170,48 +183,6 @@ class Proxy(object):
         object_.set_concurrent(True)
         return object_
  
-#    def _load_object_by_id(self,id):
-#        """Load instances inherited from ObjectDict from the database
-#        
-#        Attribute:
-#        id -- The unique id stored with an object in the database  
-#        
-#        Raises:
-#        RequestObjectError -- If no object is returned from the
-#            database, when a single object was expected.
-#        """        
-#        session = self.Session()
-#        entity = self.viewhandler.get_entity(session,id)
-#
-#        # Get the experimental object class
-#        exp_obj_class = globals()[entity.name]
-#        # Create the object
-#        object_ = exp_obj_class()
-#        
-#        for par in entity.parameters:
-#            object_[par.name]=par.value
-#       
-#        session.close()  
-#        return object_
-#    
-#    def _load_object_by_template(self,object_):
-#        """Load instances inherited from ObjectDict from the database
-#        
-#        Attribute:
-#        object_ -- An object derived from datamanager.objects.ObjectDict 
-#        
-#        RequestObjectError -- If multiple objects are returned from the
-#            database, when a single object was expected 
-#        """
-#        session = self.Session()
-#        entity = self.viewhandler.get_entity(session,object_)
-#        
-#        for par in entity.parameters:
-#            object_[par.name]=par.value
-#       
-#        session.close()  
-#        return object_
-
     def get_children(self,parent):
         """Load the children of an object from the database
         
@@ -259,7 +230,25 @@ class Proxy(object):
         session.commit()
         session.close()
         
-
+    def register_parameter(self,entity_name,parameter_name,parameter_type):
+        """Register a new parameter description for a specific experimental object
+        
+        Attribute:
+        entity_name --  The name describing the experimental object. 
+        parameter_name --  The name describing the parameter.
+        parameter_type -- The type the parameter is required to match 
+        
+        Raises:
+        TypeError -- If the parameters are not correctly specified
+        Some SQL error -- If the same entry already exists
+        """
+        session = self.Session()
+        self.viewhandler.insert_parameter_option(session,
+                                                 entity_name,
+                                                 parameter_name,
+                                                 parameter_type)
+        session.close()
+        
 if __name__ == "__main__":
     pass
 

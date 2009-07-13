@@ -7,17 +7,22 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
 from datamanager.proxy import Proxy
-#from datamanager.proxy import ProxyForObjectTemplates
-#from datamanager.objects import ObjectTemplate, Observer, Experiment
 from datamanager.objects import ObjectDict, Observer, Experiment
 from datamanager.errors import RequestObjectError
-
+from datamanager.views import ParameterOption
 
 class TestProxy(unittest.TestCase):
 
     def setUp(self):
         self.p = Proxy()
         self.p.create_tables()
+        self.session = self.p.Session()
+        self.session.add(ParameterOption('Observer','name','string'))
+        self.session.add(ParameterOption('Observer','age','integer'))
+        self.session.add(ParameterOption('Observer','handedness','string'))
+        self.session.add(ParameterOption('Experiment','project','string'))
+        self.session.add(ParameterOption('Experiment','experimenter','string'))
+        self.session.commit()
         
     def tearDown(self):
         pass
@@ -100,7 +105,21 @@ class TestProxy(unittest.TestCase):
         self.assertEqual(self.p.get_children(e), [o])
         self.assertEqual(self.p.get_children(o), [])
         
+    def testRegisterParameter(self):
+        valid_parameters=(('Observer', 'glasses', 'string'),
+                          ('Experiment','reference','string'))
+        invalid_parameters=(('Observer', 'name', 25),
+                          ('Observer', 54, 'integer'),
+                          (24,'project','string'))
+        
+        for e,p,pt in valid_parameters:
+            self.p.register_parameter(e,p,pt)
+        
+        for e,p,pt in invalid_parameters:
+            self.assertRaises(TypeError, self.p.register_parameter,e,p,pt)
+            
 
+        
 #===============================================================================
 #        
 # 
