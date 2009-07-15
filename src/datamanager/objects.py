@@ -19,10 +19,18 @@ class ObjectDict(dict):
     The super class provides functionality common to all experimental object 
     classes. 
     """  
-            
+#    class __dataDict(dict):
+#        def __setitem__(self, key, value):
+#            dict.__setitem__(self, key, dumps(value))
+#            
+#        def __getitem__(self, key):
+#            return loads(dict.__getitem__(self, key))
+
     def __init__(self):
         """Constructor"""
         dict.__init__(self)
+        self._concurrent = False
+        self.data = {}#self.__dataDict()
         
     def _set_items_from_arguments(self,d):
         """Insert function arguments as items""" 
@@ -44,10 +52,21 @@ class ObjectDict(dict):
     def get_concurrent(self):
         """Return _cuncurrent attribute"""
         return self._concurrent
+    
+#    
+#    def getData(self):
+#        print self.__data
+#        return self.__data
+#
+#    def setData(self,x):
+#        print x
+#        print "x is read only"
+#        
+#    data = property(getData, setData)
+    
         
 class Experiment(ObjectDict):
-    """Concrete class for experiments
-    """
+    """Concrete class for experiments"""
     
     def __init__(self, experimenter=None, project=None):
         """Constructor"""
@@ -55,10 +74,10 @@ class Experiment(ObjectDict):
         self._set_items_from_arguments(locals())
 
 class Observer(ObjectDict):
-    """Concrete class for observers
-    """
+    """Concrete class for observers"""
     
     def __init__(self, name=None, age=None, handedness=None):
+        """Constructor"""
         ObjectDict.__init__(self)
         self._set_items_from_arguments(locals())
         

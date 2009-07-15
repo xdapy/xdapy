@@ -22,6 +22,7 @@ class TestObjectDict(unittest.TestCase):
         dic['input']=1
         self.assertEqual(dic['default'],2)
         self.assertEqual(dic['input'],1)
+        self.assertEqual(dic.data,{})
         
     def testConcurrent(self):
         """Test set/get_concurrent()"""
@@ -59,7 +60,14 @@ class TestObjectDict(unittest.TestCase):
         self.assertEqual(expdic['reference'],'reference of this experiment')
         self.assertEqual(expdic.get_concurrent(),False)
     
-
+    def testSetData(self):
+        dic = ObjectDict()
+        dic.set_concurrent(True)
+        dic.data['default']=2
+        dic.data['input']=1
+        self.assertEqual(dic.data['default'],2)
+        #self.assertEqual(dic.get_concurrent(),False)
+        
 if __name__ == "__main__":
     unittest.main()    
 #===============================================================================

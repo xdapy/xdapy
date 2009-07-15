@@ -9,17 +9,19 @@ Created on Jun 17, 2009
         a specific experimental object
 
 TODO: Load: what happens if more attributes given as saved in database
+TODO: Save: what happens if similar object with more or less but otherwise the same 
+        attributes exists in the database
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, session
 from datamanager.views import *
 from sqlalchemy.sql import and_, or_
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from datamanager.errors import AmbiguousObjectError, RequestObjectError
 from datamanager.objects import *
-
+from utils.decorators import require
 
 class Proxy(object):
     """Handle database access and sessions
@@ -35,6 +37,8 @@ class Proxy(object):
             """Initialize ViewHandler"""
             pass
         
+        @require('session', session.Session)
+        @require('object_', ObjectDict)
         def insert_entity(self,session,object_):
             """Save a specific entity
         
@@ -64,11 +68,37 @@ class Proxy(object):
                         raise TypeError("Attribute %s must be of type %s" %
                                          (key, d[key]))
                 else:
-                    print "addparameter"
+                    if 'mysql' in session.connection().engine.name.lower():
+                        raise TypeError("Have a look here")
+                        """
+                        TODO: Test this with MySql
+                        
+                        s = select([ParameterOption.parameter_name,
+                                    ParameterOption.parameter_type], 
+                                    and_(ParameterOption.entity_name==object_.__class__.__name__,
+                                    ParameterOption.parameter_name.op('regexp')('['+key+']^')))
+                        """
+                    else:    
+                        s = select([ParameterOption.parameter_name,
+                                    ParameterOption.parameter_type], 
+                                and_(ParameterOption.entity_name==object_.__class__.__name__,
+                                ParameterOption.parameter_name.like('%'+key+'%')))
+                    
+                    result = session.execute(s).fetchall()
+                    if not result:
+                        raise RequestObjectError("The parameter '%s' is not supported."%key)
+                    else:
+                        raise RequestObjectError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key for key, type in result])))
+            for key,value in  object_.data.items():
+                d = Data(key,dumps(value))
+                entity.data.append(d)
                 
+                         
             session.add(entity)
             session.commit()
-            
+        
+        @require('session', session.Session)
+        @require('argument',(int,ObjectDict))
         def select_entity(self,session,argument):
             """Search and return a specific entity 
             
@@ -85,10 +115,9 @@ class Proxy(object):
                 return self._select_entity_by_object(session,argument)
             elif isinstance(argument,int):
                 return self._select_entity_by_id(session,argument)
-            else:
-                raise TypeError("Argument must be instance derived from ObjectDict or int! %s given"% type(argument))
-        
-        
+            
+        @require('session', session.Session)
+        @require('object_',ObjectDict)
         def _select_entity_by_object(self,session,object_):
             pars  = []
             for key,value in  object_.items():
@@ -107,15 +136,28 @@ class Proxy(object):
                 else:
                     entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).one()
             except InvalidRequestError:
-                raise RequestObjectError("Found no or multiple %s that match requirements"%object_.__class__.__name__)
+                if pars:
+                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()
+                else:
+                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).all()
+                if not entity:
+                    raise RequestObjectError("Found no %s that match requirements"%object_.__class__.__name__)
+                else:
+                    raise RequestObjectError("Found multiple %s that match requirements"%object_.__class__.__name__)
                 
             return entity       
         
+        @require('session', session.Session)
+        @require('id',int)
         def _select_entity_by_id(self,session,id):    
             try:
                 entity = session.query(Entity).filter(Entity.id==id).one()
             except InvalidRequestError:
-                raise RequestObjectError("Found no object with id: %d"%id)
+                entity = session.query(Entity).filter(Entity.id==id).all()
+                if not entity:
+                    raise RequestObjectError("Found no %s with id "%id)
+                else:
+                    raise RequestObjectError("Found multiple %s with id "%id)
             return entity            
         
         def insert_parameter_option(self, session, e_name, p_name, p_type):
@@ -136,6 +178,7 @@ class Proxy(object):
         """Create tables in database (Do not overwrite existing tables)."""
         base.metadata.create_all(self.engine)   
         
+    @require('object_',ObjectDict)
     def save(self,object_):
         """Save instances inherited from ObjectDict into database.
         
@@ -146,15 +189,12 @@ class Proxy(object):
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
         """
-        
-        if not isinstance(object_,ObjectDict):
-            raise TypeError("Argument must be instance derived from ObjectDict")
-        
         session = self.Session()
         entity = self.viewhandler.insert_entity(session,object_)
         object_.set_concurrent(True)
         session.close()
     
+    @require('argument', (int, ObjectDict))
     def load(self, argument):
         """Load instance inherited from ObjectTemplate from the database
         
@@ -179,10 +219,13 @@ class Proxy(object):
         for par in entity.parameters:
             object_[par.name]=par.value
        
+        for d in entity.data:
+            object_.data[d.name]=loads(d.data)
         session.close()  
         object_.set_concurrent(True)
         return object_
  
+    @require('parent', (int, ObjectDict))
     def get_children(self,parent):
         """Load the children of an object from the database
         
@@ -207,6 +250,8 @@ class Proxy(object):
         session.close()
         return children
     
+    @require('parent', (int, ObjectDict))
+    @require('child', (int, ObjectDict))
     def connect_objects(self,parent,child):
         """Connect two related objects
         
@@ -219,6 +264,8 @@ class Proxy(object):
         Raises:
         RequestObjectError -- If the objects to be connected are not properly 
             saved in the database
+            
+        TODO: Maybe consider to save objects automatically 
         """
         session = self.Session()
         try:
@@ -229,7 +276,10 @@ class Proxy(object):
         parent_entity.children.append(child_entity)
         session.commit()
         session.close()
-        
+    
+    @require('entity_name', str)
+    @require('parameter_name', str)
+    @require('parameter_type', str)
     def register_parameter(self,entity_name,parameter_name,parameter_type):
         """Register a new parameter description for a specific experimental object
         
