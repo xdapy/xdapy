@@ -9,13 +9,43 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.views import Parameter, StringParameter, IntegerParameter, Entity, ParameterOption
+from datamanager.views import Data, Parameter, StringParameter, IntegerParameter, Entity, ParameterOption
 from datamanager.views import base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import and_
 from sqlalchemy.exceptions import IntegrityError                 
+from pickle import dumps, loads
 
+class TestData(unittest.TestCase):
+    valid_input = (('SomeName','SomeString'),
+                   ('someName','1'),
+                   ('Somename',1.2),
+                   ('somename',[0, 2, 3, 5]),
+                   ('othername',(0, 2, 3, 5)))
+    
+    invalid_input = (('name',None))
+    
+    def setUp(self):
+        """Create test database in memory"""
+        engine = create_engine('sqlite:///:memory:', echo=False)
+        base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+
+    def tearDown(self):
+        self.session.close()
+        
+    def testValidInput(self):
+        for name, data in self.valid_input:
+            d = Data(name=name,data=dumps(data))
+            self.assertEqual(d.name,name)
+            self.assertEqual(d.data,dumps(data))
+            self.session.add(d)
+            self.session.commit()
+            d_reloaded =  self.session.query(Data).filter(Data.name==name).one()
+            self.assertEqual(data,loads(d_reloaded.data))
+        
 class TestStringParameter(unittest.TestCase):
     valid_input = (('name','Value'),
                   ('name','value'),
@@ -43,6 +73,8 @@ class TestStringParameter(unittest.TestCase):
     def testValidInput(self):
         for name,value in self.valid_input:
             par = StringParameter(name,value)
+            self.session.add(par)
+            self.session.commit()
             self.assertEqual(par.name, name)
             self.assertEqual(par.value, value)
         

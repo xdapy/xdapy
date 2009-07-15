@@ -11,18 +11,56 @@ database through a object-relational-mapper (ORM).
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """ TODO:(Hannah) Figure out what to do with global variable base """
+"""TODO: DATA Table with BLOBS"""
 
 
-
-from sqlalchemy import MetaData, Table, Column, Integer, String, ForeignKey
+from sqlalchemy import MetaData, Table, Column, Integer, String, Binary, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relation, backref, validates
 from sqlalchemy.sql import select
 from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
-
-#from sqlalchemy.orm.validates
+import StringIO
+from pickle import dumps, loads
+        
 base = declarative_base()
         
+class Data(base):
+    '''
+    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
+    must be a string. Each Data is connected to at most one entity through the 
+    adjacency list 'datalist'. The corresponding entities can be accessed via
+    the entities attribute of the Data class.
+    '''
+    id = Column('id',Integer,primary_key=True)
+    name = Column('name',String(40))
+    data = Column('data',Binary,nullable=False)
+    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'))
+    
+    __tablename__ = 'data'
+    
+    @validates('name')
+    def validate_name(self, key, parameter):
+        if not isinstance(parameter, str):
+            raise TypeError("Argument must be a string")
+        return parameter 
+    
+    def __init__(self, name, data):
+        '''Initialize a parameter with the given name.
+        
+        Argument:
+        name -- A one-word-description of data
+        data -- The data to be saved
+        
+        Raises:
+        TypeError -- Occurs if name is not a string
+        '''
+        self.name = name
+        self.data = data
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.data)
+
+
 class Parameter(base):
     '''
     The class 'Parameter' is mapped on the table 'parameters' and forms the 
@@ -32,21 +70,18 @@ class Parameter(base):
     adjacency list 'parameterlist'. The corresponding entities can be accessed via
     the entities attribute of the Parameter class.
     '''
-    __tablename__ = 'parameters'
-     
     id = Column('id',Integer,primary_key=True)
     name = Column('name',String(40))
     type = Column('type',String(20),nullable=False)
     
+    __tablename__ = 'parameters'
+    __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
     @validates('name')
     def validate_name(self, key, parameter):
         if not isinstance(parameter, str):
             raise TypeError("Argument must be a string")
         return parameter 
-    
-    #join = 'parameters.outerjoin(stringparameters).outerjoin(integerparameters)'
-    __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
     def __init__(self, name):
         '''Initialize a parameter with the given name.
@@ -57,10 +92,7 @@ class Parameter(base):
         Raises:
         TypeError -- Occurs if name is not a string
         '''
-        #if isinstance(name,str):
         self.name = name
-        #else:
-         #   raise TypeError()
     
     def __repr__(self):
         return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
@@ -71,11 +103,11 @@ class StringParameter(Parameter):
     is derived from 'Parameter'. The value assigned to a StringParameter must be 
     a string. 
     '''
-    __tablename__ = 'stringparameters'
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'string'}
-
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value',String(40))
+
+    __tablename__ = 'stringparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'string'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -106,11 +138,11 @@ class IntegerParameter(Parameter):
     is derived from Parameter. The value assigned to an IntegerParameter must be
     an integer. 
     '''
-    __tablename__ = 'integerparameters'
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'integer'}
-
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value',Integer)
+
+    __tablename__ = 'integerparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'integer'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -162,12 +194,12 @@ class Entity(base):
     hierarchical structure (represented in a flat table!) via the children and 
     parents attributes.
     '''
-    __tablename__ = 'entities'
-    
     id = Column('id',Integer,primary_key=True)
     name = Column('name',String(40)) 
     # many to many Entity<->Parameter
     parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
+    # one to many Entity->Data
+    data = relation('Data', backref=backref('entities', order_by=id))
     # many to many Entity<->Entity
     children = relation('Entity',
                         secondary = relations,
@@ -175,6 +207,8 @@ class Entity(base):
                         secondaryjoin = relations.c.child_id == id,
                         backref=backref('parents',primaryjoin = id == relations.c.child_id,
                                         secondaryjoin= relations.c.id == id))
+
+    __tablename__ = 'entities'
     
     @validates('name')
     def validate_name(self, key, e_name):
@@ -198,20 +232,18 @@ class Entity(base):
 
 class ParameterOption(base):
     '''
-    The class 'Entity' is mapped on the table 'entities'. The name column 
-    contains unique information about the object type (e.g. 'Observer', 
-    'Experiment'). Each Entity is connected to a set of parameters through the 
-    adjacency list parameterlist. Those parameters can be accessed via the 
-    parameters attribute of the Entity class. Additionally entities can build a 
-    hierarchical structure (represented in a flat table!) via the children and 
-    parents attributes.
+    The class 'ParameterOption' is mapped on the table 'parameteroptions'. This 
+    table provides a lookup table for entity/parameter pairs and the type the 
+    parameter is required to have. Ideally this table is filled once after table 
+    creation. And only if at a later moment the need for a new parameter emerges, 
+    then this parameter can be added to the list of allowed parameters.
     '''
-    __tablename__ = 'parameteroptions'
-    
     parameter_name = Column('parameter_name',String(40), primary_key=True)
     entity_name = Column('entity_name',String(40), primary_key=True)
     parameter_type = Column('parameter_type',String(40), primary_key=True)
   
+    __tablename__ = 'parameteroptions'
+
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):
         if not isinstance(p_name, str):
@@ -238,7 +270,8 @@ class ParameterOption(base):
         Argument:
         entity_name -- A one-word-description of the experimental object
         parameter_name -- A one-word-description of the parameter 
-        parameter_value -- The polimorphic type of the parameter (integer, string)
+        parameter_value -- The polimorphic type of the parameter 
+            (e.g. 'integer', 'string')
         
         Raises:
         TypeError -- Occurs if arguments aren't strings or type not in list.
