@@ -19,18 +19,20 @@ class ObjectDict(dict):
     The super class provides functionality common to all experimental object 
     classes. 
     """  
-#    class __dataDict(dict):
-#        def __setitem__(self, key, value):
-#            dict.__setitem__(self, key, dumps(value))
-#            
-#        def __getitem__(self, key):
-#            return loads(dict.__getitem__(self, key))
+    class __dataDict(dict):
+        def __init__(self, cuncurrent):
+        
+        def __setitem__(self, key, value):
+            dict.__setitem__(self, key, dumps(value))
+            
+        def __getitem__(self, key):
+            return loads(dict.__getitem__(self, key))
 
     def __init__(self):
         """Constructor"""
         dict.__init__(self)
         self._concurrent = False
-        self.data = {}#self.__dataDict()
+        self.data = {}
         
     def _set_items_from_arguments(self,d):
         """Insert function arguments as items""" 

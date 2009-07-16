@@ -16,13 +16,28 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import and_
 from sqlalchemy.exceptions import IntegrityError                 
 from pickle import dumps, loads
+import numpy as np
 
+class TestClass(object):
+    def __init__(self):
+        self.test = 'test'
+    def returntest(self):
+        return self.test
+    
 class TestData(unittest.TestCase):
-    valid_input = (('SomeName','SomeString'),
-                   ('someName','1'),
-                   ('Somename',1.2),
-                   ('somename',[0, 2, 3, 5]),
-                   ('othername',(0, 2, 3, 5)))
+
+        
+    # images, class, 
+    valid_input = (('somestring','SomeString'),
+                   ('someint',1),
+                   ('somefloat',1.2),
+                   ('somelist',[0, 2, 3, 5]),
+                   ('sometuple',(0, 2, 3, 5)),
+                   ('somearray1',np.array([2,3,1,0])),
+                   ('somearray2', np.array([[ 1.+0.j, 2.+0.j], [ 0.+0.j, 0.+0.j], [ 1.+1.j, 3.+0.j]])),
+                   ('somearray3', np.array([[1,2,3],(4,5,6)])),
+                   ('somedict',{'jack': 4098, 'sape': 4139}),
+                   ('someclass',TestClass()))
     
     invalid_input = (('name',None))
     
@@ -44,7 +59,11 @@ class TestData(unittest.TestCase):
             self.session.add(d)
             self.session.commit()
             d_reloaded =  self.session.query(Data).filter(Data.name==name).one()
-            self.assertEqual(data,loads(d_reloaded.data))
+            try:
+                self.assertEqual(data,loads(d_reloaded.data))
+            except ValueError:
+                self.assertEqual(data.all(),loads(d_reloaded.data).all())
+                
         
 class TestStringParameter(unittest.TestCase):
     valid_input = (('name','Value'),

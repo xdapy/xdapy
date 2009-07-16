@@ -78,13 +78,13 @@ class TestProxy(unittest.TestCase):
         self.assertEqual(obs_by_object.get_concurrent(),False)
         self.p.load(obs_by_object)
         self.assertEqual(obs_by_object.get_concurrent(),True)
-        #imortant obs_by_object and obs are not equal, only their dictionary parts are. 
+        #important obs_by_object and obs are not equal, only their dictionary parts are. 
         self.assertEqual(obs,obs_by_object)
         
         #Test the settings of _cuncurrent
         obs_by_id = self.p.load(1)    
         self.assertEqual(obs_by_id.get_concurrent(),True)
-        #imortant obs_by_id and obs are not equal, only their dictionary parts are. 
+        #important obs_by_id and obs are not equal, only their dictionary parts are. 
         self.assertEqual(obs,obs_by_id)
          
         #Error if object does not exist
