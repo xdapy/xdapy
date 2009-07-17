@@ -8,6 +8,7 @@ provided.
     ObjectDict              Template class for container classes
     Observer:               Observer class contains information about an observer
     Experiment:             Experiment class contains information about an experiment
+TODO: self._concurrent find a better solution to in-place assignments as []
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -20,19 +21,22 @@ class ObjectDict(dict):
     classes. 
     """  
     class __dataDict(dict):
-        def __init__(self, cuncurrent):
+        def __init__(self, concurrent):
+            self.concurrent = concurrent
         
         def __setitem__(self, key, value):
-            dict.__setitem__(self, key, dumps(value))
+            #print "here"
+            #print self.concurrent
+            #self.concurrent &= False
+            #print self.concurrent
+            dict.__setitem__(self, key, value)
+            self.concurrent[0] = False 
             
-        def __getitem__(self, key):
-            return loads(dict.__getitem__(self, key))
-
     def __init__(self):
         """Constructor"""
         dict.__init__(self)
-        self._concurrent = False
-        self.data = {}
+        self.__concurrent = [False]
+        self.__data = self.__dataDict(self.__concurrent)
         
     def _set_items_from_arguments(self,d):
         """Insert function arguments as items""" 
@@ -44,27 +48,30 @@ class ObjectDict(dict):
         """Set dictionary item and update _concurrent attribute"""
         if not self.has_key(key) or self[key] is not item:
             dict.__setitem__(self, key, item)
-            self._concurrent = False
+            self.__concurrent[0] = False
     
     @require('boolean', bool)
     def set_concurrent(self, boolean):
         """Set _concurrent attribute to a boolean value"""
-        self._concurrent =  boolean
-        
+        self.__concurrent[0] = boolean
+#       
     def get_concurrent(self):
         """Return _cuncurrent attribute"""
-        return self._concurrent
+        return self.__concurrent[0]
     
-#    
-#    def getData(self):
-#        print self.__data
-#        return self.__data
-#
-#    def setData(self,x):
-#        print x
-#        print "x is read only"
-#        
-#    data = property(getData, setData)
+    
+    def getData(self):
+        return self.__data
+    
+    @require('x', dict)
+    def setData(self,x):
+        self.__data = self.__dataDict(self.__concurrent)
+        print x
+        for key,value in x.items():
+            self.__data[key] =  value
+            
+        
+    data = property(getData, setData)
     
         
 class Experiment(ObjectDict):

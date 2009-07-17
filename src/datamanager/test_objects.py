@@ -15,6 +15,7 @@ class TestObjectDict(unittest.TestCase):
     class _ExperimentDict(ObjectDict):
         
         def __init__(self, experimenter, project=None):
+            ObjectDict.__init__(self)
             self._set_items_from_arguments(locals())     
     
     def testConstructor(self):
@@ -61,14 +62,21 @@ class TestObjectDict(unittest.TestCase):
         self.assertEqual(expdic['experimenter'],8)
         self.assertEqual(expdic['reference'],'reference of this experiment')
         self.assertEqual(expdic.get_concurrent(),False)
-    
+        
     def testSetData(self):
         dic = ObjectDict()
+        #Sideeffects of insertions
         dic.set_concurrent(True)
         dic.data['default']=2
         dic.data['input']=1
         self.assertEqual(dic.data['default'],2)
-        #self.assertEqual(dic.get_concurrent(),False)
+        self.assertEqual(dic.get_concurrent(),False)
+        
+        #Sideeffects of assignments
+        dic.set_concurrent(True)
+        self.assertRaises(TypeError, dic.data, [])
+        dic.data = {'newkey':'newvalue'}
+        self.assertEqual(dic.get_concurrent(),False)
         
 if __name__ == "__main__":
     unittest.main()    
