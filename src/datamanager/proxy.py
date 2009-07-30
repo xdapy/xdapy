@@ -13,6 +13,7 @@ TODO: Save: what happens if similar object with more or less but otherwise the s
         attributes exists in the database
 TODO: Update 
 TODO: Delete
+TODO: String similarity
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -24,6 +25,8 @@ from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from datamanager.errors import AmbiguousObjectError, RequestObjectError
 from datamanager.objects import *
 from utils.decorators import require
+from utils.algorithms import levenshtein
+from MySQLdb import connect
 
 class Proxy(object):
     """Handle database access and sessions
@@ -71,15 +74,15 @@ class Proxy(object):
                                          (key, d[key]))
                 else:
                     if 'mysql' in session.connection().engine.name.lower():
-                        raise TypeError("Have a look here")
+                        #raise TypeError("Have a look here")
                         """
                         TODO: Test this with MySql
-                        
+                        """
                         s = select([ParameterOption.parameter_name,
                                     ParameterOption.parameter_type], 
                                     and_(ParameterOption.entity_name==object_.__class__.__name__,
-                                    ParameterOption.parameter_name.op('regexp')('['+key+']^')))
-                        """
+                                    ParameterOption.parameter_name.op('regexp')('['+key+']*')))
+                    
                     else:    
                         s = select([ParameterOption.parameter_name,
                                     ParameterOption.parameter_type], 
@@ -90,7 +93,7 @@ class Proxy(object):
                     if not result:
                         raise RequestObjectError("The parameter '%s' is not supported."%key)
                     else:
-                        raise RequestObjectError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key for key, type in result])))
+                        raise RequestObjectError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key1 for key1, type in result])))
             for key,value in  object_.data.items():
                 d = Data(key,dumps(value))
                 entity.data.append(d)
@@ -100,7 +103,7 @@ class Proxy(object):
             session.commit()
         
         @require('session', session.Session)
-        @require('argument',(int,ObjectDict))
+        @require('argument',(int, long, ObjectDict))
         def select_entity(self,session,argument):
             """Search and return a specific entity 
             
@@ -115,8 +118,9 @@ class Proxy(object):
             """
             if isinstance(argument,ObjectDict):
                 return self._select_entity_by_object(session,argument)
-            elif isinstance(argument,int):
+            elif isinstance(argument,int) or isinstance(argument,long):
                 return self._select_entity_by_id(session,argument)
+            
             
         @require('session', session.Session)
         @require('object_',ObjectDict)
@@ -150,7 +154,7 @@ class Proxy(object):
             return entity       
         
         @require('session', session.Session)
-        @require('id',int)
+        @require('id',int, long)
         def _select_entity_by_id(self,session,id):    
             try:
                 entity = session.query(Entity).filter(Entity.id==id).one()
@@ -167,17 +171,30 @@ class Proxy(object):
             session.add(parameter_option)
             session.commit()
             
-    def __init__(self):
+    def __init__(self,host,user,db,pwd):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
         '''
-        self.engine = create_engine('sqlite:///:memory:', echo=False)
+#        self.host = "localhost"
+#        self.user = "root"
+#        self.passwd = "tin4u"
+#            
+#        self.host = "mach.cognition.tu-berlin.de"
+#        self.user = "psybaseuser"
+#        self.passwd = "psybasetest"
+        db = create_engine('mysql://%s@%s/%s'%(user,host,db),connect_args={'passwd':pwd})
+        #mysql_db = create_engine('mysql://scott:tiger@localhost/mydatabase', 
+         #                        connect_args = {'argument1':17, 'argument2':'bar'})
+        
+        self.engine = db#create_engine('sqlite:///:memory:', echo=False)
         self.Session = sessionmaker(bind=self.engine)
         self.viewhandler = self.ViewHandler()
     
-    def create_tables(self):
+    def create_tables(self,overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
+        if overwrite:
+            base.metadata.drop_all(self.engine)
         base.metadata.create_all(self.engine)   
         
     @require('object_',ObjectDict)
@@ -196,7 +213,7 @@ class Proxy(object):
         object_.set_concurrent(True)
         session.close()
     
-    @require('argument', (int, ObjectDict))
+    @require('argument', (int, long, ObjectDict))
     def load(self, argument):
         """Load instance inherited from ObjectTemplate from the database
         
@@ -212,12 +229,13 @@ class Proxy(object):
         """   
         session = self.Session()
         entity = self.viewhandler.select_entity(session,argument)
+        
         if isinstance(argument,ObjectDict):
             object_=argument
-        if isinstance(argument,int):
+        if isinstance(argument,int) or isinstance(argument,long):
             exp_obj_class = globals()[entity.name]
             object_ = exp_obj_class()
-        
+       
         for par in entity.parameters:
             object_[par.name]=par.value
        
@@ -252,8 +270,8 @@ class Proxy(object):
         session.close()
         return children
     
-    @require('parent', (int, ObjectDict))
-    @require('child', (int, ObjectDict))
+    @require('parent', (int, long, ObjectDict))
+    @require('child', (int, long, ObjectDict))
     def connect_objects(self,parent,child):
         """Connect two related objects
         

@@ -11,7 +11,7 @@ database through a object-relational-mapper (ORM).
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """ TODO:(Hannah) Figure out what to do with global variable base """
-"""TODO: DATA Table with BLOBS"""
+"""TODO: Make Data truncation an error"""
 
 
 from sqlalchemy import MetaData, Table, Column, Integer, String, Binary, ForeignKey

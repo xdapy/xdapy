@@ -17,16 +17,28 @@ from sqlalchemy.sql import and_
 from sqlalchemy.exceptions import IntegrityError                 
 from pickle import dumps, loads
 import numpy as np
+from sqlalchemy.orm import exc as orm_exc
 
+db = 'mysql'
+
+def return_engine():
+    if db is 'mysql':
+        engine = create_engine('mysql://root@localhost/unittestDB',connect_args={'passwd':'tin4u'})
+        base.metadata.drop_all(engine)
+    elif db is 'sqlite':
+        engine = create_engine('sqlite:///:memory:', echo=False)
+    else:
+        raise AttributeError('db type "%s" not defined'%db)
+    return engine
+        
 class TestClass(object):
     def __init__(self):
         self.test = 'test'
     def returntest(self):
         return self.test
-    
+
 class TestData(unittest.TestCase):
 
-        
     # images, class, 
     valid_input = (('somestring','SomeString'),
                    ('someint',1),
@@ -43,7 +55,7 @@ class TestData(unittest.TestCase):
     
     def setUp(self):
         """Create test database in memory"""
-        engine = create_engine('sqlite:///:memory:', echo=False)
+        engine = return_engine()
         base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -62,26 +74,47 @@ class TestData(unittest.TestCase):
             try:
                 self.assertEqual(data,loads(d_reloaded.data))
             except ValueError:
+                #arrays
                 self.assertEqual(data.all(),loads(d_reloaded.data).all())
-                
-        
+            except AssertionError:
+                #testclass
+                self.assertEqual(data.test,loads(d_reloaded.data).test)
+
+class TestParameter(unittest.TestCase):
+    string_exceeding_length = '*****************************************'
+    
+    def setUp(self):
+        """Create test database"""
+        engine = return_engine()
+        base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+
+    def tearDown(self):
+        self.session.close()
+
+    def testInvalidInputLength(self):
+        parameter = Parameter(self.string_exceeding_length)
+        self.session.add(parameter)
+        self.session.commit()
+        self.assertEqual([], self.session.query(Parameter).filter(Parameter.name==self.string_exceeding_length).all())
+       
 class TestStringParameter(unittest.TestCase):
     valid_input = (('name','Value'),
                   ('name','value'),
                   ('****************************************','Value'),
-                  ('name','****************************************************************************************************'))
+                  ('name','****************************************'))
     invalid_input_types = (('name',0),
                     ('name',0.0),
                     ('name',None),
                     (0,None))
                     #,('Name','value'))
     
-    invalid_input_length = (('*****************************************','Value'),
-                    ('name','******************************************************************************************************'))
+    invalid_input_length = ('name','******************************************************************************************************')
     
     def setUp(self):
         """Create test database in memory"""
-        engine = create_engine('sqlite:///:memory:', echo=False)
+        engine = return_engine()
         base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -102,17 +135,15 @@ class TestStringParameter(unittest.TestCase):
             self.assertRaises(TypeError, StringParameter, name, value)
         
     def testInvalidInputLength(self):
-        for name,value in self.invalid_input_length:
-            parameter = StringParameter(name,value)
-            self.session.add(parameter)
-            self.session.commit()
-            parameter_reloaded =  self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).one()
-            self.assertEqual(parameter,parameter_reloaded)
-            self.assertEqual(parameter,parameter_reloaded)
-            parameter_reloaded =  self.session.query(Parameter).filter(Parameter.name==name).one()
-            self.assertEqual(parameter,parameter_reloaded)
-            
+        name = self.invalid_input_length[0]
+        value = self.invalid_input_length[1]
+        parameter = StringParameter(name,value)
+        self.session.add(parameter)
+        self.session.commit()
+        self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
         
+        
+
 class TestIntegerParameter(unittest.TestCase):
     valid_input = (('name',26),
                   ('name',-1),
@@ -120,12 +151,10 @@ class TestIntegerParameter(unittest.TestCase):
     invalid_input_types = (('name','0'),
                     ('name',0.0),
                     ('name',None))
-                    
-    invalid_input_length = (('*****************************************',0),
-                          ('******************************************',0))
+
     def setUp(self):
         """Create test database in memory"""
-        engine = create_engine('sqlite:///:memory:', echo=False)
+        engine = return_engine()
         base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -143,15 +172,6 @@ class TestIntegerParameter(unittest.TestCase):
         for name,value in self.invalid_input_types:
             self.assertRaises(TypeError, IntegerParameter, name, value)
     
-    def testInvalidInputLength(self):
-        for name,value in self.invalid_input_length:
-            parameter = IntegerParameter(name,value)
-            self.session.add(parameter)
-            self.session.commit()
-            parameter_reloaded =  self.session.query(IntegerParameter).filter(and_(IntegerParameter.name==name,IntegerParameter.value==value)).one()
-            self.assertEqual(parameter,parameter_reloaded)
-            parameter_reloaded =  self.session.query(IntegerParameter).filter(Parameter.name==name).one()
-            self.assertEqual(parameter,parameter_reloaded)
           
 class TestEntity(unittest.TestCase):
     """Testcase for Entity class
@@ -169,7 +189,7 @@ class TestEntity(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        engine = create_engine('sqlite:///:memory:', echo=False)
+        engine = return_engine()
         base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -248,7 +268,7 @@ class TestParameterOption(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        engine = create_engine('sqlite:///:memory:', echo=False)
+        engine = return_engine()
         base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
         self.session = Session()
@@ -259,7 +279,7 @@ class TestParameterOption(unittest.TestCase):
     def testValidInput(self):
         for e_name, p_name, p_type in self.valid_input:
             parameter_option = ParameterOption(e_name, p_name, p_type)
-            #self.assertEqual(parameter_option.name, name)
+            self.assertEqual(parameter_option.parameter_name, p_name)
             self.session.add(parameter_option)
             self.session.commit()
             parameter_option_reloaded =  self.session.query(ParameterOption).filter(
@@ -282,5 +302,5 @@ class TestParameterOption(unittest.TestCase):
      
         
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -15,8 +15,8 @@ from sqlalchemy.exceptions import IntegrityError
 class TestProxy(unittest.TestCase):
 
     def setUp(self):
-        self.p = Proxy()
-        self.p.create_tables()
+        self.p = Proxy('localhost','root','unittestDB','tin4u')
+        self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         self.session.add(ParameterOption('Observer','name','string'))
         self.session.add(ParameterOption('Observer','age','integer'))
@@ -30,7 +30,7 @@ class TestProxy(unittest.TestCase):
 
     def testCreateTables(self):
         self.p.create_tables()
-
+#
     def testSave(self):
         valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
                        Experiment(project='MyProject',experimenter="John Doe"))
@@ -60,7 +60,8 @@ class TestProxy(unittest.TestCase):
         self.assertRaises(RequestObjectError, self.p.save, exp)
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
-        exp['xperimenter']='new'
+        exp['perimenter']='new'
+        #self.p.save(exp)
         self.assertRaises(RequestObjectError, self.p.save, exp)
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
