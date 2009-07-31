@@ -11,6 +11,8 @@ Created on Jun 17, 2009
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
+TODO: Save new instance of same object if the ancestor is different!
+TODO: Retrieve data always by going top down through the whole hierarchy
 TODO: Update 
 TODO: Delete
 TODO: String similarity
@@ -44,7 +46,7 @@ class Proxy(object):
         
         @require('session', session.Session)
         @require('object_', ObjectDict)
-        def insert_entity(self,session,object_):
+        def insert_object(self,session,object_):
             """Save a specific entity
         
             Arguments:
@@ -104,7 +106,7 @@ class Proxy(object):
         
         @require('session', session.Session)
         @require('argument',(int, long, ObjectDict))
-        def select_entity(self,session,argument):
+        def select_object(self,session,argument):
             """Search and return a specific entity 
             
             Arguments:
@@ -117,10 +119,28 @@ class Proxy(object):
             IOError: An error occurred accessing the table.Table object.
             """
             if isinstance(argument,ObjectDict):
-                return self._select_entity_by_object(session,argument)
+                entities = self._select_entity_by_object(session,argument)
             elif isinstance(argument,int) or isinstance(argument,long):
-                return self._select_entity_by_id(session,argument)
+                entities = self._select_entity_by_id(session,argument)
+          
+            exp_obj_list = []
+            for entity in entities:       
+                # if isinstance(argument,ObjectDict):
+                #    object_=argument
+                #if isinstance(argument,int) or isinstance(argument,long):
+                exp_obj_class = globals()[entity.name]
+                exp_obj = exp_obj_class()
+           
+                for par in entity.parameters:
+                    exp_obj[par.name]=par.value
+               
+                for d in entity.data:
+                    exp_obj.data[d.name]=loads(d.data)
+                
+                exp_obj.set_concurrent(True)
+                exp_obj_list.append(exp_obj)
             
+            return exp_obj_list
             
         @require('session', session.Session)
         @require('object_',ObjectDict)
@@ -136,40 +156,52 @@ class Proxy(object):
                         raise TypeError("Attribute type '%s' is not supported" %
                                          type(value))     
                 
-            try:       
-                if pars:
-                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).one()
-                else:
-                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).one()
-            except InvalidRequestError:
-                if pars:
-                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()
-                else:
-                    entity =  session.query(Entity).filter_by(name=object_.__class__.__name__).all()
-                if not entity:
-                    raise RequestObjectError("Found no %s that match requirements"%object_.__class__.__name__)
-                else:
-                    raise RequestObjectError("Found multiple %s that match requirements"%object_.__class__.__name__)
-                
-            return entity       
+            if pars:
+                return  session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()
+            else:
+                return  session.query(Entity).filter_by(name=object_.__class__.__name__).all()#one()
+   
         
         @require('session', session.Session)
         @require('id',int, long)
         def _select_entity_by_id(self,session,id):    
-            try:
-                entity = session.query(Entity).filter(Entity.id==id).one()
-            except InvalidRequestError:
-                entity = session.query(Entity).filter(Entity.id==id).all()
-                if not entity:
-                    raise RequestObjectError("Found no %s with id "%id)
-                else:
-                    raise RequestObjectError("Found multiple %s with id "%id)
-            return entity            
+            return session.query(Entity).filter(Entity.id==id).all()          
         
         def insert_parameter_option(self, session, e_name, p_name, p_type):
             parameter_option = ParameterOption(e_name,p_name,p_type)
             session.add(parameter_option)
             session.commit()
+        
+        @require('session', session.Session)
+        @require('parent', ObjectDict)
+        @require('child', ObjectDict)
+        def append_child(self, session, parent, child):
+            parent_entity = self._select_entity_by_object(session, parent)
+            child_entity = self._select_entity_by_object(session, child)
+            if not parent_entity or not child_entity:
+                raise RequestObjectError("Objects must be saved before they can be loaded")
+            elif len(parent_entity)>1 or len(child_entity)>1:
+                raise RequestObjectError("Objects are not unique")
+            else:
+                parent_entity[0].children.append(child_entity[0])
+        
+         
+        @require('session', session.Session)
+        @require('parent', ObjectDict)
+        def retrieve_children(self, session, parent):
+            parent_entities = self._select_entity_by_object(session,parent)
+            if not parent_entities:
+                RequestObjectError("Object must be saved before its children can be loaded")
+            if len(parent_entities) >1:
+                print "WARNING: THE PARENT IS CONTAINT IN MORE THAN ONE CONTEXT HIERARCHIES"
+            
+            children_list = []
+            for parent_entity in parent_entities:
+                for child_entity in parent_entity.children:
+                    child_object = self.select_object(session, child_entity.id)
+                    assert(len(child_object) is 1)
+                    children_list.append(child_object[0])
+            return children_list 
             
     def __init__(self,host,user,db,pwd):
         '''Constructor
@@ -209,7 +241,7 @@ class Proxy(object):
         TypeError -- If the attribute is None
         """
         session = self.Session()
-        entity = self.viewhandler.insert_entity(session,object_)
+        entity = self.viewhandler.insert_object(session,object_)
         object_.set_concurrent(True)
         session.close()
     
@@ -228,22 +260,29 @@ class Proxy(object):
         RequestObjectError -- If the request does not yield a single objects 
         """   
         session = self.Session()
-        entity = self.viewhandler.select_entity(session,argument)
+        objects = self.viewhandler.select_object(session,argument)
         
-        if isinstance(argument,ObjectDict):
-            object_=argument
-        if isinstance(argument,int) or isinstance(argument,long):
-            exp_obj_class = globals()[entity.name]
-            object_ = exp_obj_class()
-       
-        for par in entity.parameters:
-            object_[par.name]=par.value
-       
-        for d in entity.data:
-            object_.data[d.name]=loads(d.data)
+        if len(objects)>1:
+            raise RequestObjectError("Found multiple objects that match requirements")#%object_.__class__.__name__)
+        
+        if not objects:
+            raise RequestObjectError("Found no object that matches requirements")#%object_.__class__.__name__)
+           
         session.close()  
-        object_.set_concurrent(True)
-        return object_
+        
+        return objects
+    
+    @require('argument', ObjectDict)
+    def load_all(self, argument):
+        """Load all matching instances inherited from ObjectTemplate from the database
+        
+        Attribute:
+        argument -- An object derived from datamanager.objects.ObjectTemplate 
+        """   
+        session = self.Session()
+        objects = self.viewhandler.select_object(session,argument)
+        session.close()  
+        return objects
  
     @require('parent', (int, ObjectDict))
     def get_children(self,parent):
@@ -258,15 +297,7 @@ class Proxy(object):
             not properly saved in the database
         """
         session = self.Session()
-        try:
-            parent_entity = self.viewhandler.select_entity(session,parent)
-        except RequestObjectError:
-            RequestObjectError("Object must be saved before its children can be loaded")
-        
-        children = []
-        for child in parent_entity.children:
-            children.append(self.load(child.id))
-        
+        children = self.viewhandler.retrieve_children(session, parent)
         session.close()
         return children
     
@@ -288,12 +319,13 @@ class Proxy(object):
         TODO: Maybe consider to save objects automatically 
         """
         session = self.Session()
-        try:
-            parent_entity = self.viewhandler.select_entity(session,parent)
-            child_entity = self.viewhandler.select_entity(session,child)
-        except RequestObjectError:
-            raise RequestObjectError("objects must be saved before they can be loaded")
-        parent_entity.children.append(child_entity)
+        self.viewhandler.append_child(session, parent,child)
+#        try:
+#            parent_entity = self.viewhandler.select_entity(session,parent)
+#            child_entity = self.viewhandler.select_entity(session,child)
+#        except RequestObjectError:
+#            raise RequestObjectError("objects must be saved before they can be loaded")
+#        parent_entity.children.append(child_entity)
         session.commit()
         session.close()
     

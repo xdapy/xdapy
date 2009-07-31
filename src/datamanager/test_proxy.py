@@ -75,18 +75,17 @@ class TestProxy(unittest.TestCase):
         self.p.save(obs)
         
         #Test the settings of _cuncurrent
-        obs_by_object = Observer(name="Max Mustermann")
-        self.assertEqual(obs_by_object.get_concurrent(),False)
-        self.p.load(obs_by_object)
-        self.assertEqual(obs_by_object.get_concurrent(),True)
+        obs = Observer(name="Max Mustermann")
+        for obs_by_object in self.p.load(obs):
+            self.assertEqual(obs_by_object.get_concurrent(),True)
         #important obs_by_object and obs are not equal, only their dictionary parts are. 
-        self.assertEqual(obs,obs_by_object)
+       
         
         #Test the settings of _cuncurrent
-        obs_by_id = self.p.load(1)    
-        self.assertEqual(obs_by_id.get_concurrent(),True)
+        for obs_by_object in self.p.load(1):
+            self.assertEqual(obs_by_object.get_concurrent(),True)
         #important obs_by_id and obs are not equal, only their dictionary parts are. 
-        self.assertEqual(obs,obs_by_id)
+        
          
         #Error if object does not exist
         self.assertRaises(RequestObjectError,self.p.load,Observer(name='John Doe'))
@@ -107,15 +106,8 @@ class TestProxy(unittest.TestCase):
         self.p.save(o)
         self.p.connect_objects(e,o)
         
-        s = self.p.Session()
-        exp_reloaded = self.p.viewhandler.select_entity(s,1)
-        obs_reloaded = self.p.viewhandler.select_entity(s,2)
-        
         #Assure that the .children and .parent are correctly populated
-        self.assertEqual(exp_reloaded.children, [obs_reloaded])
-        self.assertEqual(exp_reloaded.parents,[])
-        self.assertEqual(obs_reloaded.children, [])
-        self.assertEqual(obs_reloaded.parents,[exp_reloaded])
+    
         
     def testGetChildren(self):
         e = Experiment(project='MyProject',experimenter="John Doe")
