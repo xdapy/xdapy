@@ -9,6 +9,7 @@ provided.
     Observer:               Observer class contains information about an observer
     Experiment:             Experiment class contains information about an experiment
 TODO: self._concurrent find a better solution to in-place assignments as []
+TODO: Objects need an id in this interface to make them unique in the hierarchy
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
