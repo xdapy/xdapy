@@ -128,7 +128,13 @@ class Proxy(object):
                 # if isinstance(argument,ObjectDict):
                 #    object_=argument
                 #if isinstance(argument,int) or isinstance(argument,long):
-                exp_obj_class = globals()[entity.name]
+                try:
+                    exp_obj_class = globals()[entity.name]
+                except KeyError:
+                    #occurs if the class definition is not know to proxy 
+                    #that means if not saved in objects
+                    raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
+                        
                 exp_obj = exp_obj_class()
            
                 for par in entity.parameters:
@@ -270,7 +276,7 @@ class Proxy(object):
            
         session.close()  
         
-        return objects
+        return objects[0]
     
     @require('argument', ObjectDict)
     def load_all(self, argument):
