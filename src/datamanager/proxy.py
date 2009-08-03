@@ -11,11 +11,12 @@ Created on Jun 17, 2009
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
-TODO: Save new instance of same object if the ancestor is different!
+TODO: Label the connections to make hierarchy unique
 TODO: Retrieve data always by going top down through the whole hierarchy
 TODO: Update 
 TODO: Delete
 TODO: String similarity
+TODO: Convert Object to entity, Convert entity to object
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -29,6 +30,7 @@ from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
 from MySQLdb import connect
+
 
 class Proxy(object):
     """Handle database access and sessions
@@ -123,30 +125,8 @@ class Proxy(object):
             elif isinstance(argument,int) or isinstance(argument,long):
                 entities = self._select_entity_by_id(session,argument)
           
-            exp_obj_list = []
-            for entity in entities:       
-                # if isinstance(argument,ObjectDict):
-                #    object_=argument
-                #if isinstance(argument,int) or isinstance(argument,long):
-                try:
-                    exp_obj_class = globals()[entity.name]
-                except KeyError:
-                    #occurs if the class definition is not know to proxy 
-                    #that means if not saved in objects
-                    raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
-                        
-                exp_obj = exp_obj_class()
+            return [self._convert_entity_to_object(entity) for entity in entities]
            
-                for par in entity.parameters:
-                    exp_obj[par.name]=par.value
-               
-                for d in entity.data:
-                    exp_obj.data[d.name]=loads(d.data)
-                
-                exp_obj.set_concurrent(True)
-                exp_obj_list.append(exp_obj)
-            
-            return exp_obj_list
             
         @require('session', session.Session)
         @require('object_',ObjectDict)
@@ -156,7 +136,7 @@ class Proxy(object):
                 if value is not None:
                     if isinstance(value,str):
                         pars.append(Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value== value ,StringParameter.name==key)))
-                    elif isinstance(value,int):
+                    elif isinstance(value,int) or isinstance(value,long):
                         pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value== value ,IntegerParameter.name==key)))
                     else:
                         raise TypeError("Attribute type '%s' is not supported" %
@@ -200,14 +180,32 @@ class Proxy(object):
                 RequestObjectError("Object must be saved before its children can be loaded")
             if len(parent_entities) >1:
                 print "WARNING: THE PARENT IS CONTAINT IN MORE THAN ONE CONTEXT HIERARCHIES"
+            parent_entity = parent_entities[0]
+            return [self._convert_entity_to_object(child_entity) for child_entity in parent_entity.children]
+             
+        
+        def get_roots(self,session):
+            entities = session.query(Entity).filter(Entity.parents == None).all()#one()
+            return  [self._convert_entity_to_object(entity) for entity in entities]
+        
+        def _convert_entity_to_object(self,entity):
+            try:
+                exp_obj_class = globals()[entity.name]
+            except KeyError:
+                #occurs if the class definition is not know to proxy 
+                #that means if not saved in objects
+                raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
+                    
+            exp_obj = exp_obj_class()
+       
+            for par in entity.parameters:
+                exp_obj[par.name]=par.value
+           
+            for d in entity.data:
+                exp_obj.data[d.name]=loads(d.data)
             
-            children_list = []
-            for parent_entity in parent_entities:
-                for child_entity in parent_entity.children:
-                    child_object = self.select_object(session, child_entity.id)
-                    assert(len(child_object) is 1)
-                    children_list.append(child_object[0])
-            return children_list 
+            exp_obj.set_concurrent(True)
+            return exp_obj
             
     def __init__(self,host,user,db,pwd):
         '''Constructor
@@ -235,20 +233,24 @@ class Proxy(object):
             base.metadata.drop_all(self.engine)
         base.metadata.create_all(self.engine)   
         
-    @require('object_',ObjectDict)
-    def save(self,object_):
+#    @require('object_',ObjectDict)
+#    def save(self,object_):
+    def save(self,*args):
         """Save instances inherited from ObjectDict into database.
         
         Attribute:
-        object_ -- An object derived from datamanager.objects.ObjectDict 
+        args -- One or more objects derived from datamanager.objects.ObjectDict 
         
         Raises:
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
         """
         session = self.Session()
-        entity = self.viewhandler.insert_object(session,object_)
-        object_.set_concurrent(True)
+        for arg in args:
+            entity = self.viewhandler.insert_object(session,arg)
+            arg.set_concurrent(True)
+        #entity = self.viewhandler.insert_object(session,object_)
+        #object_.set_concurrent(True)
         session.close()
     
     @require('argument', (int, long, ObjectDict))
@@ -290,7 +292,7 @@ class Proxy(object):
         session.close()  
         return objects
  
-    @require('parent', (int, ObjectDict))
+    @require('parent', (int, long, ObjectDict))
     def get_children(self,parent):
         """Load the children of an object from the database
         
@@ -334,6 +336,35 @@ class Proxy(object):
 #        parent_entity.children.append(child_entity)
         session.commit()
         session.close()
+    
+    def get_data_matrix(self, conditions, items):
+        session = self.Session()
+        matrix = []#[[0,0,0],[0,0,0],[0,0,0]]
+        column = []
+        i = 0
+        j = 0
+        roots = self.viewhandler.get_roots(session)
+        for root in roots:
+            self._traverse(root,matrix,column, conditions, items)#i,j)
+        session.close()
+        return matrix
+    
+    def _traverse(self, node, matrix, column, conditions, items):#i, j):
+        column.append(node)
+             
+        #matrix[i][j] = node.__class__.__name__
+        children =self.get_children(node)
+        for child_num in range(len(children)):
+        #for child in self.get_children(node):
+            newCol = []
+            newCol.extend(column)
+            self._traverse(children[child_num],matrix,newCol, conditions, items)#i+1,j+child_num)
+        if not children:
+            matrix.append(column)
+        return
+    
+    def _process(self, node):
+        print node
     
     @require('entity_name', str)
     @require('parameter_name', str)

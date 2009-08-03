@@ -68,6 +68,11 @@ class TestProxy(unittest.TestCase):
         exp.data['somedata']=[0,1,2,3]
         self.p.save(exp)
         
+        e = Experiment(project='YourProject',experimenter="Johny Dony")
+        o1 = Observer(name="Maxime Mustermann", handedness="right", age=26)
+        o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
+        self.p.save(e,o1,o2)
+        
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
         obs.data['moredata']=(0,3,6,8)
@@ -76,16 +81,14 @@ class TestProxy(unittest.TestCase):
         
         #Test the settings of _cuncurrent
         obs = Observer(name="Max Mustermann")
-        for obs_by_object in self.p.load(obs):
-            self.assertEqual(obs_by_object.get_concurrent(),True)
+        obs_by_object = self.p.load(obs)
+        self.assertEqual(obs_by_object.get_concurrent(),True)
         #important obs_by_object and obs are not equal, only their dictionary parts are. 
-       
         
         #Test the settings of _cuncurrent
-        for obs_by_object in self.p.load(1):
-            self.assertEqual(obs_by_object.get_concurrent(),True)
         #important obs_by_id and obs are not equal, only their dictionary parts are. 
-        
+        obs_by_object = self.p.load(1)
+        self.assertEqual(obs_by_object.get_concurrent(),True)
          
         #Error if object does not exist
         self.assertRaises(RequestObjectError,self.p.load,Observer(name='John Doe'))
@@ -95,6 +98,10 @@ class TestProxy(unittest.TestCase):
         self.p.save(Observer(name="Max Mustermann", handedness="left", age=29))
         self.assertRaises(RequestObjectError,self.p.load,Observer(name="Max Mustermann"))                  
         self.assertRaises(RequestObjectError,self.p.load,3)
+        
+        #No Error for load_all
+        for obs_by_obj in self.p.load_all(Observer(name='Max Mustermann')):
+            self.assertEqual(obs_by_obj.get_concurrent(),True) 
 #                    
     def testConnectObjects(self):
         #Test add_child and get_children
@@ -119,6 +126,26 @@ class TestProxy(unittest.TestCase):
         #Assert that children are correctly returned
         self.assertEqual(self.p.get_children(e), [o])
         self.assertEqual(self.p.get_children(o), [])
+        
+    
+    def testGetDataMatrix(self):
+        e = Experiment(project='MyProject',experimenter="John Doe")
+        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+        o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
+       
+        o3 = Observer(name="Susi Sorgen", handedness='left',age=38)
+        #all observers are root
+        self.p.save(e, o1, o2, o3)
+     #   self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], [Observer()])
+        
+        
+        #only e is root
+        self.p.connect_objects(e, o1)
+        self.p.connect_objects(e, o2)
+       # self.p.connect_objects(e, o3)
+        self.p.connect_objects(o2, o3)
+        print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], [Observer()])
+        
         
     def testRegisterParameter(self):
         valid_parameters=(('Observer', 'glasses', 'string'),
