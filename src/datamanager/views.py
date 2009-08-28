@@ -192,7 +192,7 @@ def _create_relation(child, label):
 class Relation(base):
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True)
     child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    label = Column('label', Integer)
+    label = Column('label', Integer, primary_key=True)
     
     __tablename__ = 'relations'
     
