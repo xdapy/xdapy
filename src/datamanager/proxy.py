@@ -23,15 +23,14 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, session
 from datamanager.views import *
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from datamanager.errors import AmbiguousObjectError, RequestObjectError
 from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
 from MySQLdb import connect
-
-
+    
 class Proxy(object):
     """Handle database access and sessions
     
@@ -169,7 +168,7 @@ class Proxy(object):
             elif len(parent_entity)>1 or len(child_entity)>1:
                 raise RequestObjectError("Objects are not unique")
             else:
-                parent_entity[0].children.append(child_entity[0])
+                parent_entity[0].relations[child_entity[0]]=0
         
          
         @require('session', session.Session)
@@ -185,8 +184,10 @@ class Proxy(object):
              
         
         def get_roots(self,session):
-            entities = session.query(Entity).filter(Entity.parents == None).all()#one()
-            return  [self._convert_entity_to_object(entity) for entity in entities]
+            subquery = session.query(Relation.child_id).subquery()
+            roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
+            #entities = session.query(Entity).filter(Entity.parents == None).all()#one()
+            return  [self._convert_entity_to_object(entity) for entity in roots]
         
         def _convert_entity_to_object(self,entity):
             try:

@@ -9,10 +9,10 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.views import Data, Parameter, StringParameter, IntegerParameter, Entity, ParameterOption
+from datamanager.views import Data, Parameter, StringParameter, IntegerParameter, Entity, ParameterOption, Relation
 from datamanager.views import base
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, join
 from sqlalchemy.sql import and_
 from sqlalchemy.exceptions import IntegrityError                 
 from pickle import dumps, loads
@@ -229,28 +229,30 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(ip_reloaded.entities,[exp])
         self.assertEqual(sp_reloaded.entities,[])
         
-    def testChildrenAttribute(self):
+    def testRelationsAttribute(self):
         exp = Entity('experiment')
         obs1 = Entity('observer1')
         obs2 = Entity('observer2')
-        exp.children.append(obs1)
+        exp.relations[obs1]=1
         
         self.session.add(exp)
         self.session.add(obs2)
         self.session.commit()
         
+      #  parents = self.session.query(Entity.name,Relation.label).select_from(join(Entity,Relation,Relation.parent)).filter(Relation.child_id==childid).all()
+       # children = self.session.query(Entity.name).select_from(join(Entity,Relation,Relation.child)).filter(Relation.parent_id==parentid).all()
+   
+        #exp_reloaded = self.session.query(Entity).select_from(join(Entity,Relation,Relation.parent)).filter(Entity.name=='experiment').all()
+        #print exp_reloaded
         exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
-        self.assertEqual(exp_reloaded.children, [obs1])
-        self.assertEqual(exp_reloaded.parents,[])
+        self.assertTrue(obs1 in exp_reloaded.relations)
+       # self.assertEqual(exp_reloaded.parents,[])
         
         obs1_reloaded =  self.session.query(Entity).filter(Entity.name=='observer1').one()
-        self.assertEqual(obs1_reloaded.parents, [exp])
-        self.assertEqual(obs1_reloaded.children, [])
-
+        
         obs2_reloaded =  self.session.query(Entity).filter(Entity.name=='observer2').one()
-        self.assertEqual(obs2_reloaded.parents, [])
-        self.assertEqual(obs2_reloaded.children, [])
-
+        self.assertFalse(obs1_reloaded.relations)
+        
 
           
 class TestParameterOption(unittest.TestCase):

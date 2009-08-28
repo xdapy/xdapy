@@ -19,8 +19,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relation, backref, validates
 from sqlalchemy.sql import select
 from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
-import StringIO
+#import StringIO
 from pickle import dumps, loads
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm.collections import attribute_mapped_collection
         
 base = declarative_base()
         
@@ -179,12 +181,79 @@ parameterlist = Table('parameterlist', base.metadata,
 relations is an association table. It relates an Entity and another Entity 
 using their ids as foreign keys.
 '''
-relations = Table('relations', base.metadata,     
-     Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
-     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True),
-     Column('type',String(40)))
+#relations = Table('relations', base.metadata,     
+#     Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
+#     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True),
+#     Column('type',String(40)))
+def _create_relation(child, label):
+    """A creator function, constructs Holdings from Stock and share quantity."""
+    return Relation(child=child, label=label)
 
+class Relation(base):
+    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    label = Column('label', Integer)
+    
+    __tablename__ = 'relations'
+    
+    parent = relation('Entity', 
+                       primaryjoin='Relation.parent_id==Entity.id')
+    child = relation('Entity',
+                      primaryjoin='Relation.child_id==Entity.id')
+    
+    def __init__(self, parent=None, child=None, label=0):
+        self.parent = parent
+        self.child = child
+        self.label = label
 
+#        
+#class Entity(base):
+#    '''
+#    The class 'Entity' is mapped on the table 'entities'. The name column 
+#    contains unique information about the object type (e.g. 'Observer', 
+#    'Experiment'). Each Entity is connected to a set of parameters through the 
+#    adjacency list parameterlist. Those parameters can be accessed via the 
+#    parameters attribute of the Entity class. Additionally entities can build a 
+#    hierarchical structure (represented in a flat table!) via the children and 
+#    parents attributes.
+#    '''
+#    id = Column('id',Integer,primary_key=True)
+#    name = Column('name',String(40)) 
+#    # many to many Entity<->Parameter
+#    parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
+#    # one to many Entity->Data
+#    data = relation('Data', backref=backref('entities', order_by=id))
+#    # many to many Entity<->Entity
+#    children = relation('Entity',
+#                        secondary = relations,
+#                        primaryjoin = id == relations.c.id,
+#                        secondaryjoin = relations.c.child_id == id,
+#                        backref=backref('parents',primaryjoin = id == relations.c.child_id,
+#                                        secondaryjoin= relations.c.id == id))
+#
+#    __tablename__ = 'entities'
+#    
+#    @validates('name')
+#    def validate_name(self, key, e_name):
+#        if not isinstance(e_name, str):
+#            raise TypeError("Argument must be a string")
+#        return e_name 
+#    
+#    def __init__(self, name):
+#        '''Initialize an entity corresponding to an experimental object.
+#        
+#        Argument:
+#        name -- A one-word-description of the experimental object
+#        
+#        Raises:
+#        TypeError -- Occurs if name is not a string or value is no an integer.
+#        '''
+#        self.name = name
+#                
+#    def __repr__(self):
+#        return "<Entity('%s','%s')>" % (self.id,self.name)
+    
+    
 class Entity(base):
     '''
     The class 'Entity' is mapped on the table 'entities'. The name column 
@@ -197,19 +266,20 @@ class Entity(base):
     '''
     id = Column('id',Integer,primary_key=True)
     name = Column('name',String(40)) 
+   
+    __tablename__ = 'entities'
+    
+    relations = association_proxy('children', 'label', creator=_create_relation)
+    
+    children = relation('Relation',
+        collection_class=attribute_mapped_collection('child'),
+        primaryjoin='Relation.parent_id==Entity.id')
+   
     # many to many Entity<->Parameter
     parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
     # one to many Entity->Data
     data = relation('Data', backref=backref('entities', order_by=id))
-    # many to many Entity<->Entity
-    children = relation('Entity',
-                        secondary = relations,
-                        primaryjoin = id == relations.c.id,
-                        secondaryjoin = relations.c.child_id == id,
-                        backref=backref('parents',primaryjoin = id == relations.c.child_id,
-                                        secondaryjoin= relations.c.id == id))
-
-    __tablename__ = 'entities'
+    
     
     @validates('name')
     def validate_name(self, key, e_name):
