@@ -181,7 +181,8 @@ using their ids as foreign keys.
 '''
 relations = Table('relations', base.metadata,     
      Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
-     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True))
+     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True),
+     Column('type',String(40)))
 
 
 class Entity(base):

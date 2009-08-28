@@ -339,33 +339,60 @@ class Proxy(object):
     
     def get_data_matrix(self, conditions, items):
         session = self.Session()
-        matrix = []#[[0,0,0],[0,0,0],[0,0,0]]
-        column = []
-        i = 0
-        j = 0
+        matrix = []
+        
         roots = self.viewhandler.get_roots(session)
         for root in roots:
-            self._traverse(root,matrix,column, conditions, items)#i,j)
+            #print(sum([ len(value) for value in items.values()]))
+            item_column = [None for i in range(sum([ len(value) for value in items.values()]))]
+            condition_column = [False for i in range(len(conditions))]
+            self._traverse(root,matrix,item_column, condition_column, conditions, items)
         session.close()
         return matrix
     
-    def _traverse(self, node, matrix, column, conditions, items):#i, j):
-        column.append(node)
-             
-        #matrix[i][j] = node.__class__.__name__
+    def _traverse(self, node, matrix, item_column, condition_column, conditions, items):
+        #check if one of the conditions is fulfilled for this node
+        cond_num = 0
+        for condition in conditions:
+            if node.__class__ is condition.__class__:
+                 for key,value in condition.items():
+                     #if condition not applicable, continue 
+                     #if condition not fullfilled, break
+                     #if condidion fullfilled, register and continue 
+                     if value and node[key] != value:
+                         return
+                     elif value and node[key] == value:
+                        condition_column[cond_num]=True
+            
+        #check if one of the required items is provided in this node
+        item_num = 0
+        for object_type,object_params in items.items():
+            if node.__class__.__name__ is object_type:
+                "TODO: Select the required items"
+                #if item provided, register and continue
+                #if not, continue
+                param_num = 0
+                for object_param in object_params:
+                    if object_param in node:
+                        item_column[item_num+param_num]=node[object_param]
+                    param_num +=1
+            item_num +=1
+        
+        #proceed with children of this node if items or conditions are missing
+        #if None in item_column or False in condition_column:              
         children =self.get_children(node)
-        for child_num in range(len(children)):
-        #for child in self.get_children(node):
-            newCol = []
-            newCol.extend(column)
-            self._traverse(children[child_num],matrix,newCol, conditions, items)#i+1,j+child_num)
-        if not children:
-            matrix.append(column)
+        for child in children:
+            newitemcol = []#to not overwrite, create real copies of the columns 
+            newitemcol.extend(item_column)
+            newcondcol = []
+            newcondcol.extend(condition_column)
+            self._traverse(child,matrix,newitemcol, newcondcol, conditions, items)
+            
+        #register the full column if all conditions are met and all items are found    
+        if None not in item_column and False not in condition_column:# and not children
+            matrix.append(item_column)
         return
-    
-    def _process(self, node):
-        print node
-    
+
     @require('entity_name', str)
     @require('parameter_name', str)
     @require('parameter_type', str)
@@ -389,7 +416,32 @@ class Proxy(object):
         session.close()
         
 if __name__ == "__main__":
-    pass
+    p = Proxy('localhost','root','unittestDB','tin4u')
+    p.create_tables(overwrite=True)
+    session = p.Session()
+    session.add(ParameterOption('Observer','name','string'))
+    session.add(ParameterOption('Observer','age','integer'))
+    session.add(ParameterOption('Observer','handedness','string'))
+    session.add(ParameterOption('Experiment','project','string'))
+    session.add(ParameterOption('Experiment','experimenter','string'))
+    session.commit()
+    e1 = Experiment(project='MyProject',experimenter="John Doe")
+    e2 = Experiment(project='YourProject',experimenter="John Doe")
+    o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+    o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
+   
+    o3 = Observer(name="Susi Sorgen", handedness='left',age=40)
+    #all objects are root
+    p.save(e1, e2, o1, o2, o3)
+    
+    print p.get_data_matrix([], {'Observer':['age','name']})
+    
+    #only e1 and e2 are root
+    p.connect_objects(e1, o1)
+    p.connect_objects(e1, o2)
+    p.connect_objects(e2, o3)
+    p.connect_objects(e, o3)
+    print p.get_data_matrix([Observer(handedness='left')], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================
 # 

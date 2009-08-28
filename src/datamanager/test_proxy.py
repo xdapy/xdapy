@@ -129,22 +129,41 @@ class TestProxy(unittest.TestCase):
         
     
     def testGetDataMatrix(self):
-        e = Experiment(project='MyProject',experimenter="John Doe")
+        e1 = Experiment(project='MyProject',experimenter="John Doe")
         o1 = Observer(name="Max Mustermann", handedness="right", age=26)
         o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
        
-        o3 = Observer(name="Susi Sorgen", handedness='left',age=38)
-        #all observers are root
-        self.p.save(e, o1, o2, o3)
-     #   self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], [Observer()])
+        e2 = Experiment(project='YourProject',experimenter="John Doe")
+        o3 = Observer(name="Susi Sorgen", handedness='left',age=40)
+        
+        self.p.save(e1, e2, o1, o2, o3)
+        
+        #all objects are root
+        self.assertEqual(self.p.get_data_matrix([], {'Observer':['age']}),[[26],[38],[40]])
+        self.assertEqual(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),[])
+        self.assertEqual(self.p.get_data_matrix([Experiment()], {'Observer':['age']}),[])
+        
+        #only e1 and e2 are root
+        self.p.connect_objects(e1, o1)
+        self.p.connect_objects(e1, o2)
+        self.p.connect_objects(e2, o3)
         
         
-        #only e is root
-        self.p.connect_objects(e, o1)
-        self.p.connect_objects(e, o2)
-       # self.p.connect_objects(e, o3)
-        self.p.connect_objects(o2, o3)
-        print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], [Observer()])
+        self.assertEqual(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
+                                                [[26L], [38L]])
+        self.assertEqual(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
+                                                [[40]])
+        self.assertEqual(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age','name']}),
+                                                [[40,'Susi Sorgen']])
+        self.assertEqual(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age','name']}),
+                                                [[26,"Max Mustermann"],[38,"Susanne Sorgenfrei"]])
+        
+        self.assertEqual( self.p.get_data_matrix([Observer(handedness='left')], 
+                                                 {'Experiment':['project'],'Observer':['age']}),
+                                                 [['MyProject', 38L], ['YourProject', 40L]])
+        self.assertEqual( self.p.get_data_matrix([Observer(handedness='left')], 
+                                                 {'Observer':['age'],'Experiment':['project']}),
+                                                 [['MyProject', 38L], ['YourProject', 40L]])
         
         
     def testRegisterParameter(self):
