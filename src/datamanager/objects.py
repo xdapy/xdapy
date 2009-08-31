@@ -8,8 +8,8 @@ provided.
     ObjectDict              Template class for container classes
     Observer:               Observer class contains information about an observer
     Experiment:             Experiment class contains information about an experiment
-TODO: self._concurrent find a better solution to in-place assignments as []
 TODO: Objects need an id in this interface to make them unique in the hierarchy
+TODO: self._concurrent find a better solution to in-place assignments as []
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -87,6 +87,22 @@ class Observer(ObjectDict):
     """Concrete class for observers"""
     
     def __init__(self, name=None, age=None, handedness=None):
+        """Constructor"""
+        ObjectDict.__init__(self)
+        self._set_items_from_arguments(locals())
+     
+class Session(ObjectDict):
+    """Concrete class for sessions"""
+    
+    def __init__(self, date=None):
+        """Constructor"""
+        ObjectDict.__init__(self)
+        self._set_items_from_arguments(locals())
+
+class Trial(ObjectDict):
+    """Concrete class for trials"""
+    
+    def __init__(self, rt=None, valid=None, response=None):
         """Constructor"""
         ObjectDict.__init__(self)
         self._set_items_from_arguments(locals())
