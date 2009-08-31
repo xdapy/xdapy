@@ -12,11 +12,9 @@ TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
 TODO: Label the connections to make hierarchy unique
-TODO: Retrieve data always by going top down through the whole hierarchy
 TODO: Update 
 TODO: Delete
 TODO: String similarity
-TODO: Convert Object to entity, Convert entity to object
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
@@ -168,26 +166,61 @@ class Proxy(object):
             elif len(parent_entity)>1 or len(child_entity)>1:
                 raise RequestObjectError("Objects are not unique")
             else:
-                parent_entity[0].relations[child_entity[0]]=0
+                # find the relation label that should be used for this new relation
+                # based on the relation that the parent belongs to or create a new 
+                # label if the parent is root. Throw an error if the label can not 
+                # be found because of multiple ancestors of parent
+                # If the child already has decendents and was previously root, 
+                # chance the labels of those relations as well.      
+                
+                #grandparent
+                granny_relations = session.query(Relation).filter(Relation.child_id==parent_entity[0].id).all()
+                if len(granny_relations)>1:
+                    raise RequestObjectError("Context for this relation is not unique")
+                elif not granny_relations:
+                    label = parent_entity[0].id
+                else: #one granny
+                    label = granny_relations[0].label
+                parent_entity[0].relations[child_entity[0]]=label
+                
+                # grandchildren and other descendents (which should all belong to the same context!)
+               # child_relation_label = session.query(Relation.label).filter(Relation.parent_id == parent_entity[0].id).all()
+               # label_set = set(label for label, in child_relation_label)
+                
+               # if label_set:#update all
+                descendents = session.query(Relation).filter(Relation.label==child_entity[0].id).all()
+                for descendent in descendents:
+                    descendent.label = label
+                session.commit()
+                   
         
-         
         @require('session', session.Session)
         @require('parent', ObjectDict)
-        def retrieve_children(self, session, parent):
+        def retrieve_children(self, session, parent, label=None):
             parent_entities = self._select_entity_by_object(session,parent)
             if not parent_entities:
                 RequestObjectError("Object must be saved before its children can be loaded")
             if len(parent_entities) >1:
                 print "WARNING: THE PARENT IS CONTAINT IN MORE THAN ONE CONTEXT HIERARCHIES"
             parent_entity = parent_entities[0]
-            return [self._convert_entity_to_object(child_entity) for child_entity in parent_entity.children]
+            if label:
+                if label in parent_entity.relations.values():
+                    start = parent_entity.relations.values().index(label)
+                    stop = start+parent_entity.relations.values().count(label)
+                    children = parent_entity.relations.keys()[start:stop]
+                else:
+                    children = []
+            
+            else:
+                children = parent_entity.children
+            return [self._convert_entity_to_object(child_entity) for child_entity in children]
              
         
         def get_roots(self,session):
             subquery = session.query(Relation.child_id).subquery()
             roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
             #entities = session.query(Entity).filter(Entity.parents == None).all()#one()
-            return  [self._convert_entity_to_object(entity) for entity in roots]
+            return  [self._convert_entity_to_object(entity) for entity in roots],[entity.id for entity in roots]
         
         def _convert_entity_to_object(self,entity):
             try:
@@ -294,7 +327,7 @@ class Proxy(object):
         return objects
  
     @require('parent', (int, long, ObjectDict))
-    def get_children(self,parent):
+    def get_children(self,parent, label=None):
         """Load the children of an object from the database
         
         Attribute:
@@ -306,7 +339,7 @@ class Proxy(object):
             not properly saved in the database
         """
         session = self.Session()
-        children = self.viewhandler.retrieve_children(session, parent)
+        children = self.viewhandler.retrieve_children(session, parent, label)
         session.close()
         return children
     
@@ -342,16 +375,16 @@ class Proxy(object):
         session = self.Session()
         matrix = []
         
-        roots = self.viewhandler.get_roots(session)
-        for root in roots:
+        roots,labels = self.viewhandler.get_roots(session)
+        for index,root in enumerate(roots):
             #print(sum([ len(value) for value in items.values()]))
             item_column = [None for i in range(sum([ len(value) for value in items.values()]))]
             condition_column = [False for i in range(len(conditions))]
-            self._traverse(root,matrix,item_column, condition_column, conditions, items)
+            self._traverse(root, labels[index], matrix,item_column, condition_column, conditions, items)
         session.close()
         return matrix
     
-    def _traverse(self, node, matrix, item_column, condition_column, conditions, items):
+    def _traverse(self, node, label, matrix, item_column, condition_column, conditions, items):
         #check if one of the conditions is fulfilled for this node
         cond_num = 0
         for condition in conditions:
@@ -381,13 +414,13 @@ class Proxy(object):
         
         #proceed with children of this node if items or conditions are missing
         #if None in item_column or False in condition_column:              
-        children =self.get_children(node)
+        children =self.get_children(node, label)
         for child in children:
             newitemcol = []#to not overwrite, create real copies of the columns 
             newitemcol.extend(item_column)
             newcondcol = []
             newcondcol.extend(condition_column)
-            self._traverse(child,matrix,newitemcol, newcondcol, conditions, items)
+            self._traverse(child, label, matrix, newitemcol, newcondcol, conditions, items)
             
         #register the full column if all conditions are met and all items are found    
         if None not in item_column and False not in condition_column:# and not children
