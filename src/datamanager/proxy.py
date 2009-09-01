@@ -158,40 +158,95 @@ class Proxy(object):
         @require('session', session.Session)
         @require('parent', ObjectDict)
         @require('child', ObjectDict)
-        def append_child(self, session, parent, child):
+        @require('root', ObjectDict)
+        def append_child(self, session, parent, child, root=None):
             parent_entity = self._select_entity_by_object(session, parent)
             child_entity = self._select_entity_by_object(session, child)
+            
+            #assure that both objects are already saved
             if not parent_entity or not child_entity:
-                raise RequestObjectError("Objects must be saved before they can be loaded")
-            elif len(parent_entity)>1 or len(child_entity)>1:
-                raise RequestObjectError("Objects are not unique")
-            else:
-                # find the relation label that should be used for this new relation
-                # based on the relation that the parent belongs to or create a new 
-                # label if the parent is root. Throw an error if the label can not 
-                # be found because of multiple ancestors of parent
-                # If the child already has decendents and was previously root, 
-                # chance the labels of those relations as well.      
+                raise RequestObjectError("Objects must be saved before they can be used in a context")
+                    
+            if len(child_entity)>1 or len(parent_entity)>1:
+                 RequestObjectError("implement id for each object to make them distinguishable")
+            
+            if root:
+                root_entity = self._select_entity_by_object(session, root)
+                #get_roots()
+                subquery = session.query(Relation.child_id).subquery()
+                roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
+                if root in roots:
+                    label = root_entity.id
+                else:
+                    RequestObjectError("implement for arbitrary node in context")
                 
-                #grandparent
-                granny_relations = session.query(Relation).filter(Relation.child_id==parent_entity[0].id).all()
-                if len(granny_relations)>1:
-                    raise RequestObjectError("Context for this relation is not unique")
-                elif not granny_relations:
-                    label = parent_entity[0].id
-                else: #one granny
-                    label = granny_relations[0].label
-                parent_entity[0].relations[child_entity[0]]=label
+#            if len(parent_entity)>1:
+#                if label and len(parent_entity)>1:
+#                    possible_contexts = []
+#                    for parent_ent in parent_entity:
+#                        res = session.query(Relation).filter(and_(Relation.child_entity==parent_ent.id, 
+#                                                                  Relation.label == label)).count()
+#                        if count>1:
+#                            print "this is dotted case in diagramm, and not valid! only solvable by making the parent discriminable!"
+#                        else:
+#                            res = session.query(Relation).filter(and_(Relation.child_entity==parent_ent.id, 
+#                                                                  Relation.label == label)).one()
+#                            possible_parent.append(res)
+#                    if len(possible_parent)>1:
+#                        print 
+#                    
+#                        
+#                else:
+#                    raise RequestObjectError("objects (parent or child mapping) are not unique")
+#                
+#            else:
+
+
+            # find the relation label that should be used for this new relation
+            # based on the relation that the parent belongs to or create a new 
+            # label if the parent is root. Throw an error if the label can not 
+            # be found because of multiple ancestors of parent
+            
+            #grandparent
+            granny_relations = session.query(Relation).filter(Relation.child_id==parent_entity[0].id).all()
+            
+            if len(granny_relations)>1:
+                if not root:
+                    raise RequestObjectError("Context for this relation is not unique, specify root!")
+                else:
+                    if root_entity[0].id in [relation.label for relation in granny_relations]:
+                        label = root_entity[0].id
+                    else:
+                        raise RequestObjectError("Context for this relation is not unique")
+            elif not granny_relations:
+                label = parent_entity[0].id
+            else: #one granny
+                label = granny_relations[0].label
+            
+            
+            #if the child already has a different parent under the same context
+            #the situation becomes unsolvable for any further descendent in the 
+            #context !! There for the situation is not allowed and must be 
+            #prevented ! 
+            child_relations = session.query(Relation).filter(Relation.child_id==child_entity[0].id).all()
+            #if child_relations is a list
+            if child_relations:
+                if label in [relation.label for relation in child_relations]:
+                    raise RequestObjectError("Child already contained in context with same root! This is not allowed")
+             
+            #if everything was fine, go on and connect
+            parent_entity[0].relations[child_entity[0]]=label
                 
-                # grandchildren and other descendents (which should all belong to the same context!)
-               # child_relation_label = session.query(Relation.label).filter(Relation.parent_id == parent_entity[0].id).all()
-               # label_set = set(label for label, in child_relation_label)
-                
-               # if label_set:#update all
-                descendents = session.query(Relation).filter(Relation.label==child_entity[0].id).all()
-                for descendent in descendents:
-                    descendent.label = label
-                session.commit()
+            # If the child already has decendents and was previously root, 
+            # chance the labels of those relations as well.      
+            
+            # child_relation_label = session.query(Relation.label).filter(Relation.parent_id == parent_entity[0].id).all()
+            # label_set = set(label for label, in child_relation_label)
+            # if label_set:#update all
+            descendents = session.query(Relation).filter(Relation.label==child_entity[0].id).all()
+            for descendent in descendents:
+                descendent.label = label
+            session.commit()
                    
         
         @require('session', session.Session)
@@ -281,8 +336,15 @@ class Proxy(object):
         """
         session = self.Session()
         for arg in args:
-            entity = self.viewhandler.insert_object(session,arg)
-            arg.set_concurrent(True)
+            objects = self.viewhandler.select_object(session,arg)
+            for object in objects:
+                if object == arg and object.data == arg.data:
+                    print object
+                    print arg
+                    raise AmbiguousObjectError("The object %s is already contained in the database!", object)
+            else:
+                entity = self.viewhandler.insert_object(session,arg)
+                arg.set_concurrent(True)
         #entity = self.viewhandler.insert_object(session,object_)
         #object_.set_concurrent(True)
         session.close()
@@ -345,7 +407,7 @@ class Proxy(object):
     
     @require('parent', (int, long, ObjectDict))
     @require('child', (int, long, ObjectDict))
-    def connect_objects(self,parent,child):
+    def connect_objects(self,parent,child,root=None):
         """Connect two related objects
         
         Attribute:
@@ -361,7 +423,10 @@ class Proxy(object):
         TODO: Maybe consider to save objects automatically 
         """
         session = self.Session()
-        self.viewhandler.append_child(session, parent,child)
+        if root:
+            self.viewhandler.append_child(session, parent, child, root)
+        else:
+            self.viewhandler.append_child(session, parent,child)
 #        try:
 #            parent_entity = self.viewhandler.select_entity(session,parent)
 #            child_entity = self.viewhandler.select_entity(session,child)

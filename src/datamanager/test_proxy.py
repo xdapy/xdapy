@@ -7,7 +7,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
 from datamanager.proxy import Proxy
-from datamanager.objects import ObjectDict, Observer, Experiment
+from datamanager.objects import ObjectDict, Observer, Experiment, Trial
 from datamanager.errors import RequestObjectError
 from datamanager.views import ParameterOption
 from sqlalchemy.exceptions import IntegrityError
@@ -23,6 +23,10 @@ class TestProxy(unittest.TestCase):
         self.session.add(ParameterOption('Observer','handedness','string'))
         self.session.add(ParameterOption('Experiment','project','string'))
         self.session.add(ParameterOption('Experiment','experimenter','string'))
+        self.session.add(ParameterOption('Trial', 'time','string'))
+        self.session.add(ParameterOption('Trial', 'rt', 'integer'))
+        self.session.add(ParameterOption('Trial', 'valid', 'integer'))
+        self.session.add(ParameterOption('Trial', 'response', 'string'))
         self.session.commit()
         
     def tearDown(self):
@@ -61,7 +65,6 @@ class TestProxy(unittest.TestCase):
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
         exp['perimenter']='new'
-        #self.p.save(exp)
         self.assertRaises(RequestObjectError, self.p.save, exp)
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
@@ -107,7 +110,7 @@ class TestProxy(unittest.TestCase):
         #Test add_child and get_children
         e = Experiment(project='MyProject',experimenter="John Doe")
         o = Observer(name="Max Mustermann", handedness="right", age=26)
-        t = Observer(name="Susanne Sorgenfrei", handedness="left", age=29)
+        t = Trial(rt=125, valid=1, response='left')
         self.p.save(e)
         self.assertRaises(RequestObjectError,self.p.connect_objects,e,o)
         
@@ -119,7 +122,18 @@ class TestProxy(unittest.TestCase):
         self.p.connect_objects(e,o)
         self.assertEqual(self.p.get_children(e), [o])
         self.assertEqual(self.p.get_children(o,1), [t])
-    
+        
+        e2 = Experiment(project='yourProject',experimenter="John Doe")
+        t2 = Trial(rt=189, valid=0, response='right')
+        self.p.save(e2,t2)
+        self.p.connect_objects(e2, o)
+        self.p.connect_objects(o, t2, e2)
+        
+        o2 = Observer(name="Susanne Sorgenfrei", handedness="right", age=30)
+        self.p.save(o2)
+        self.p.connect_objects(e, o2)
+        self.assertRaises(RequestObjectError, self.p.connect_objects, o2, t)
+        
         
     def testGetChildren(self):
         e = Experiment(project='MyProject',experimenter="John Doe")
