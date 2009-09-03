@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker, session
 from datamanager.views import *
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from datamanager.errors import AmbiguousObjectError, RequestObjectError
+from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError
 from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
@@ -99,7 +99,8 @@ class Proxy(object):
                 d = Data(key,dumps(value))
                 entity.data.append(d)
                 
-                         
+            entity.context.append(Context(","))
+               
             session.add(entity)
             session.commit()
         
@@ -160,123 +161,206 @@ class Proxy(object):
         @require('child', ObjectDict)
         @require('root', ObjectDict)
         def append_child(self, session, parent, child, root=None):
-            parent_entity = self._select_entity_by_object(session, parent)
-            child_entity = self._select_entity_by_object(session, child)
-            
+            parent_entities = self._select_entity_by_object(session, parent)
+            child_entities = self._select_entity_by_object(session, child)
+                
             #assure that both objects are already saved
-            if not parent_entity or not child_entity:
-                raise RequestObjectError("Objects must be saved before they can be used in a context")
-                    
-            if len(child_entity)>1 or len(parent_entity)>1:
-                 RequestObjectError("implement id for each object to make them distinguishable")
+            if not parent_entities or not child_entities:
+                raise SelectionError("Objects must be saved before they can be used in a context")
+            elif len(parent_entities)>1:
+                 SelectionError("Multiple parents found! Please specify the parent node clearly")
+            elif len(child_entities)>1:
+                SelectionError("Multiple children found! Please specify the child node clearly")
+            else:
+                parent_entity = parent_entities[0]
+                child_entity = child_entities[0]
             
             if root:
-                root_entity = self._select_entity_by_object(session, root)
-                #get_roots()
-                subquery = session.query(Relation.child_id).subquery()
-                roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
-                if root in roots:
-                    label = root_entity.id
+                ancestor_entities = self._select_entity_by_object(session, root)
+                if not ancestor_entities:
+                    raise SelectionError("ancestor object must be saved before they can be used in a context")
+                elif len(ancestor_entities)>1:
+                     SelectionError("Multiple ancestors found! Please specify the ancestor node clearly")
                 else:
-                    RequestObjectError("implement for arbitrary node in context")
-                
-#            if len(parent_entity)>1:
-#                if label and len(parent_entity)>1:
-#                    possible_contexts = []
-#                    for parent_ent in parent_entity:
-#                        res = session.query(Relation).filter(and_(Relation.child_entity==parent_ent.id, 
-#                                                                  Relation.label == label)).count()
-#                        if count>1:
-#                            print "this is dotted case in diagramm, and not valid! only solvable by making the parent discriminable!"
-#                        else:
-#                            res = session.query(Relation).filter(and_(Relation.child_entity==parent_ent.id, 
-#                                                                  Relation.label == label)).one()
-#                            possible_parent.append(res)
-#                    if len(possible_parent)>1:
-#                        print 
-#                    
-#                        
+                    ancestor_entity = ancestor_entities[0]
+               
+            
+            
+#===============================================================================
+#            if root:
+#                root_entity = self._select_entity_by_object(session, root)
+#                #get_roots()
+#                subquery = session.query(Relation.child_id).subquery()
+#                roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
+#                if root in roots:
+#                    label = str(root_entity.id)
 #                else:
-#                    raise RequestObjectError("objects (parent or child mapping) are not unique")
+#                    RequestObjectError("implement for arbitrary node in context")
+# 
+# 
+#            # find the relation label that should be used for this new relation
+#            # based on the relation that the parent belongs to or create a new 
+#            # label if the parent is root. Throw an error if the label can not 
+#            # be found because of multiple ancestors of parent
+#            
+#            #grandparent
+#            granny_relations = session.query(Relation).filter(Relation.child_id==parent_entities[0].id).all()
+#            
+#            if len(granny_relations)>1:
+#                if not root:
+#                    raise RequestObjectError("Context for this relation is not unique, specify root!")
+#                else:
+#                    if str(root_entity[0].id) in [relation.label for relation in granny_relations]:
+#                        label = str(root_entity[0].id)
+#                    else:
+#                        raise RequestObjectError("Context for this relation is not unique")
+#            elif not granny_relations:
+#                label = str(parent_entities[0].id)
+#            else: #one granny
+#                label = str(granny_relations[0].label)
+#            
+#            
+#            #if the child already has a different parent under the same context
+#            #the situation becomes unsolvable for any further descendent in the 
+#            #context !! There for the situation is not allowed and must be 
+#            #prevented ! 
+#            child_relations = session.query(Relation).filter(Relation.child_id==child_entities[0].id).all()
+#            #if child_relations is a list
+#            if child_relations:
+#                if label in [relation.label for relation in child_relations]:
+#                    raise RequestObjectError("Child already contained in context with same root! This is not allowed")
+#             
+#            #if everything was fine, go on and connect
+#            parent_entities[0].relations[child_entities[0]]=label
 #                
-#            else:
-
-
-            # find the relation label that should be used for this new relation
-            # based on the relation that the parent belongs to or create a new 
-            # label if the parent is root. Throw an error if the label can not 
-            # be found because of multiple ancestors of parent
+#            # If the child already has decendents and was previously root, 
+#            # chance the labels of those relations as well.      
+#            
+#            # child_relation_label = session.query(Relation.label).filter(Relation.parent_id == parent_entities[0].id).all()
+#            # label_set = set(label for label, in child_relation_label)
+#            # if label_set:#update all
+#            descendents = session.query(Relation).filter(Relation.label==str(child_entities[0].id)).all()
+#            for descendent in descendents:
+#                descendent.label = label
+#===============================================================================
             
-            #grandparent
-            granny_relations = session.query(Relation).filter(Relation.child_id==parent_entity[0].id).all()
+            paths_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
             
-            if len(granny_relations)>1:
-                if not root:
-                    raise RequestObjectError("Context for this relation is not unique, specify root!")
-                else:
-                    if root_entity[0].id in [relation.label for relation in granny_relations]:
-                        label = root_entity[0].id
+            if len(paths_to_parent)>1:
+                if root:
+                    path_fragment = ","+str(ancestor_entity.id)+","
+                    paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path_fragment+'%')).all()
+                                                                                                                                
+                    if len(paths_to_parent_with_ancestor)>1:
+                        raise ContextError("There are several contexts with the given ancestor!")
+                    elif not paths_to_parent_with_ancestor:
+                        raise ContextError("There is no context with the given ancestor!")
                     else:
-                        raise RequestObjectError("Context for this relation is not unique")
-            elif not granny_relations:
-                label = parent_entity[0].id
-            else: #one granny
-                label = granny_relations[0].label
+                        path_to_parent = paths_to_parent_with_ancestor[0]
+                else:
+                    raise ContextError("Please specify an ancestor node to determine the context.")
+            elif not paths_to_parent:
+                raise ContextError("This is not a user problem, please report this bug!")
+            else:
+                path_to_parent = paths_to_parent[0]
+               
+            path_fragment = ","+str(child_entity.id)+","
+            if path_to_parent.path.find(path_fragment) is not -1:
+                raise InsertError('Can not insert child in this context, because of circularity.')
+            
+            path_fragment_to_child = path_to_parent.path+str(parent_entity.id)+','
+            
+            paths_from_child =  session.query(Context).filter(Context.path.like('%'+path_fragment+'%'))
+            for path_from_child in paths_from_child:
+                if path_from_child.path.find(path_fragment,0,len(path_fragment)) is 0:
+                    path_from_child.path = path_fragment_to_child+path_from_child.path[1:]
+ 
+            if child_entity.context[0].path==",":
+                child_entity.context[0].path = path_fragment_to_child
+            else:
+                child_entity.context.append(Context(path_fragment_to_child))
             
             
-            #if the child already has a different parent under the same context
-            #the situation becomes unsolvable for any further descendent in the 
-            #context !! There for the situation is not allowed and must be 
-            #prevented ! 
-            child_relations = session.query(Relation).filter(Relation.child_id==child_entity[0].id).all()
-            #if child_relations is a list
-            if child_relations:
-                if label in [relation.label for relation in child_relations]:
-                    raise RequestObjectError("Child already contained in context with same root! This is not allowed")
-             
-            #if everything was fine, go on and connect
-            parent_entity[0].relations[child_entity[0]]=label
-                
-            # If the child already has decendents and was previously root, 
-            # chance the labels of those relations as well.      
-            
-            # child_relation_label = session.query(Relation.label).filter(Relation.parent_id == parent_entity[0].id).all()
-            # label_set = set(label for label, in child_relation_label)
-            # if label_set:#update all
-            descendents = session.query(Relation).filter(Relation.label==child_entity[0].id).all()
-            for descendent in descendents:
-                descendent.label = label
+#            
             session.commit()
                    
         
         @require('session', session.Session)
         @require('parent', ObjectDict)
         def retrieve_children(self, session, parent, label=None):
+            level = 1
             parent_entities = self._select_entity_by_object(session,parent)
             if not parent_entities:
-                RequestObjectError("Object must be saved before its children can be loaded")
-            if len(parent_entities) >1:
-                print "WARNING: THE PARENT IS CONTAINT IN MORE THAN ONE CONTEXT HIERARCHIES"
-            parent_entity = parent_entities[0]
-            if label:
-                if label in parent_entity.relations.values():
-                    start = parent_entity.relations.values().index(label)
-                    stop = start+parent_entity.relations.values().count(label)
-                    children = parent_entity.relations.keys()[start:stop]
-                else:
-                    children = []
-            
+                SelectionError("Parent not found! Objects must be saved before its children can be loaded")
+            elif len(parent_entities) >1:
+                SelectionError("Multiple parents found! Please specify the parent node clearly")
             else:
-                children = parent_entity.children
-            return [self._convert_entity_to_object(child_entity) for child_entity in children]
+                parent_entity = parent_entities[0]
+#===============================================================================
+#            
+#      
+#            
+#                    
+#            if label:
+#                if label in parent_entity.relations.values():
+#                    start = parent_entity.relations.values().index(label)
+#                    stop = start+parent_entity.relations.values().count(label)
+#                    children = parent_entity.relations.keys()[start:stop]
+#                else:
+#                    children = []
+#            
+#            else:
+#                children = parent_entity.children
+            #return [self._convert_entity_to_object(child_entity) for child_entity in children]
+                
+#===============================================================================
+            path_fragment = ","+str(parent_entity.id)+","
+            contexts_with_parent =  session.query(Context).filter(Context.path.like('%'+path_fragment+'%')).all()
+            
+            decendents_all = []
+            for context_with_parent in contexts_with_parent:
+                path_entities = [int(y) for y in context_with_parent.path.strip(',').split(',')]+[int(context_with_parent.entity_id)]
+                index = path_entities.index(parent_entity.id)
+                if label:
+                    if label in path_entities[0:index+1]:
+                        decendents = path_entities[index+1:] 
+                    else:
+                        decendents = []
+                else:
+                    decendents = path_entities[index+1:] 
+                    
+#                index = context_with_parent.path.find(path_fragment)
+#                if index is not -1:
+#                    if label:
+#                        label_index = context_with_parent.path.find(path_fragment,0,index+len(path_fragment))
+#                        if index is not -1:
+#                            decendents = context_with_parent.path[index+len(path_fragment)+1:len(context_with_parent.path)-1].split(',')
+#                        else:
+#                            decendents = []
+#                    else:
+#                        decendents = context_with_parent.path[index+len(path_fragment)+1:len(context_with_parent.path)-1].split(',')
+#                else:
+#                    decendents = []
+                    
+                decendents_all = decendents_all+decendents[0:level]
+            #i_dec = [int(decendent) for decendent in decendents_all]
+            decendent_entities = session.query(Entity).filter(Entity.id.in_(decendents_all)).all()
+            return [self._convert_entity_to_object(decendent) for decendent in decendent_entities]
+               
+                
              
         
         def get_roots(self,session):
             subquery = session.query(Relation.child_id).subquery()
             roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
-            #entities = session.query(Entity).filter(Entity.parents == None).all()#one()
-            return  [self._convert_entity_to_object(entity) for entity in roots],[entity.id for entity in roots]
+            #return  [self._convert_entity_to_object(entity) for entity in roots],[str(entity.id) for entity in roots]
+            roots = session.query(Entity).filter(Entity.context.any(Context.path == ",")).all()
+            #exp_reloaded = self.session.query(Entity).select_from(join(Entity,Relation,Relation.parent)).filter(Entity.name=='experiment').all()
         
+            #roots = session.query(Entity,Context.path]).select_from(join(Entity,Context)).filter(Entity.name=='experiment').all()
+            #filter(Context.path==",").all()
+            return  [self._convert_entity_to_object(entity) for entity in roots],[str(entity.id) for entity in roots]
+            
         def _convert_entity_to_object(self,entity):
             try:
                 exp_obj_class = globals()[entity.name]
@@ -339,8 +423,6 @@ class Proxy(object):
             objects = self.viewhandler.select_object(session,arg)
             for object in objects:
                 if object == arg and object.data == arg.data:
-                    print object
-                    print arg
                     raise AmbiguousObjectError("The object %s is already contained in the database!", object)
             else:
                 entity = self.viewhandler.insert_object(session,arg)
@@ -527,20 +609,26 @@ if __name__ == "__main__":
     e1 = Experiment(project='MyProject',experimenter="John Doe")
     e2 = Experiment(project='YourProject',experimenter="John Doe")
     o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-    o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
-   
+    o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)   
     o3 = Observer(name="Susi Sorgen", handedness='left',age=40)
+    
     #all objects are root
     p.save(e1, e2, o1, o2, o3)
     
-    print p.get_data_matrix([], {'Observer':['age','name']})
+    p.connect_objects(e1,o1)
+    p.connect_objects(o1,o2)
+    print p.get_children(e1)
+    print p.get_children(o1,1)
+    
+    
+    # print p.get_data_matrix([], {'Observer':['age','name']})
     
     #only e1 and e2 are root
     p.connect_objects(e1, o1)
     p.connect_objects(e1, o2)
     p.connect_objects(e2, o3)
-    p.connect_objects(e, o3)
-    print p.get_data_matrix([Observer(handedness='left')], {'Experiment':['project'],'Observer':['age','name']})
+    p.connect_objects(e1, o3)
+   # print p.get_data_matrix([Observer(handedness='left')], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================
 # 

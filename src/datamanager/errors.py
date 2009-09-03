@@ -24,3 +24,21 @@ class RequestObjectError(Error):
     in the database. 
     """
     pass
+
+class SelectionError(Error):
+    """Raised when an operation attempts to load an object that does not exist 
+    in the database. 
+    """
+    pass
+
+class InsertionError(Error):
+    """Raised when an operation attempts to load an object that does not exist 
+    in the database. 
+    """
+    pass
+
+class ContextError(Error):
+    """Raised when an operation attempts to load an object that does not exist 
+    in the database. 
+    """
+    pass

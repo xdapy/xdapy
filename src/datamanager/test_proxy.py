@@ -8,7 +8,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 import unittest
 from datamanager.proxy import Proxy
 from datamanager.objects import ObjectDict, Observer, Experiment, Trial
-from datamanager.errors import RequestObjectError
+from datamanager.errors import RequestObjectError, SelectionError
 from datamanager.views import ParameterOption
 from sqlalchemy.exceptions import IntegrityError
 
@@ -112,7 +112,7 @@ class TestProxy(unittest.TestCase):
         o = Observer(name="Max Mustermann", handedness="right", age=26)
         t = Trial(rt=125, valid=1, response='left')
         self.p.save(e)
-        self.assertRaises(RequestObjectError,self.p.connect_objects,e,o)
+        self.assertRaises(SelectionError,self.p.connect_objects,e,o)
         
         self.p.save(o,t)
         self.p.connect_objects(o,t)
@@ -132,7 +132,9 @@ class TestProxy(unittest.TestCase):
         o2 = Observer(name="Susanne Sorgenfrei", handedness="right", age=30)
         self.p.save(o2)
         self.p.connect_objects(e, o2)
-        self.assertRaises(RequestObjectError, self.p.connect_objects, o2, t)
+        self.p.connect_objects(o2, t)
+        self.assertEqual(self.p.get_children(o2,1), [t])
+        self.assertEqual(self.p.get_children(o2,4), [])
         
         
     def testGetChildren(self):

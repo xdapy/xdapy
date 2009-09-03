@@ -253,6 +253,15 @@ class TestEntity(unittest.TestCase):
         obs2_reloaded =  self.session.query(Entity).filter(Entity.name=='observer2').one()
         self.assertFalse(obs1_reloaded.relations)
         
+#    def testContextAttribute(self):
+#        exp = Entity('experiment')
+#        obs1 = Entity('observer1')
+#        obs2 = Entity('observer2')
+#        
+#        self.session.add(exp)
+#        self.session.add(obs2)
+#        self.session.commit()exp = Entity('experiment')
+#        self.assertEqual(exp.context,",") 
 
           
 class TestParameterOption(unittest.TestCase):

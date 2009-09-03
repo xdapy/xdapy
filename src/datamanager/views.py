@@ -192,7 +192,7 @@ def _create_relation(child, label):
 class Relation(base):
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True)
     child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    label = Column('label', Integer, primary_key=True)
+    label = Column('label', String(500), primary_key=True)
     
     __tablename__ = 'relations'
     
@@ -205,6 +205,38 @@ class Relation(base):
         self.parent = parent
         self.child = child
         self.label = label
+
+
+class Context(base):
+    '''
+    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
+    must be a string. Each Data is connected to at most one entity through the 
+    adjacency list 'datalist'. The corresponding entities can be accessed via
+    the entities attribute of the Data class.
+    '''
+    id = Column('id',Integer,primary_key=True)
+    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'))
+    path = Column('path',String(500))
+    
+    __tablename__ = 'contexts'
+    
+    @validates('path')
+    def validate_path(self, key, parameter):
+        if not isinstance(parameter, str):
+            raise TypeError("Argument must be a string")
+        return parameter 
+    
+    def __init__(self, path):
+        '''Initialize a parameter with the given name.
+        
+        Argument:
+        name -- A one-word-description of data
+        data -- The data to be saved
+        
+        Raises:
+        TypeError -- Occurs if name is not a string
+        '''
+        self.path = path
 
 #        
 #class Entity(base):
@@ -275,6 +307,8 @@ class Entity(base):
         collection_class=attribute_mapped_collection('child'),
         primaryjoin='Relation.parent_id==Entity.id')
    
+    # one to many Entity->Context
+    context = relation('Context', backref=backref('entities', order_by=id))
     # many to many Entity<->Parameter
     parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
     # one to many Entity->Data
