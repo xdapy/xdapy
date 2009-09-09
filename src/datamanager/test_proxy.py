@@ -8,7 +8,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 import unittest
 from datamanager.proxy import Proxy
 from datamanager.objects import ObjectDict, Observer, Experiment, Trial
-from datamanager.errors import RequestObjectError, SelectionError
+from datamanager.errors import RequestObjectError, SelectionError, ContextError
 from datamanager.views import ParameterOption
 from sqlalchemy.exceptions import IntegrityError
 
@@ -116,41 +116,98 @@ class TestProxy(unittest.TestCase):
         
         self.p.save(o,t)
         self.p.connect_objects(o,t)
-        self.assertEqual(self.p.get_children(o,2),[t])
-        self.assertEqual(self.p.get_children(o,1),[])
+        self.assertEqual(self.p.get_children(e),[])
+        self.assertEqual(self.p.get_children(o),[t])
+        self.assertEqual(self.p.get_children(t),[])
         
         self.p.connect_objects(e,o)
         self.assertEqual(self.p.get_children(e), [o])
-        self.assertEqual(self.p.get_children(o,1), [t])
-        
+        self.assertEqual(self.p.get_children(o), [t])
+        self.assertEqual(self.p.get_children(t),[])
+          
         e2 = Experiment(project='yourProject',experimenter="John Doe")
         t2 = Trial(rt=189, valid=0, response='right')
         self.p.save(e2,t2)
         self.p.connect_objects(e2, o)
+        self.assertRaises(ContextError, self.p.connect_objects, o, t2)
         self.p.connect_objects(o, t2, e2)
+        
+        self.assertEqual(self.p.get_children(e), [o])
+        self.assertEqual(self.p.get_children(o,e), [t])
+        self.assertEqual(self.p.get_children(o,e2), [t2])
+        self.assertEqual(self.p.get_children(t),[])
+        self.assertEqual(self.p.get_children(e2), [o])
+       
+        self.assertEqual(self.p.get_children(t2), [])
         
         o2 = Observer(name="Susanne Sorgenfrei", handedness="right", age=30)
         self.p.save(o2)
         self.p.connect_objects(e, o2)
         self.p.connect_objects(o2, t)
-        self.assertEqual(self.p.get_children(o2,1), [t])
-        self.assertEqual(self.p.get_children(o2,4), [])
-        
+      
+        self.assertEqual(self.p.get_children(e), [o,o2]) 
+        self.assertEqual(self.p.get_children(o,e), [t])
+        self.assertEqual(self.p.get_children(o,e2), [t2])
+        self.assertEqual(self.p.get_children(t,o),[])
+        self.assertEqual(self.p.get_children(t,o2),[])
+        self.assertEqual(self.p.get_children(e2), [o])
+        self.assertEqual(self.p.get_children(o2), [t])
+        self.assertEqual(self.p.get_children(t2), [])
+        self.assertRaises(ContextError, self.p.get_children, o)
+        self.assertRaises(ContextError, self.p.get_children, t)
         
     def testGetChildren(self):
         e = Experiment(project='MyProject',experimenter="John Doe")
         o = Observer(name="Max Mustermann", handedness="right", age=26)
-        self.p.save(e,o)
+        t = Trial(rt=189, valid=0, response='right')
+        self.p.save(e,o,t)
+        self.p.connect_objects(o,t)
+#===============================================================================
+#        
+#        self.assertEqual(self.p.get_children(e), [])
+#        self.assertRaises(ContextError, self.p.get_children,e,e)
+#        self.assertRaises(ContextError, self.p.get_children,e,o)
+#        self.assertRaises(ContextError, self.p.get_children,e,1)
+#        self.assertRaises(ContextError, self.p.get_children,e,',1,')
+#        self.assertRaises(TypeError, self.p.get_children,e,'1')
+#        self.assertRaises(TypeError, self.p.get_children,e,',')
+#        
+#        self.assertEqual(self.p.get_children(o), [t])
+#        self.assertRaises(ContextError, self.p.get_children,o,o)
+#        self.assertRaises(ContextError, self.p.get_children,o,2)
+#        self.assertRaises(TypeError, self.p.get_children,o,'2')
+#        self.assertRaises(ContextError, self.p.get_children,o,',2,')
+#        self.assertRaises(ContextError, self.p.get_children,o,e)
+#        
+#        self.assertEqual(self.p.get_children(t,o), [])
+#        self.assertEqual(self.p.get_children(t,2), [])
+#        self.assertEqual(self.p.get_children(t,',2,'), [])
+#        
+#===============================================================================
+     
         self.p.connect_objects(e,o)
-        
-        #Assert that children are correctly returned
+                
         self.assertEqual(self.p.get_children(e), [o])
-        self.assertEqual(self.p.get_children(o), [])
+        self.assertRaises(ContextError, self.p.get_children,e,e)
+        self.assertRaises(ContextError, self.p.get_children,e,o)
+        self.assertRaises(ContextError, self.p.get_children,e,1)
+        self.assertRaises(ContextError, self.p.get_children,e,',1,')
+        self.assertRaises(TypeError, self.p.get_children,e,'1')
         
-        self.assertEqual(self.p.get_children(e,1), [o])
-        self.assertEqual(self.p.get_children(o,1), [])
-        self.assertEqual(self.p.get_children(o,2), [])
-    
+        self.assertEqual(self.p.get_children(o), [t])
+        self.assertEqual(self.p.get_children(o,e), [t])
+        self.assertEqual(self.p.get_children(o,1), [t])
+        self.assertEqual(self.p.get_children(o,',1,'), [t])
+        self.assertRaises(ContextError, self.p.get_children,o,o)
+        self.assertRaises(TypeError, self.p.get_children,o,'1')
+        
+        self.assertEqual(self.p.get_children(t,o), [])
+        self.assertEqual(self.p.get_children(t,e), [])
+        self.assertEqual(self.p.get_children(t,2), [])
+        self.assertEqual(self.p.get_children(t,',2,'), [])
+        
+      
+            
     def testGetDataMatrix(self):
         e1 = Experiment(project='MyProject',experimenter="John Doe")
         o1 = Observer(name="Max Mustermann", handedness="right", age=26)
