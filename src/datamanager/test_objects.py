@@ -1,11 +1,9 @@
 """Unittest for objects
 
 Created on Jun 17, 2009
-    TestObjectDict:    Testcase for ObjectDict class
-    
-TODO: Load image into testSetData
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+"""TODO: Load image into testSetData"""
                
 import unittest
 from datamanager.objects import ObjectDict

@@ -4,39 +4,35 @@ Created on Jun 17, 2009
 This module provides the template class for all container classes to be stored 
 in the database. Two exemplary container classes "observer" and "experiment" are
 provided.
-    
-    ObjectDict              Template class for container classes
-    Observer:               Observer class contains information about an observer
-    Experiment:             Experiment class contains information about an experiment
-TODO: Objects need an id in this interface to make them unique in the hierarchy
+"""
+""" 
 TODO: self._concurrent find a better solution to in-place assignments as []
 """
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from utils.decorators import require
 
 class ObjectDict(dict):
-    """Template class for container classes
+    """Template class for object classes
     
     The super class provides functionality common to all experimental object 
-    classes. 
+    classes such as dictionary like variable access for parameters, a data object 
+    (dictionary as well) to store binary data and a boolean variable monitoring the 
+    concurrency with the database.
     """  
     class __dataDict(dict):
         def __init__(self, concurrent):
             self.concurrent = concurrent
         
         def __setitem__(self, key, value):
-            #print "here"
-            #print self.concurrent
-            #self.concurrent &= False
-            #print self.concurrent
             dict.__setitem__(self, key, value)
             self.concurrent[0] = False 
             
     def __init__(self):
         """Constructor"""
         dict.__init__(self)
-        self.__concurrent = [False]
+        self.__concurrent = [False]#:boolean value indicating the concurrency with the database
         self.__data = self.__dataDict(self.__concurrent)
         
     def _set_items_from_arguments(self,d):
@@ -67,10 +63,8 @@ class ObjectDict(dict):
     @require('x', dict)
     def setData(self,x):
         self.__data = self.__dataDict(self.__concurrent)
-        print x
         for key,value in x.items():
             self.__data[key] =  value
-            
         
     data = property(getData, setData)
     

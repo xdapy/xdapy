@@ -3,15 +3,13 @@
 Created on Jun 17, 2009
 This module contains so called views - classes that are directly mapped onto the 
 database through a object-relational-mapper (ORM).
-    Parameter:
-    StringParameter:
-    IntegerParameter:
-    Entity:
-    ParameterOption:
 """
+"""
+TODO:(Hannah) Figure out what to do with global variable base
+TODO: Make Data truncation an error
+"""
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
-""" TODO:(Hannah) Figure out what to do with global variable base """
-"""TODO: Make Data truncation an error"""
 
 
 from sqlalchemy import MetaData, Table, Column, Integer, String, Binary, ForeignKey

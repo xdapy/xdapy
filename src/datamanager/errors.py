@@ -26,19 +26,15 @@ class RequestObjectError(Error):
     pass
 
 class SelectionError(Error):
-    """Raised when an operation attempts to load an object that does not exist 
-    in the database. 
-    """
+    """Raised when the loading of an object from the database is erroneous."""
     pass
 
 class InsertionError(Error):
-    """Raised when an operation attempts to load an object that does not exist 
-    in the database. 
+    """Raised when the storage of an object in the database can not be completed. 
     """
     pass
 
 class ContextError(Error):
-    """Raised when an operation attempts to load an object that does not exist 
-    in the database. 
+    """Raised when the context of an object can not be determined. 
     """
     pass

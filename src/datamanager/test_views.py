@@ -1,10 +1,6 @@
 """Unittest for views
 
 Created on Jun 17, 2009
-    TestStringParameter:    Testcase for StringParameter class
-    TestIntegerParameter:   Testcase for IntegerParameter class
-    TestEntity:             Testcase for Entity class
-    TestParameterOption:    Testcase for ParameterOption class
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 

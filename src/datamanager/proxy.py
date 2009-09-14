@@ -1,13 +1,8 @@
 """This module provides the code to communicate with a database management system. 
 
 Created on Jun 17, 2009
-    Proxy:          Handle database access and sessions
-    create_tables()  Create tables in database (Do not overwrite existing tables)
-    save()    Save instances inherited from ObjectTemplate into database
-    load()    Load instances inherited from ObjectTemplate from database
-    register_parameter() Register a new parameter description for 
-        a specific experimental object
-
+"""
+"""
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
@@ -15,7 +10,9 @@ TODO: Label the connections to make hierarchy unique
 TODO: Update 
 TODO: Delete
 TODO: String similarity
+TODO: Error if the commiting fails
 """
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy import create_engine
@@ -23,19 +20,14 @@ from sqlalchemy.orm import sessionmaker, session
 from datamanager.views import *
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError
+from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError
 from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
 from MySQLdb import connect
     
 class Proxy(object):
-    """Handle database access and sessions
-    
-    Attributes:
-    engine -- a database engine
-    Session -- a session factory
-    """
+    """Handle database access and sessions"""
     
     class ViewHandler(object):
         
@@ -46,16 +38,17 @@ class Proxy(object):
         @require('session', session.Session)
         @require('object_', ObjectDict)
         def insert_object(self,session,object_):
-            """Save a specific entity
-        
-            Arguments:
-            session -- A session 
-            object_ -- An instance inherited from ObjectDict
+            """Save a specific entity.
             
-            Raises:
-            TypeError: An error occurred inserting
+            @type session: sqlalchemy.orm.session.Session
+            @param session: Concrete session 
+            @type object_: Instance derived from datamanager.objects.ObjectDict
+            @param object_: Experimental object to be inserted into the database 
+            
+            @raise TypeError: If the type of an object's parameter does not 
+                match the constrains imposed by the database. 
+            @raise InsertionError: If an object's parameter is not registered for the given object.
             """
-            
             s = select([ParameterOption.parameter_name,
                         ParameterOption.parameter_type], 
                        ParameterOption.entity_name==object_.__class__.__name__)
@@ -75,7 +68,6 @@ class Proxy(object):
                                          (key, d[key]))
                 else:
                     if 'mysql' in session.connection().engine.name.lower():
-                        #raise TypeError("Have a look here")
                         """
                         TODO: Test this with MySql
                         """
@@ -92,9 +84,9 @@ class Proxy(object):
                     
                     result = session.execute(s).fetchall()
                     if not result:
-                        raise RequestObjectError("The parameter '%s' is not supported."%key)
+                        raise InsertionError("The parameter '%s' is not supported."%key)
                     else:
-                        raise RequestObjectError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key1 for key1, type in result])))
+                        raise InsertionError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key1 for key1, type in result])))
             for key,value in  object_.data.items():
                 d = Data(key,dumps(value))
                 entity.data.append(d)
@@ -107,16 +99,18 @@ class Proxy(object):
         @require('session', session.Session)
         @require('argument',(int, long, ObjectDict))
         def select_object(self,session,argument):
-            """Search and return a specific entity 
+            """Search for and return a specific entity.
             
-            Arguments:
-            argument -- An open table.Table instance.
-              
-            Returns:
-            Instance of Entity
-           
-            Raises:
-            IOError: An error occurred accessing the table.Table object.
+            @type session: sqlalchemy.orm.session.Session
+            @param session: Concrete session 
+            @type argument: Instance derived from datamanager.objects.ObjectDict or Integer
+            @param argument: Experimental object (partially defined object or 
+                its entitie's id) to be selected from the database 
+            
+            @raise TypeError: If the type of an object's parameter does not 
+                match the constrains imposed by the database. 
+
+            @return: Experimental objects (List with instances of datamanager.objects.ObjectDict)
             """
             if isinstance(argument,ObjectDict):
                 entities = self._select_entity_by_object(session,argument)
@@ -161,6 +155,26 @@ class Proxy(object):
         @require('child', ObjectDict)
         @require('root', ObjectDict)
         def append_child(self, session, parent, child, root=None):
+            """Append an object as a child of another object.
+            
+            @type session: sqlalchemy.orm.session.Session
+            @param session: Concrete session 
+            @type parent: Instance derived from datamanager.objects.ObjectDict
+            @param parent: Experimental object serving as parent 
+            @type child: Instance derived from datamanager.objects.ObjectDict
+            @param child: Experimental object to be appended 
+            @type root: Instance derived from datamanager.objects.ObjectDict
+            @param root: Experimental object higher in the hierarchy as the 
+                parent used to depict the context into which the child should 
+                be appended
+            
+            @raise SelectionError: If the corresponding database entities to the 
+                given objects(parent, child, root) can not be determined.
+            @raise ContextError: If the context under which the child should be 
+                appended can not be determined. 
+            @raise InsertionError: If the child can not be inserted because of circularity.
+            """
+            
             parent_entities = self._select_entity_by_object(session, parent)
             child_entities = self._select_entity_by_object(session, child)
                 
@@ -178,7 +192,7 @@ class Proxy(object):
             if root:
                 ancestor_entities = self._select_entity_by_object(session, root)
                 if not ancestor_entities:
-                    raise SelectionError("ancestor object must be saved before they can be used in a context")
+                    raise SelectionError("Ancestor object must be saved before they can be used in a context")
                 elif len(ancestor_entities)>1:
                      SelectionError("Multiple ancestors found! Please specify the ancestor node clearly")
                 else:

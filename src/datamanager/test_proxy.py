@@ -1,7 +1,6 @@
-"""Unittest for the proxy
+"""Unittest for  proxy
 
 Created on Jun 17, 2009
-    TestProxy:    Testcase for Proxy class
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
