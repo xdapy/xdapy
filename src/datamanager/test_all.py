@@ -15,7 +15,10 @@ __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 import unittest
 from datamanager.proxy import Proxy
 from datamanager.objects import Observer, Experiment, Session, Trial
+from datamanager.views import Entity, StringParameter, Data
 from random import randint
+from pickle import dumps, loads
+from datamanager import convert
 
 class Test(unittest.TestCase):
 
@@ -38,69 +41,87 @@ class Test(unittest.TestCase):
         self.p.register_parameter('Trial', 'response', 'string')
         
         #create hierarchy
-        e1 = Experiment(project='MyProject',experimenter="John Doe")
-        e2 = Experiment(project='YourProject',experimenter="Jeanne Done")
+        self.e1 = Experiment(project='MyProject',experimenter="John Doe")
+        self.e2 = Experiment(project='YourProject',experimenter="Jeanne Done")
         
-        o3 = Observer(name="Max Mustermann", handedness="right", age=26)
-        o4 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
-        o5 = Observer(name="Susi Sorgen", handedness='left',age=40)
+        self.o3 = Observer(name="Max Mustermann", handedness="right", age=26)
+        self.o4 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
+        self.o5 = Observer(name="Susi Sorgen", handedness='left',age=40)
         
-        s6 = Session(date='2009-09-20')
-        s7 = Session(date='2009-09-21')
-        s8 = Session(date='2009-09-21')
-        s9 = Session(date='2009-09-22')
-        s10 = Session(date='2009-09-23')
+        self.s6 = Session(date='2009-09-20')
+        self.s7 = Session(date='2009-09-21')
+        self.s8 = Session(date='2009-09-22')
+        self.s9 = Session(date='2009-09-23')
+        self.s10 = Session(date='2009-09-24')
         
-        t11 = Trial(rt=int(randint(100, 300)), valid = 1, response='left')
-        t12 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        t13 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        t14 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        t15 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        t16 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        t17 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        t18 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        t19 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        t20 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        t21 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        t22 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        t23 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        t24 = Trial(rt=randint(100, 300), valid = 0, response='right')
+        self.t11 = Trial(rt=int(randint(100, 300)), valid = 1, response='left')
+        self.t12 = Trial(rt=randint(100, 300), valid = 1, response='right')
+        self.t13 = Trial(rt=randint(100, 300), valid = 1, response='left')
+        self.t14 = Trial(rt=randint(100, 300), valid = 1, response='right')
+        self.t15 = Trial(rt=randint(100, 300), valid = 1, response='left')
+        self.t16 = Trial(rt=randint(100, 300), valid = 1, response='right')
+        self.t17 = Trial(rt=randint(100, 300), valid = 1, response='left')
+        self.t18 = Trial(rt=randint(100, 300), valid = 0, response='right')
+        self.t19 = Trial(rt=randint(100, 300), valid = 0, response='left')
+        self.t20 = Trial(rt=randint(100, 300), valid = 0, response='right')
+        self.t21 = Trial(rt=randint(100, 300), valid = 0, response='left')
+        self.t22 = Trial(rt=randint(100, 300), valid = 0, response='right')
+        self.t23 = Trial(rt=randint(100, 300), valid = 0, response='left')
+        self.t24 = Trial(rt=randint(100, 300), valid = 0, response='right')
         
-        self.p.save(e1,e2,o3,o4,o5,s6,s7,s8,s9,s10,
-                         t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24)
+        self.p.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6, 
+                    self.s7, self.s8, self.s9, self.s10, self.t11, self.t12,
+                    self.t13, self.t14, self.t15, self.t16, self.t17, self.t18,
+                    self.t19, self.t20, self.t21, self.t22, self.t23, self.t24)
         
-        self.p.connect_objects(e1, o3)
-        self.p.connect_objects(e1, o4)
-        self.p.connect_objects(e2, o4)
-        self.p.connect_objects(o3, s6)
-        self.p.connect_objects(o3, s7)
-        self.p.connect_objects(o4, s8)
-        self.p.connect_objects(o4, s8)
-        self.p.connect_objects(o4, s9)
-        self.p.connect_objects(o4, s10)
-        self.p.connect_objects(s6, t11)
-        self.p.connect_objects(s6, t12)
-        self.p.connect_objects(s7, t13)
-        self.p.connect_objects(s7, t14)
-        self.p.connect_objects(s8, t15)
-        self.p.connect_objects(s8, t16)
-        self.p.connect_objects(s8, t17)
-        self.p.connect_objects(s9, t18)
-        self.p.connect_objects(s9, t19)
-        self.p.connect_objects(s9, t20)
-        self.p.connect_objects(s10, t21)
-        self.p.connect_objects(s10, t22)
-        self.p.connect_objects(s10, t23)
-        self.p.connect_objects(s10, t24)
+        self.p.connect_objects(self.e1, self.o3)
+        self.p.connect_objects(self.e1, self.o4)
+        self.p.connect_objects(self.e2, self.o4)
+        self.p.connect_objects(self.o3, self.s6)
+        self.p.connect_objects(self.o3, self.s7)
+        self.p.connect_objects(self.o4, self.s8, self.e1)
+        self.p.connect_objects(self.o4, self.s8, self.e2)
+        self.p.connect_objects(self.o4, self.s9, self.e2)
+        self.p.connect_objects(self.o4, self.s10, self.e2)
+        self.p.connect_objects(self.s6, self.t11)
+        self.p.connect_objects(self.s6, self.t12)
+        self.p.connect_objects(self.s7, self.t13)
+        self.p.connect_objects(self.s7, self.t14)
+        self.p.connect_objects(self.s8, self.t15, self.e1)
+        self.p.connect_objects(self.s8, self.t16, self.e1)
+        self.p.connect_objects(self.s8, self.t17, self.e2)
+        self.p.connect_objects(self.s9, self.t18)
+        self.p.connect_objects(self.s9, self.t19)
+        self.p.connect_objects(self.s9, self.t20)
+        self.p.connect_objects(self.s10, self.t21)
+        self.p.connect_objects(self.s10, self.t22)
+        self.p.connect_objects(self.s10, self.t23)
+        self.p.connect_objects(self.s10, self.t24)
         
         
     def tearDown(self):
         self.session.close()
 
-    def testName(self):
-        pass
-
-
+    def testReturn(self):
+        self.assertEqual(self.p.get_children(Observer(name="Susanne Sorgenfrei")),[self.s8, self.s9, self.s10])
+        self.assertEqual(self.p.get_children(Observer(name="Susi Sorgen")),[])
+        self.assertEqual(self.p.get_children(Observer(name="Max Mustermann")),[self.s6, self.s7])
+        
+        print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], {'Session':['date']})
+        
+    def testConvert(self):
+        experiment_object = Experiment(project="Test",experimenter="Maxim Muster")
+        experiment_object.data['light']=[[0,1],[2,3]]
+        
+        experiment_entity = Entity('Experiment')
+        experiment_entity.parameters.append(StringParameter('project','Test'))
+        experiment_entity.parameters.append(StringParameter('experimenter','Maxim Muster'))
+        experiment_entity.data.append(Data('light',dumps([[0,1],[2,3]])))
+        
+        e_o = convert(experiment_entity)
+        e_e = convert(experiment_object)
+        print e_o
+        print e_e
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
