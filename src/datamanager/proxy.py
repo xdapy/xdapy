@@ -419,7 +419,65 @@ class Proxy(object):
             
             exp_obj.set_concurrent(True)
             return exp_obj
+        
+        def _is_valid(self,session, entity):
+            """Test if a specific entity confirms to database requirements.
             
+            @type session: sqlalchemy.orm.session.Session 
+            @param session:  Concrete session
+            @type entity: datamanager.views.Entity
+            @param entity: Entity to be validated against database 
+            
+            @returns: A tuple (b,msg). The first entry specifies if given entity was valid. 
+                The second entry contains a message which can be used for error 
+                handling 
+            @rtype: (Boolean,String)
+            """
+            return_value = True
+            msg = ""
+            
+            s = select([ParameterOption.parameter_name,
+                        ParameterOption.parameter_type], 
+                       ParameterOption.entity_name==entity.name)
+            result = session.execute(s).fetchall()
+                
+            optionlut={}
+            for name, type_specifier in result:
+                optionlut[name]=type_specifier
+
+            
+            for parameter in entity.parameters:
+                if optionlut.has_key(parameter.name):#key is not None and d.has_key(key):
+                    if self.typelut[type(parameter.value)]!=optionlut[parameter.name]:
+                        return_value = False
+                        msg ="\n".join([msg,"Attribute '%s' with value '%s' must be of type '%s', but type '%s' given." %
+                                         (parameter.name, parameter.value, optionlut[parameter.name], type(parameter.value))])
+                else:
+                    return_value = False
+                    msg = "\n".join([msg,"The parameter '%s' is not supported."%parameter.name])
+                    if 'mysql' in session.connection().engine.name.lower():
+                        s = select([ParameterOption.parameter_name,
+                                    ParameterOption.parameter_type], 
+                                    and_(ParameterOption.entity_name==entity.name,
+                                    ParameterOption.parameter_name.op('regexp')('['+parameter.name+']*')))
+                    
+                    else:    
+                        s = select([ParameterOption.parameter_name,
+                                    ParameterOption.parameter_type], 
+                                and_(ParameterOption.entity_name==entity.name,
+                                ParameterOption.parameter_name.like('%'+parameter.name+'%')))
+                    
+                    result = session.execute(s).fetchall()
+                    
+                    if not result:
+                        raise InsertionError("The parameter '%s' is not supported."%parameter.name)
+                    else:
+                        msg = " ".join([msg,"Did you mean one of the following: '%s'."%( "', '".join([ '%s'%key1 for key1, type_1 in result]))])
+                        #raise InsertionError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(parameter.name, "', '".join([ '%s'%key1 for key1, type_1 in result])))
+            
+            return return_value, msg
+              
+              
     def __init__(self,host,user,db,pwd):
         '''Constructor
         
