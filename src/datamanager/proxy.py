@@ -352,34 +352,10 @@ class Proxy(object):
             return
 
         def _get_roots(self,session):
-            subquery = session.query(Relation.child_id).subquery()
-            roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
-            #return  [self._convert_entity_to_object(entity) for entity in roots],[str(entity.id) for entity in roots]
+            #subquery = session.query(Relation.child_id).subquery()
+            #roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
             roots = session.query(Entity).filter(Entity.context.any(Context.path == ",")).all()
-            #exp_reloaded = self.session.query(Entity).select_from(join(Entity,Relation,Relation.parent)).filter(Entity.name=='experiment').all()
-        
-            #roots = session.query(Entity,Context.path]).select_from(join(Entity,Context)).filter(Entity.name=='experiment').all()
-            #filter(Context.path==",").all()
-            return  roots#[self._convert_entity_to_object(entity) for entity in roots],[str(entity.id) for entity in roots]
-            
-        def _convert_entity_to_object(self,entity):
-            try:
-                exp_obj_class = globals()[entity.name]
-            except KeyError:
-                #occurs if the class definition is not know to proxy 
-                #that means if not saved in objects
-                raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
-                    
-            exp_obj = exp_obj_class()
-       
-            for par in entity.parameters:
-                exp_obj[par.name]=par.value
-           
-            for d in entity.data:
-                exp_obj.data[d.name]=loads(d.data)
-            
-            exp_obj.set_concurrent(True)
-            return exp_obj
+            return  roots
         
         def _is_valid(self,session, entity):
             """Test if a specific entity confirms to database requirements.
@@ -430,12 +406,9 @@ class Proxy(object):
                     
                     result = session.execute(s).fetchall()
                     
-                    if not result:
-                        raise InsertionError("The parameter '%s' is not supported."%parameter.name)
-                    else:
+                    if result:
                         msg = " ".join([msg,"Did you mean one of the following: '%s'."%( "', '".join([ '%s'%key1 for key1, type_1 in result]))])
-                        #raise InsertionError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(parameter.name, "', '".join([ '%s'%key1 for key1, type_1 in result])))
-            
+                       
             return return_value, msg
               
               
