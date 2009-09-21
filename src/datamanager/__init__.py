@@ -5,8 +5,8 @@ __license__ = 'LGPL v3, http://www.gnu.org/licenses/lgpl.html'
 __contact__ = 'hannah.dold@mailbox.tu-berlin.de'
 
 # import modules
-import errors
-import proxy
+#import errors
+#import proxy
 import views 
 import objects
 
@@ -24,8 +24,8 @@ def convert(convertible):
             elif isinstance(value, int):
                 entity.parameters.append(views.IntegerParameter(key,value))
             else:
-                raise TypeError("Attribute %s must be of type %s" %
-                                 (key, d[key]))
+                raise TypeError("Type of attribute '%s' with value '%s' is not supported" %
+                                 (key, value))
         #add data to the entity
         for key,value in  convertible.data.items():
             d = views.Data(key,dumps(value))
