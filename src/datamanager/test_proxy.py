@@ -40,14 +40,13 @@ class TestProxy(unittest.TestCase):
 #
     def testSave(self):
         valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
-                       Experiment(project='MyProject',experimenter="John Doe"))
-        invalid_objects=(Experiment(project='MyProject', experimenter=None),
-                       Observer(name="Max Mustermann", handedness="right"),
-                       Observer(),
-                       Experiment(project='MyProject'),
-                       Experiment(project=1.2))
-        
-        invalid_types = (None,1,1.2,'string')
+                       Experiment(project='MyProject',experimenter="John Doe"),
+                       Experiment(project='MyProject'))
+  
+        invalid_objects=(Observer(name=9, handedness="right"),
+                       Experiment(project=12))
+       
+        invalid_types = (None,1,1.2,'string',Experiment(project=1.2))
         
         for obj in valid_objects:
             self.assertEqual(obj.get_concurrent(), False)
@@ -56,7 +55,7 @@ class TestProxy(unittest.TestCase):
 
         for obj in invalid_objects:
             self.assertEqual(obj.get_concurrent(), False)
-            self.assertRaises(TypeError, self.p.save, obj)    
+            self.assertRaises(InsertionError, self.p.save, obj)    
             self.assertEqual(obj.get_concurrent(), False)
         
         for obj in invalid_types:
@@ -108,7 +107,7 @@ class TestProxy(unittest.TestCase):
         #No Error for load_all
         for obs_by_obj in self.p.load_all(Observer(name='Max Mustermann')):
             self.assertEqual(obs_by_obj.get_concurrent(),True) 
-#                    
+                    
     def testConnectObjects(self):
         #Test add_child and get_children
         e = Experiment(project='MyProject',experimenter="John Doe")
@@ -275,17 +274,17 @@ class TestProxy(unittest.TestCase):
     def  testIsValid(self):
         e = Experiment(project='MyProject',experimenter="John Doe")
         exp = convert(e)
-        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),exp)
+        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),exp)
         self.assertEqual(True,valid)
         
         o = Observer(name="Max Mustermann", handedness=1, age=26)
         obs = convert(o)
-        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),obs)
+        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),obs)
         self.assertEqual(False,valid)
         
         o['glasses']="no"
         obs = convert(o)
-        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),obs)
+        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),obs)
         self.assertEqual(False,valid)
         
 #===============================================================================

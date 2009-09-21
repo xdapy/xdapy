@@ -6,7 +6,8 @@ Created on Jun 17, 2009
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
-TODO: insert check if same object exists, if yes, use this object 
+TODO: insert check if same object exists, if yes, use this object
+        print "WARNING: The object %s is already contained in the database!"% object 
 TODO: Update: split node if necessary
 TODO: Delete
 TODO: String similarity
@@ -53,6 +54,7 @@ class Proxy(object):
             @raise InsertionError: If an object's parameter is not registered for the given object.
             """
             valid, msg = self._is_valid(session, entity)   
+                
             if valid:
                 session.add(entity)
                 session.commit()
@@ -81,7 +83,7 @@ class Proxy(object):
             elif isinstance(argument,int) or isinstance(argument,long):
                 entities = self._select_entity_by_id(session,argument)
           
-            return [self._convert_entity_to_object(entity) for entity in entities]
+            return [convert(entity) for entity in entities]
            
             
         @require('session', session.Session)
@@ -280,7 +282,7 @@ class Proxy(object):
             children_entities = session.query(Entity).filter(Entity.id.in_(children_id_subquery)).all()
             
             if isinstance(parent,ObjectDict):
-                return [self._convert_entity_to_object(decendent) for decendent in children_entities]
+                return [convert(decendent) for decendent in children_entities]
             else:
                 return children_entities
                
@@ -452,14 +454,8 @@ class Proxy(object):
         """
         session = self.Session()
         for arg in args:
-            objects = self.viewhandler.select_object(session,arg)
-            for object in objects:
-                if object == arg and object.data == arg.data:
-                    print "WARNING: The object %s is already contained in the database!"% object
-                    #raise AmbiguousObjectError("The object %s is already contained in the database!", object)
-            else:
-                entity = self.viewhandler.insert_object(session,convert(arg))
-                arg.set_concurrent(True)
+           entity = self.viewhandler.insert_object(session,convert(arg))
+           arg.set_concurrent(True)
         #entity = self.viewhandler.insert_object(session,object_)
         #object_.set_concurrent(True)
         session.close()

@@ -39,7 +39,8 @@ class ObjectDict(dict):
         """Insert function arguments as items""" 
         self = d.pop('self')
         for n, v in d.iteritems( ):
-            self[n]=v
+            if v:
+                self[n]=v
         
     def __setitem__(self, key, item):
         """Set dictionary item and update _concurrent attribute"""
