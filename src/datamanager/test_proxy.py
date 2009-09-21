@@ -2,13 +2,17 @@
 
 Created on Jun 17, 2009
 """
+"""
+TODO: Real test for create_tables
+"""
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
 from datamanager.proxy import Proxy
 from datamanager.objects import ObjectDict, Observer, Experiment, Trial
-from datamanager.errors import RequestObjectError, SelectionError, ContextError
+from datamanager.errors import InsertionError, SelectionError, ContextError
 from datamanager.views import ParameterOption
+from datamanager import convert
 from sqlalchemy.exceptions import IntegrityError
 
 class TestProxy(unittest.TestCase):
@@ -60,11 +64,11 @@ class TestProxy(unittest.TestCase):
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
         exp['parameter']='new'
-        self.assertRaises(RequestObjectError, self.p.save, exp)
+        self.assertRaises(InsertionError, self.p.save, exp)
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
         exp['perimenter']='new'
-        self.assertRaises(RequestObjectError, self.p.save, exp)
+        self.assertRaises(InsertionError, self.p.save, exp)
         
         exp = Experiment(project='MyProject',experimenter="John Doe")
         exp.data['somedata']=[0,1,2,3]
@@ -93,13 +97,13 @@ class TestProxy(unittest.TestCase):
         self.assertEqual(obs_by_object.get_concurrent(),True)
          
         #Error if object does not exist
-        self.assertRaises(RequestObjectError,self.p.load,Observer(name='John Doe'))
-        self.assertRaises(RequestObjectError,self.p.load,5)
+        self.assertRaises(SelectionError,self.p.load,Observer(name='John Doe'))
+        self.assertRaises(SelectionError,self.p.load,5)
         
         #Error if object exists multiple times
         self.p.save(Observer(name="Max Mustermann", handedness="left", age=29))
-        self.assertRaises(RequestObjectError,self.p.load,Observer(name="Max Mustermann"))                  
-        self.assertRaises(RequestObjectError,self.p.load,3)
+        self.assertRaises(SelectionError,self.p.load,Observer(name="Max Mustermann"))                  
+        self.assertRaises(SelectionError,self.p.load,3)
         
         #No Error for load_all
         for obs_by_obj in self.p.load_all(Observer(name='Max Mustermann')):
@@ -152,8 +156,10 @@ class TestProxy(unittest.TestCase):
         self.assertEqual(self.p.get_children(e2), [o])
         self.assertEqual(self.p.get_children(o2), [t])
         self.assertEqual(self.p.get_children(t2), [])
-        self.assertRaises(ContextError, self.p.get_children, o)
-        self.assertRaises(ContextError, self.p.get_children, t)
+        self.assertEqual(self.p.get_children(o), [t,t2])
+        self.assertRaises(ContextError, self.p.get_children, o, uniqueContext = True)
+        self.assertRaises(ContextError, self.p.get_children, t, uniqueContext = True)
+        
         
     def testGetChildren(self):
         e = Experiment(project='MyProject',experimenter="John Doe")
@@ -205,6 +211,8 @@ class TestProxy(unittest.TestCase):
         self.assertEqual(self.p.get_children(t,2), [])
         self.assertEqual(self.p.get_children(t,',2,'), [])
         
+        self.p.get_children(o,e)
+        # [t]
       
             
     def testGetDataMatrix(self):
