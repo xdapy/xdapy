@@ -274,44 +274,44 @@ class Proxy(object):
                 raise TypeError("Function not defined for variables of ", type(ancestor))
                 
             if path:
-                paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
-                if len(paths_to_parent_with_ancestor)>1:
-                    raise ContextError("There are several contexts with the given ancestor!")
-                elif not paths_to_parent_with_ancestor:
+                contexts_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
+                if len(contexts_to_parent_with_ancestor)>1:
+                    if uniqueContext:
+                        raise ContextError("There are several contexts with the given ancestor!")
+                    else:
+                        raise ContextWarning("There are several contexts with this parent and ancestor")
+                elif not contexts_to_parent_with_ancestor:
                     raise ContextError("There is no context with the given ancestor!")
-                else:
-                    path_to_parent = paths_to_parent_with_ancestor[0].path
+#                else:
+#                    path_to_parent = paths_to_parent_with_ancestor[0].path
+                paths_to_parent = [context.path for context in contexts_to_parent_with_ancestor]
             else:
                 contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
                 if len(contexts_to_parent)>1:
-                    raise ContextError("Please specify an ancestor node to determine the context.")
+                    if uniqueContext:
+                        raise ContextError("Please specify an ancestor node to determine the context.")
+                    else:
+                        print ContextWarning("ContextWarning: There are several contexts with this parent and ancestor")
+                        #print "Warning: There are several contexts with this parent and ancestor" 
                 elif not contexts_to_parent:
                     raise ContextError("This is not a user problem, please report this bug!")
-                else:
-                    path_to_parent = contexts_to_parent[0].path
-#            
-#===============================================================================
-#            contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
-#             
-#            if len(contexts_to_parent)>1:
-#                if path:
-#                    paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
-#                                                                                                                                
-#                    if len(paths_to_parent_with_ancestor)>1:
-#                        raise ContextError("There are several contexts with the given ancestor!")
-#                    elif not paths_to_parent_with_ancestor:
-#                        raise ContextError("There is no context with the given ancestor!")
-#                    else:
-#                        path_to_parent = paths_to_parent_with_ancestor[0].path
-#                else:
-#                    raise ContextError("Please specify an ancestor node to determine the context.")
-#            elif not contexts_to_parent:
-#                raise ContextError("This is not a user problem, please report this bug!")
-#            else:
-#                path_to_parent = contexts_to_parent[0].path
-#===============================================================================
-                
-            children_id_subquery = session.query(Context.entity_id).filter(Context.path== path_to_parent+str(parent_entity.id)+',').subquery()
+               # else:
+                #    path_to_parent = contexts_to_parent[0].path
+                paths_to_parent = [context.path for context in contexts_to_parent]
+               
+            pars = []
+            for path_to_parent in paths_to_parent:
+                pars.append(Context.path == path_to_parent+str(parent_entity.id)+',')
+            #print pars
+            
+            if pars:
+                #children_id = session.query(Context.entity_id).filter(or_(*pars)).all()
+                #print children_id
+                children_id_subquery = session.query(Context.entity_id).filter(or_(*pars)).subquery() 
+             #session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()            
+            
+            
+            #children_id_subquery = session.query(Context.entity_id).filter(Context.path== path_to_parent+str(parent_entity.id)+',').subquery()
             
             children_entities = session.query(Entity).filter(Entity.id.in_(children_id_subquery)).all()
             
@@ -508,7 +508,7 @@ class Proxy(object):
         return objects
  
     @require('parent', (int, long, ObjectDict))
-    def get_children(self,parent, label=None):
+    def get_children(self,parent, label=None, uniqueContext=False):
         """Load the children of an object from the database
         
         Attribute:
@@ -520,7 +520,7 @@ class Proxy(object):
             not properly saved in the database
         """
         session = self.Session()
-        children = self.viewhandler.retrieve_children(session, parent, label)
+        children = self.viewhandler.retrieve_children(session, parent, label, uniqueContext)
         session.close()
         return children
              
