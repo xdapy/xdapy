@@ -38,3 +38,8 @@ class ContextError(Error):
     """Raised when the context of an object can not be determined. 
     """
     pass
+
+class ContextWarning(Warning):
+    """Raised when the context of an object is ambiguous. 
+    """
+    pass
