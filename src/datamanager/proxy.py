@@ -182,9 +182,9 @@ class Proxy(object):
             if not parent_entities or not child_entities:
                 raise SelectionError("Objects must be saved before they can be used in a context")
             elif len(parent_entities)>1:
-                 SelectionError("Multiple parents found! Please specify the parent node clearly")
+                raise SelectionError("Multiple parents found! Please specify the parent node clearly")
             elif len(child_entities)>1:
-                SelectionError("Multiple children found! Please specify the child node clearly")
+                raise SelectionError("Multiple children found! Please specify the child node clearly")
             else:
                 parent_entity = parent_entities[0]
                 child_entity = child_entities[0]
@@ -194,39 +194,13 @@ class Proxy(object):
                 if not ancestor_entities:
                     raise SelectionError("Ancestor object must be saved before they can be used in a context")
                 elif len(ancestor_entities)>1:
-                     SelectionError("Multiple ancestors found! Please specify the ancestor node clearly")
+                    raise SelectionError("Multiple ancestors found! Please specify the ancestor node clearly")
                 else:
                     ancestor_entity = ancestor_entities[0]
                     path = ','+str(ancestor_entity.id)+','
             else:
                 path = None 
         
-               
-#===============================================================================
-#            
-#            
-#            paths_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
-#        
-#                    
-#            if len(paths_to_parent)>1:
-#                if root:
-#                    path_fragment = ","+str(ancestor_entity.id)+","
-#                    paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path_fragment+'%')).all()
-#                                                                                                                                
-#                    if len(paths_to_parent_with_ancestor)>1:
-#                        raise ContextError("There are several contexts with the given ancestor!")
-#                    elif not paths_to_parent_with_ancestor:
-#                        raise ContextError("There is no context with the given ancestor!")
-#                    else:
-#                        path_to_parent = paths_to_parent_with_ancestor[0]
-#                else:
-#                    raise ContextError("Please specify an ancestor node to determine the context.")
-#            elif not paths_to_parent:
-#                raise ContextError("This is not a user problem, please report this bug!")
-#            else:
-#                path_to_parent = paths_to_parent[0]
-#===============================================================================
-                    
             if path:
                 paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
                 if len(paths_to_parent_with_ancestor)>1:
@@ -259,22 +233,20 @@ class Proxy(object):
                 child_entity.context[0].path = path_fragment_to_child
             else:
                 child_entity.context.append(Context(path_fragment_to_child))
-            
-            
-#            
+             
             session.commit()
                    
         
         @require('session', session.Session)
         @require('parent', ObjectDict, Entity)
-        def retrieve_children(self, session, parent, ancestor=None):
+        def retrieve_children(self, session, parent, ancestor=None, uniqueContext=True):
             level = 1
             if isinstance(parent,ObjectDict):
                 parent_entities = self._select_entity_by_object(session,parent)
                 if not parent_entities:
-                    SelectionError("Parent not found! Objects must be saved before its children can be loaded")
+                    raise SelectionError("Parent not found! Objects must be saved before its children can be loaded")
                 elif len(parent_entities) >1:
-                    SelectionError("Multiple parents found! Please specify the parent node clearly")
+                    raise SelectionError("Multiple parents found! Please specify the parent node clearly")
                 else:
                     parent_entity = parent_entities[0]
             else:
@@ -283,9 +255,9 @@ class Proxy(object):
             if isinstance(ancestor,ObjectDict):
                 ancestor_entities = self._select_entity_by_object(session,ancestor)
                 if not ancestor_entities:
-                    SelectionError("Ancestor not found! Objects must be saved before its children can be loaded")
+                    raise SelectionError("Ancestor not found! Objects must be saved before its children can be loaded")
                 elif len(ancestor_entities) >1:
-                    SelectionError("Multiple parents found! Please specify the ancestor node clearly")
+                    raise SelectionError("Multiple parents found! Please specify the ancestor node clearly")
                 else:
                     path = ','+str(ancestor_entities[0].id)+','
             elif isinstance(ancestor,Entity):
@@ -514,10 +486,10 @@ class Proxy(object):
         objects = self.viewhandler.select_object(session,argument)
         
         if len(objects)>1:
-            raise RequestObjectError("Found multiple objects that match requirements")#%object_.__class__.__name__)
+            raise SelectionError("Found multiple objects that match requirements")#%object_.__class__.__name__)
         
         if not objects:
-            raise RequestObjectError("Found no object that matches requirements")#%object_.__class__.__name__)
+            raise SelectionError("Found no object that matches requirements")#%object_.__class__.__name__)
            
         session.close()  
         
