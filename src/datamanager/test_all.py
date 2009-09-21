@@ -15,7 +15,7 @@ __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 import unittest
 from datamanager.proxy import Proxy
 from datamanager.objects import Observer, Experiment, Session, Trial
-from datamanager.views import Entity, StringParameter, Data
+from datamanager.views import Entity, StringParameter, Data, Context
 from random import randint
 from pickle import dumps, loads
 from datamanager import convert
@@ -54,20 +54,20 @@ class Test(unittest.TestCase):
         self.s9 = Session(date='2009-09-23')
         self.s10 = Session(date='2009-09-24')
         
-        self.t11 = Trial(rt=int(randint(100, 300)), valid = 1, response='left')
-        self.t12 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        self.t13 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        self.t14 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        self.t15 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        self.t16 = Trial(rt=randint(100, 300), valid = 1, response='right')
-        self.t17 = Trial(rt=randint(100, 300), valid = 1, response='left')
-        self.t18 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        self.t19 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        self.t20 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        self.t21 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        self.t22 = Trial(rt=randint(100, 300), valid = 0, response='right')
-        self.t23 = Trial(rt=randint(100, 300), valid = 0, response='left')
-        self.t24 = Trial(rt=randint(100, 300), valid = 0, response='right')
+        self.t11 = Trial(rt=int(randint(100, 3000)), valid = 1, response='left')
+        self.t12 = Trial(rt=randint(100, 3000), valid = 1, response='right')
+        self.t13 = Trial(rt=randint(100, 3000), valid = 1, response='left')
+        self.t14 = Trial(rt=randint(100, 3000), valid = 1, response='right')
+        self.t15 = Trial(rt=randint(100, 3000), valid = 1, response='left')
+        self.t16 = Trial(rt=randint(100, 3000), valid = 1, response='right')
+        self.t17 = Trial(rt=randint(100, 3000), valid = 1, response='left')
+        self.t18 = Trial(rt=randint(100, 3000), valid = 0, response='right')
+        self.t19 = Trial(rt=randint(100, 3000), valid = 0, response='left')
+        self.t20 = Trial(rt=randint(100, 3000), valid = 0, response='right')
+        self.t21 = Trial(rt=randint(100, 3000), valid = 0, response='left')
+        self.t22 = Trial(rt=randint(100, 3000), valid = 0, response='right')
+        self.t23 = Trial(rt=randint(100, 3000), valid = 0, response='left')
+        self.t24 = Trial(rt=randint(100, 3000), valid = 0, response='right')
         
         self.p.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6, 
                     self.s7, self.s8, self.s9, self.s10, self.t11, self.t12,
@@ -107,7 +107,7 @@ class Test(unittest.TestCase):
         self.assertEqual(self.p.get_children(Observer(name="Susi Sorgen")),[])
         self.assertEqual(self.p.get_children(Observer(name="Max Mustermann")),[self.s6, self.s7])
         
-        print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], {'Session':['date']})
+   #     print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], {'Session':['date']})
         
     def testConvert(self):
         experiment_object = Experiment(project="Test",experimenter="Maxim Muster")
@@ -117,11 +117,40 @@ class Test(unittest.TestCase):
         experiment_entity.parameters.append(StringParameter('project','Test'))
         experiment_entity.parameters.append(StringParameter('experimenter','Maxim Muster'))
         experiment_entity.data.append(Data('light',dumps([[0,1],[2,3]])))
+        experiment_entity.context.append(Context(","))
         
         e_o = convert(experiment_entity)
         e_e = convert(experiment_object)
-        print e_o
-        print e_e
+        self.assertEqual(experiment_object, e_o)
+        
+        
+        #entity can not be compared that easily, because they are only equal if 
+        # they are the same entities in the db.
+        self.assertEqual(experiment_entity.name, e_e.name)
+        
+        par = {}
+        for param in experiment_entity.parameters:
+            par[param.name]=param.value
+        par2 = {}    
+        for param in e_e.parameters:
+            par2[param.name]=param.value
+        self.assertEqual(par,par2)
+        
+        dat = {}
+        for param in experiment_entity.data:
+            par[param.name]=param.data
+        dat2 = {}    
+        for param in e_e.data:
+            par2[param.name]=param.data
+        self.assertEqual(dat,dat2)
+        
+        con = [cont.path for cont in experiment_entity.context]
+        con2 = [cont.path for cont in e_e.context]
+        self.assertEqual(con,con2)
+       
+        o = Observer(name="Max Mustermann", age=26)
+        self.assertRaises(TypeError,convert,o)
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
