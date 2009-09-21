@@ -482,9 +482,10 @@ class Proxy(object):
             objects = self.viewhandler.select_object(session,arg)
             for object in objects:
                 if object == arg and object.data == arg.data:
-                    raise AmbiguousObjectError("The object %s is already contained in the database!", object)
+                    print "WARNING: The object %s is already contained in the database!"% object
+                    #raise AmbiguousObjectError("The object %s is already contained in the database!", object)
             else:
-                entity = self.viewhandler.insert_object(session,arg)
+                entity = self.viewhandler.insert_object(session,convert(arg))
                 arg.set_concurrent(True)
         #entity = self.viewhandler.insert_object(session,object_)
         #object_.set_concurrent(True)
