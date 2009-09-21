@@ -39,65 +39,26 @@ class Proxy(object):
             
         
         @require('session', session.Session)
-        @require('object_', ObjectDict)
-        def insert_object(self,session,object_):
+        @require('entity', Entity)
+        def insert_object(self,session,entity):
             """Save a specific entity.
             
-            @type session: sqlalchemy.orm.session.Session
-            @param session: Concrete session 
-            @type object_: Instance derived from datamanager.objects.ObjectDict
-            @param object_: Experimental object to be inserted into the database 
+            @type session: sqlalchemy.orm.session.Session 
+            @param session:  Concrete session
+            @type entity: datamanager.views.Entity
+            @param entity: Entity to be inserted into the database 
             
-            @raise TypeError: If the type of an object's parameter does not 
+            @raise InsertionError: If the type of an object's parameter does not 
                 match the constrains imposed by the database. 
             @raise InsertionError: If an object's parameter is not registered for the given object.
             """
-            s = select([ParameterOption.parameter_name,
-                        ParameterOption.parameter_type], 
-                       ParameterOption.entity_name==object_.__class__.__name__)
-            d={}
-            for key, type in session.execute(s).fetchall():
-                d[key]=type
-
-            entity = Entity(object_.__class__.__name__)
-            for key,value in  object_.items():
-                if key is not None and d.has_key(key): 
-                    if isinstance(value,str) and d[key] == 'string':
-                        entity.parameters.append(StringParameter(key,value))
-                    elif isinstance(value, int) and d[key] == 'integer':
-                        entity.parameters.append(IntegerParameter(key,value))
-                    else:
-                        raise TypeError("Attribute %s must be of type %s" %
-                                         (key, d[key]))
-                else:
-                    if 'mysql' in session.connection().engine.name.lower():
-                        """
-                        TODO: Test this with MySql
-                        """
-                        s = select([ParameterOption.parameter_name,
-                                    ParameterOption.parameter_type], 
-                                    and_(ParameterOption.entity_name==object_.__class__.__name__,
-                                    ParameterOption.parameter_name.op('regexp')('['+key+']*')))
-                    
-                    else:    
-                        s = select([ParameterOption.parameter_name,
-                                    ParameterOption.parameter_type], 
-                                and_(ParameterOption.entity_name==object_.__class__.__name__,
-                                ParameterOption.parameter_name.like('%'+key+'%')))
-                    
-                    result = session.execute(s).fetchall()
-                    if not result:
-                        raise InsertionError("The parameter '%s' is not supported."%key)
-                    else:
-                        raise InsertionError("The parameter '%s' is not supported. Did you mean one of the following: '%s'."%(key, "', '".join([ '%s'%key1 for key1, type in result])))
-            for key,value in  object_.data.items():
-                d = Data(key,dumps(value))
-                entity.data.append(d)
+            valid, msg = self._is_valid(session, entity)   
+            if valid:
+                session.add(entity)
+                session.commit()
+            else:
+                raise InsertionError(msg)
                 
-            entity.context.append(Context(","))
-               
-            session.add(entity)
-            session.commit()
         
         @require('session', session.Session)
         @require('argument',(int, long, ObjectDict))
