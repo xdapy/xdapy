@@ -35,7 +35,8 @@ class Proxy(object):
         
         def __init__(self):
             """Initialize ViewHandler"""
-            pass
+            self.typelut={type('str'):'string',type(1):'integer'}
+            
         
         @require('session', session.Session)
         @require('object_', ObjectDict)
