@@ -6,25 +6,27 @@ Created on Jun 17, 2009
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
-TODO: Label the connections to make hierarchy unique
-TODO: Update 
+TODO: insert check if same object exists, if yes, use this object 
+TODO: Update: split node if necessary
 TODO: Delete
 TODO: String similarity
 TODO: Error if the commiting fails
+TODO: config datei fuer password user verwaltung        
 """
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, session
-from datamanager.views import *
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError
+from datamanager.views import *
+from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
 from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
-from MySQLdb import connect
+from datamanager import convert
     
 class Proxy(object):
     """Handle database access and sessions"""
