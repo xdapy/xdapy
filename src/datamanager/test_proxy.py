@@ -272,6 +272,22 @@ class TestProxy(unittest.TestCase):
         self.assertRaises(IntegrityError, self.p.register_parameter, 
                           'Experiment', 'reference', 'string')
         
+    def  testIsValid(self):
+        e = Experiment(project='MyProject',experimenter="John Doe")
+        exp = convert(e)
+        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),exp)
+        self.assertEqual(True,valid)
+        
+        o = Observer(name="Max Mustermann", handedness=1, age=26)
+        obs = convert(o)
+        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),obs)
+        self.assertEqual(False,valid)
+        
+        o['glasses']="no"
+        obs = convert(o)
+        valid, msg = self.p.viewhandler.is_valid(self.p.Session(),obs)
+        self.assertEqual(False,valid)
+        
 #===============================================================================
 #        
 # 
