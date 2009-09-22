@@ -176,6 +176,8 @@ class Proxy(object):
             @raise InsertionError: If the child can not be inserted because of circularity.
             """
             
+            
+            #-------Retrieve saved entities from the database-------
             parent_entities = self._select_entity_by_object(session,parent)
             self._check_length_of_result(parent_entities, 
                                   missing="Objects must be saved before they can be used in a context",
@@ -196,43 +198,42 @@ class Proxy(object):
                                       multiple = "Multiple ancestors found! Please specify the ancestor object clearly")
                 ancestor_entity = ancestor_entities[0]
                 
-                path = ','+str(ancestor_entity.id)+','
-            else:
-                path = None 
-        
-            if path:
-                paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
-                self._check_length_of_result(paths_to_parent_with_ancestor,
+            #---------retrieve contexts from database------------------------
+                path_fragment_of_ancestor = ','+str(ancestor_entity.id)+','
+                contexts_to_parent = session.query(Context).filter(
+                        Context.entity_id == parent_entity.id).filter(
+                        Context.path.like('%'+path_fragment_of_ancestor+'%')).all()
+                self._check_length_of_result(contexts_to_parent,
                                       error=ContextError,
                                       multiple="There are several contexts with the given ancestor!",
                                       missing="There is no context with the given ancestor!")
-
-                path_to_parent = paths_to_parent_with_ancestor[0].path
             else:
                 contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
                 self._check_length_of_result(contexts_to_parent,
                                       error=ContextError,
                                       multiple="Please specify an ancestor node to determine the context.",
                                       missing="This is not a user problem, please report this bug!")
-
-                path_to_parent = contexts_to_parent[0].path
-                    
-            path_fragment = ","+str(child_entity.id)+","
-            if path_to_parent.find(path_fragment) is not -1:
+            path_to_parent = contexts_to_parent[0].path
+            
+            #---------handle circularity-----------------------
+            path_fragment_of_child = ","+str(child_entity.id)+","
+            if path_to_parent.find(path_fragment_of_child) is not -1:
                 raise InsertError('Can not insert child in this context, because of circularity.')
             
-            path_fragment_to_child = path_to_parent+str(parent_entity.id)+','
-            
-            contexts_from_child =  session.query(Context).filter(Context.path.like(path_fragment+'%'))
+            #---------if child was root and already has descendents, update their paths------------            
+            path_to_child = path_to_parent+str(parent_entity.id)+','
+            contexts_from_child =  session.query(Context).filter(Context.path.like(path_fragment_of_child+'%'))
             for context_from_child in contexts_from_child:
                 #if path_from_child.path.find(path_fragment,0,len(path_fragment)) is 0:
-                context_from_child.path = path_fragment_to_child+context_from_child.path[1:]
+                context_from_child.path = path_to_child+context_from_child.path[1:]
  
+            #---------update the childs path--------------------------------
             if child_entity.context[0].path==",":
-                child_entity.context[0].path = path_fragment_to_child
+                child_entity.context[0].path = path_to_child
             else:
-                child_entity.context.append(Context(path_fragment_to_child))
-             
+                child_entity.context.append(Context(path_to_child))
+            
+            #---------save changes---------
             session.commit()
                    
         
