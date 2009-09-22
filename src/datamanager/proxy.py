@@ -37,8 +37,7 @@ class Proxy(object):
         def __init__(self):
             """Initialize ViewHandler"""
             self.typelut={type('str'):'string',type(1):'integer'}
-            
-        
+                    
         @require('session', session.Session)
         @require('entity', Entity)
         def insert_object(self,session,entity):
@@ -177,48 +176,46 @@ class Proxy(object):
             @raise InsertionError: If the child can not be inserted because of circularity.
             """
             
-            parent_entities = self._select_entity_by_object(session, parent)
-            child_entities = self._select_entity_by_object(session, child)
-                
-            #assure that both objects are already saved
-            if not parent_entities or not child_entities:
-                raise SelectionError("Objects must be saved before they can be used in a context")
-            elif len(parent_entities)>1:
-                raise SelectionError("Multiple parents found! Please specify the parent node clearly")
-            elif len(child_entities)>1:
-                raise SelectionError("Multiple children found! Please specify the child node clearly")
-            else:
-                parent_entity = parent_entities[0]
-                child_entity = child_entities[0]
+            parent_entities = self._select_entity_by_object(session,parent)
+            self._check_length_of_result(parent_entities, 
+                                  missing="Objects must be saved before they can be used in a context",
+                                  multiple="Multiple parents found! Please specify the parent object more clearly")
+            parent_entity = parent_entities[0]
             
+            child_entities = self._select_entity_by_object(session, child)
+            self._check_length_of_result(child_entities,
+                                  missing="Objects must be saved before they can be used in a context",
+                                  multiple="Multiple children found! Please specify the child object more clearly")
+            child_entity = child_entities[0]
+
+
             if root:
                 ancestor_entities = self._select_entity_by_object(session, root)
-                if not ancestor_entities:
-                    raise SelectionError("Ancestor object must be saved before they can be used in a context")
-                elif len(ancestor_entities)>1:
-                    raise SelectionError("Multiple ancestors found! Please specify the ancestor node clearly")
-                else:
-                    ancestor_entity = ancestor_entities[0]
-                    path = ','+str(ancestor_entity.id)+','
+                self._check_length_of_result(ancestor_entities,
+                                      missing = "Ancestor object must be saved before it can be used in a context",
+                                      multiple = "Multiple ancestors found! Please specify the ancestor object clearly")
+                ancestor_entity = ancestor_entities[0]
+                
+                path = ','+str(ancestor_entity.id)+','
             else:
                 path = None 
         
             if path:
                 paths_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
-                if len(paths_to_parent_with_ancestor)>1:
-                    raise ContextError("There are several contexts with the given ancestor!")
-                elif not paths_to_parent_with_ancestor:
-                    raise ContextError("There is no context with the given ancestor!")
-                else:
-                    path_to_parent = paths_to_parent_with_ancestor[0].path
+                self._check_length_of_result(paths_to_parent_with_ancestor,
+                                      error=ContextError,
+                                      multiple="There are several contexts with the given ancestor!",
+                                      missing="There is no context with the given ancestor!")
+
+                path_to_parent = paths_to_parent_with_ancestor[0].path
             else:
                 contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
-                if len(contexts_to_parent)>1:
-                    raise ContextError("Please specify an ancestor node to determine the context.")
-                elif not contexts_to_parent:
-                    raise ContextError("This is not a user problem, please report this bug!")
-                else:
-                    path_to_parent = contexts_to_parent[0].path
+                self._check_length_of_result(contexts_to_parent,
+                                      error=ContextError,
+                                      multiple="Please specify an ancestor node to determine the context.",
+                                      missing="This is not a user problem, please report this bug!")
+
+                path_to_parent = contexts_to_parent[0].path
                     
             path_fragment = ","+str(child_entity.id)+","
             if path_to_parent.find(path_fragment) is not -1:
