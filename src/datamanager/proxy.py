@@ -101,16 +101,52 @@ class Proxy(object):
                                          type(value))     
                 
             if pars:
-                return  session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()
+                result = session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()
             else:
-                return  session.query(Entity).filter_by(name=object_.__class__.__name__).all()#one()
-   
+                result = session.query(Entity).filter_by(name=object_.__class__.__name__).all()#one()
+            
+            return result
+            
         
         @require('session', session.Session)
         @require('id',int, long)
         def _select_entity_by_id(self,session,id):    
             return session.query(Entity).filter(Entity.id==id).all()          
         
+        def _check_length_of_result(self,result,error=SelectionError,missing=None,single=None,multiple=None):
+            """Raise an error if the result of a selection has not the required length. 
+            
+            @type selection: List 
+            @param selection:  result of sqlalchemy query 
+            @type error: Error
+            @param error: Error to be raised
+            @type missing: String
+            @param missing: The error massage to be displayed if the result is an empty list.
+                IF None, no error will be raised.
+            @type single: String
+            @param single: The error massage to be displayed if the result has a single entry.
+                IF None, no error will be raised.
+            @type multiple: String
+            @param multiple: The error massage to be displayed if the result has more than one entry.
+                IF None, no error will be raised.
+            
+            @raise Error: If the result has not the required length
+                
+            @returns: True if no error is raised
+            @rtype: Boolean
+            """
+            if len(result)>1 and multiple:
+                #"More than one corresponding entry found in database! Please specify requirements more clearly"
+                raise error(multiple)
+            if not result and missing:
+                #"No corresponding entry found in database!"
+                raise error(missing)
+            if len(result)==1 and single:
+                #"Only a single entry found in database!"
+                raise error(single)
+            
+            return True
+            
         def insert_parameter_option(self, session, e_name, p_name, p_type):
             parameter_option = ParameterOption(e_name,p_name,p_type)
             session.add(parameter_option)
