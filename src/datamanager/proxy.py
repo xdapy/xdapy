@@ -28,7 +28,26 @@ from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
 from datamanager import convert
-    
+
+#http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
+#RICK COPELAND (23.09.2009)
+
+from sqlalchemy.databases import postgres
+
+class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+     def visit_table(self, table):
+        for column in table.columns:
+            if column.default is not None:
+                self.traverse_single(column.default)
+        self.append("\nDROP TABLE " +
+                    self.preparer.format_table(table) +
+                    " CASCADE")
+        self.execute()
+
+postgres.dialect.schemadropper = PGCascadeSchemaDropper
+
+
+
 class Proxy(object):
     """Handle database access and sessions"""
     
