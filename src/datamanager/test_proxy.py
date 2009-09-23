@@ -18,7 +18,7 @@ from sqlalchemy.exceptions import IntegrityError
 class TestProxy(unittest.TestCase):
 
     def setUp(self):
-        self.p = Proxy('localhost','root','unittestDB','tin4u')
+        self.p = Proxy('/Users/hannah/Documents/Coding/postgresconfig.tex')
         self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         self.session.add(ParameterOption('Observer','name','string'))
