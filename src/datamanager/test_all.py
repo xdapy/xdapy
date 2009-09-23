@@ -24,7 +24,7 @@ class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.p = Proxy('localhost','root','unittestDB','tin4u')
+        self.p = Proxy('/Users/hannah/Documents/Coding/mysqlconfig.tex')
         self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         
@@ -148,7 +148,7 @@ class Test(unittest.TestCase):
         con2 = [cont.path for cont in e_e.context]
         self.assertEqual(con,con2)
        
-        o = Observer(name="Max Mustermann", age=26)
+        o = Observer(name="Max Mustermann", age=2.6)
         self.assertRaises(TypeError,convert,o)
         
 if __name__ == "__main__":
