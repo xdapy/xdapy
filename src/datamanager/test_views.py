@@ -55,13 +55,15 @@ class TestData(unittest.TestCase):
     
     def setUp(self):
         """Create test database in memory"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
+
         
     def testValidInput(self):
         for name, data in self.valid_input:
@@ -85,13 +87,14 @@ class TestParameter(unittest.TestCase):
     
     def setUp(self):
         """Create test database"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
 
     def testInvalidInputLength(self):
         parameter = Parameter(self.string_exceeding_length)
@@ -107,28 +110,32 @@ class TestStringParameter(unittest.TestCase):
     invalid_input_types = (('name',0),
                     ('name',0.0),
                     ('name',None),
-                    (0,None))
+                    (0,None),
+                    ('name',datetime.date.today()),
+                    ('name',datetime.datetime.now().time()),
+                    ('name',datetime.datetime.now()))
                     #,('Name','value'))
     
     invalid_input_length = ('name','******************************************************************************************************')
     
     def setUp(self):
         """Create test database in memory"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
-            par = StringParameter(name,value)
-            self.session.add(par)
+            parameter = StringParameter(name,value)
+            self.session.add(parameter)
             self.session.commit()
-            self.assertEqual(par.name, name)
-            self.assertEqual(par.value, value)
+            self.assertEqual(parameter.name, name)
+            self.assertEqual(parameter.value, value)
         
     def testInvalidInputType(self):
         for name,value in self.invalid_input_types:
@@ -150,23 +157,29 @@ class TestIntegerParameter(unittest.TestCase):
                   ('****************************************',0))
     invalid_input_types = (('name','0'),
                     ('name',0.0),
+                    ('name',datetime.datetime.now().date()),
+                    ('name',datetime.datetime.now().time()),
+                    ('name',datetime.datetime.now()),
                     ('name',None))
 
     def setUp(self):
         """Create test database in memory"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
-            parameter_reloaded = IntegerParameter(name,value)
-            self.assertEqual(parameter_reloaded.name, name)
-            self.assertEqual(parameter_reloaded.value, value)
+            parameter = IntegerParameter(name,value)
+            self.session.add(parameter)
+            self.session.commit()
+            self.assertEqual(parameter.name, name)
+            self.assertEqual(parameter.value, value)
         
     def testInvalidInputType(self):
         for name,value in self.invalid_input_types:
@@ -295,13 +308,14 @@ class TestEntity(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
 
     def testValidInput(self):
         for name in self.valid_input:
@@ -385,13 +399,14 @@ class TestParameterOption(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        engine = return_engine()
-        base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def tearDown(self):
-        self.session.close()
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
 
     def testValidInput(self):
         for e_name, p_name, p_type in self.valid_input:
