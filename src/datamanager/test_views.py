@@ -11,7 +11,7 @@ from datamanager.views import base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, join
 from sqlalchemy.sql import and_
-from sqlalchemy.exceptions import IntegrityError                 
+from sqlalchemy.exceptions import IntegrityError, DataError                
 from pickle import dumps, loads
 import numpy as np
 from sqlalchemy.orm import exc as orm_exc
@@ -19,14 +19,33 @@ import datetime
 import time
 db = 'postgres'
 
-db = 'mysql'
+
+#http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
+#RICK COPELAND (23.09.2009)
+
+from sqlalchemy.databases import postgres
+
+class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+     def visit_table(self, table):
+        for column in table.columns:
+            if column.default is not None:
+                self.traverse_single(column.default)
+        self.append("\nDROP TABLE " +
+                    self.preparer.format_table(table) +
+                    " CASCADE")
+        self.execute()
+
+postgres.dialect.schemadropper = PGCascadeSchemaDropper
 
 def return_engine():
     if db is 'mysql':
-        engine = create_engine('mysql://root@localhost/unittestDB',connect_args={'passwd':'tin4u'})
+        engine = create_engine(open('/Users/hannah/Documents/Coding/mysqlconfig.tex').read())
         base.metadata.drop_all(engine)
     elif db is 'sqlite':
         engine = create_engine('sqlite:///:memory:', echo=False)
+    elif db is 'postgres':
+        #'/Users/hannah/Documents/Coding/postgresconfig.tex'
+        engine = create_engine(open('/Users/hannah/Documents/Coding/postgresconfig.tex').read())
     else:
         raise AttributeError('db type "%s" not defined'%db)
     return engine
@@ -99,8 +118,11 @@ class TestParameter(unittest.TestCase):
     def testInvalidInputLength(self):
         parameter = Parameter(self.string_exceeding_length)
         self.session.add(parameter)
-        self.session.commit()
-        self.assertEqual([], self.session.query(Parameter).filter(Parameter.name==self.string_exceeding_length).all())
+        if db == 'postgres':
+            self.assertRaises(DataError, self.session.commit)
+        else:
+            self.session.commit()
+            self.assertEqual([], self.session.query(Parameter).filter(Parameter.name==self.string_exceeding_length).all())
        
 class TestStringParameter(unittest.TestCase):
     valid_input = (('name','Value'),
@@ -146,9 +168,11 @@ class TestStringParameter(unittest.TestCase):
         value = self.invalid_input_length[1]
         parameter = StringParameter(name,value)
         self.session.add(parameter)
-        self.session.commit()
-        self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
-        
+        if db == 'postgres':
+            self.assertRaises(DataError,self.session.commit)
+        else:
+            self.session.commit()
+            self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
         
 
 class TestIntegerParameter(unittest.TestCase):
