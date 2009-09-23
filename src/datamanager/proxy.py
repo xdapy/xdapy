@@ -485,7 +485,7 @@ class Proxy(object):
     def create_tables(self,overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
         if overwrite:
-            base.metadata.drop_all(self.engine)
+            base.metadata.drop_all(self.engine, checkfirst=True)
         base.metadata.create_all(self.engine)   
     
 #    @require('object_',ObjectDict)
