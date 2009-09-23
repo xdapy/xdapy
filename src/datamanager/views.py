@@ -12,15 +12,17 @@ TODO: Make Data truncation an error
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
-from sqlalchemy import MetaData, Table, Column, Integer, String, Binary, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import mapper, relation, backref, validates
-from sqlalchemy.sql import select
-from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
-#import StringIO
-from pickle import dumps, loads
+from sqlalchemy import (MetaData, Table, Column, ForeignKey,
+                        Binary, String, Integer, Float, Date, Time, DateTime, 
+                        Boolean)
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import select
+from sqlalchemy.orm import mapper, relation, backref, validates
+from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from datetime import date, time, datetime
+from pickle import dumps, loads
         
 base = declarative_base()
         
@@ -166,6 +168,180 @@ class IntegerParameter(Parameter):
     def __repr__(self):
         return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
 
+
+class FloatParameter(Parameter):
+    '''
+    The class 'FloatParameter' is mapped on the table 'floatparameters' and 
+    is derived from 'Parameter'. The value assigned to a FloatParameter must be 
+    a float. 
+    '''
+    id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
+    value = Column('value',Float)
+
+    __tablename__ = 'floatparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'float'}
+    
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, float):
+            raise TypeError("Argument must be a float")
+        return parameter 
+            
+    def __init__(self, name, value):
+        '''Initialize a parameter with the given name and string value.
+        
+        Argument:
+        name -- A one-word-description of the parameter
+        value -- The float associated with the name 
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no float.
+        '''
+        self.name = name
+        self.value = value
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+
+
+class DateParameter(Parameter):
+    '''
+    The class 'FloatParameter' is mapped on the table 'dateparameters' and 
+    is derived from 'Parameter'. The value assigned to a DateParameter must be 
+    a datetime.date. 
+    '''
+    id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
+    value = Column('value',Date)
+
+    __tablename__ = 'dateparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'date'}
+    
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, date) or parameter is None:
+            raise TypeError("Argument must be a datetime.date")
+        elif isinstance(parameter, date) and parameter.timetuple()[3:6]!=(0,0,0):
+            raise TypeError("Argument must be a datetime.date")
+        return parameter 
+            
+    def __init__(self, name, value):
+        '''Initialize a parameter with the given name and datetime.date.
+        
+        Argument:
+        name -- A one-word-description of the parameter
+        value -- The datetime.date associated with the name 
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no a datetime.date.
+        '''
+        self.name = name
+        self.value = value
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+
+
+class TimeParameter(Parameter):
+    '''
+    The class 'TimeParameter' is mapped on the table 'timeparameters' and 
+    is derived from 'Parameter'. The value assigned to a TimeParameter must be 
+    a datetime.time. 
+    '''
+    id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
+    value = Column('value',Time)
+
+    __tablename__ = 'timeparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'time'}
+    
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, time) or parameter is None:
+            raise TypeError("Argument must be a datetime.time")
+        return parameter 
+            
+    def __init__(self, name, value):
+        '''Initialize a parameter with the given name and datetime.time value.
+        
+        Argument:
+        name -- A one-word-description of the parameter
+        value -- The datetime.time object associated with the name 
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is not datetime.time.
+        '''
+        self.name = name
+        self.value = value
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+
+class DateTimeParameter(Parameter):
+    '''
+    The class 'DateTimeParameter' is mapped on the table 'datetimeparameters' and 
+    is derived from 'Parameter'. The value assigned to a DateTimeParameter must be 
+    a datetime.datetime. 
+    '''
+    id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
+    value = Column('value',DateTime)
+
+    __tablename__ = 'datetimeparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'datetime'}
+    
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, datetime):
+            raise TypeError("Argument must be a datetime.datetime")
+        return parameter 
+            
+    def __init__(self, name, value):
+        '''Initialize a parameter with the given name and datetime.datetime value.
+        
+        Argument:
+        name -- A one-word-description of the parameter
+        value -- The datetime.datetime object associated with the name 
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no datetime.datetime.
+        '''
+        self.name = name
+        self.value = value
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+
+class BooleanParameter(Parameter):
+    '''
+    The class 'BooleanParameter' is mapped on the table 'booleanparameters' and 
+    is derived from 'Parameter'. The value assigned to a BooleanParameter must be 
+    a boolean. 
+    '''
+    id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
+    value = Column('value',DateTime)
+
+    __tablename__ = 'booleanparameters'
+    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'boolean'}
+    
+    @validates('value')
+    def validate_value(self, key, parameter):
+        if not isinstance(parameter, boolean):
+            raise TypeError("Argument must be a boolean")
+        return parameter 
+            
+    def __init__(self, name, value):
+        '''Initialize a parameter with the given name and boolean value.
+        
+        Argument:
+        name -- A one-word-description of the parameter
+        value -- The boolean object associated with the name 
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no boolean.
+        '''
+        self.name = name
+        self.value = value
+        
+    def __repr__(self):
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
 
 '''
 The parameterlist is an association table. It relates an Entity and a Parameter 
