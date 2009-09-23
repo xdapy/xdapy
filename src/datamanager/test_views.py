@@ -5,7 +5,8 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.views import Data, Parameter, StringParameter, IntegerParameter, Entity, ParameterOption, Relation
+from datamanager.views import (Data, Parameter, Entity, ParameterOption, Relation,
+    StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter)
 from datamanager.views import base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, join
@@ -14,6 +15,9 @@ from sqlalchemy.exceptions import IntegrityError
 from pickle import dumps, loads
 import numpy as np
 from sqlalchemy.orm import exc as orm_exc
+import datetime 
+import time
+db = 'postgres'
 
 db = 'mysql'
 
@@ -168,7 +172,113 @@ class TestIntegerParameter(unittest.TestCase):
         for name,value in self.invalid_input_types:
             self.assertRaises(TypeError, IntegerParameter, name, value)
     
-          
+
+class TestFloatParameter(unittest.TestCase):
+    valid_input = (('name',1.02),
+                  ('name',-256.),
+                  ('****************************************',0.))
+    invalid_input_types = (('name','0'),
+                    ('name',0),
+                    ('name',datetime.datetime.now().date()),
+                    ('name',datetime.datetime.now().time()),
+                    ('name',datetime.datetime.now()),
+                    ('name',None))
+
+    def setUp(self):
+        """Create test database in memory"""
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
+        
+    def testValidInput(self):
+        for name,value in self.valid_input:
+            parameter = FloatParameter(name,value)
+            self.session.add(parameter)
+            self.session.commit()
+            self.assertEqual(parameter.name, name)
+            self.assertEqual(parameter.value, value)
+       
+        
+    def testInvalidInputType(self):
+        for name,value in self.invalid_input_types:
+            self.assertRaises(TypeError, FloatParameter, name, value)
+            
+
+class TestDateParameter(unittest.TestCase):
+    valid_input = (('name',datetime.date.today()),
+                  ('name',datetime.date.fromtimestamp(time.time())),
+                  ('****************************************',datetime.date(2009, 9, 22)),
+                  ('name',datetime.datetime.now().date()))
+                  
+    invalid_input_types = (('name','0'),
+                    ('name',0),
+                    ('name',datetime.datetime.now().time()),
+                    ('name',datetime.datetime.now()),
+                    ('name',None))
+
+    def setUp(self):
+        """Create test database in memory"""
+        self.engine = return_engine()
+        base.metadata.drop_all(self.engine)
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
+        
+    def testValidInput(self):
+        for name,value in self.valid_input:
+            parameter = DateParameter(name,value)
+            self.session.add(parameter)
+            self.session.commit()
+            self.assertEqual(parameter.name, name)
+            self.assertEqual(parameter.value, value)
+         
+        
+    def testInvalidInputType(self):
+        for name,value in self.invalid_input_types:
+            self.assertRaises(TypeError, DateParameter, name, value)
+            
+class TestTimeParameter(unittest.TestCase):
+    valid_input = (('name',datetime.time(23,6,2,635)),
+                  ('name',datetime.datetime.now().time()))
+    invalid_input_types = (('name','0'),
+                    ('name',0),
+                    ('name',datetime.datetime.now().date()),
+                    ('name',datetime.datetime.now()),
+                    ('name',None))
+
+    def setUp(self):
+        """Create test database in memory"""
+        self.engine = return_engine()
+        base.metadata.create_all(self.engine)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+    def tearDown(self):         
+        self.session.close()         
+        base.metadata.drop_all(self.engine)
+        
+    def testValidInput(self):
+        for name,value in self.valid_input:
+            parameter = TimeParameter(name,value)
+            self.session.add(parameter)
+            self.session.commit()
+            self.assertEqual(parameter.name, name)
+            self.assertEqual(parameter.value, value)
+            
+        
+    def testInvalidInputType(self):
+        for name,value in self.invalid_input_types:
+            self.assertRaises(TypeError, TimeParameter, name, value)
+            
 class TestEntity(unittest.TestCase):
     """Testcase for Entity class
 
