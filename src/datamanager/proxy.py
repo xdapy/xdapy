@@ -244,13 +244,13 @@ class Proxy(object):
             contexts_from_child =  session.query(Context).filter(Context.path.like(path_fragment_of_child+'%'))
             for context_from_child in contexts_from_child:
                 #if path_from_child.path.find(path_fragment,0,len(path_fragment)) is 0:
-                context_from_child.path = path_to_child+context_from_child.path[1:]
+                context_from_child.path = str(path_to_child+context_from_child.path[1:])
  
             #---------update the childs path--------------------------------
             if child_entity.context[0].path==",":
-                child_entity.context[0].path = path_to_child
+                child_entity.context[0].path = str(path_to_child)
             else:
-                child_entity.context.append(Context(path_to_child))
+                child_entity.context.append(Context(str(path_to_child)))
             
             #---------save changes---------
             session.commit()
