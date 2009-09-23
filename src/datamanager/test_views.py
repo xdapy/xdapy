@@ -349,29 +349,7 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(ip_reloaded.entities,[exp])
         self.assertEqual(sp_reloaded.entities,[])
         
-    def testRelationsAttribute(self):
-        exp = Entity('experiment')
-        obs1 = Entity('observer1')
-        obs2 = Entity('observer2')
-        exp.relations[obs1]=1
-        
-        self.session.add(exp)
-        self.session.add(obs2)
-        self.session.commit()
-        
-      #  parents = self.session.query(Entity.name,Relation.label).select_from(join(Entity,Relation,Relation.parent)).filter(Relation.child_id==childid).all()
-       # children = self.session.query(Entity.name).select_from(join(Entity,Relation,Relation.child)).filter(Relation.parent_id==parentid).all()
-   
-        #exp_reloaded = self.session.query(Entity).select_from(join(Entity,Relation,Relation.parent)).filter(Entity.name=='experiment').all()
-        #print exp_reloaded
-        exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
-        self.assertTrue(obs1 in exp_reloaded.relations)
-       # self.assertEqual(exp_reloaded.parents,[])
-        
-        obs1_reloaded =  self.session.query(Entity).filter(Entity.name=='observer1').one()
-        
-        obs2_reloaded =  self.session.query(Entity).filter(Entity.name=='observer2').one()
-        self.assertFalse(obs1_reloaded.relations)
+
         
 #    def testContextAttribute(self):
 #        exp = Entity('experiment')
