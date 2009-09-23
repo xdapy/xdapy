@@ -32,12 +32,14 @@ class TestProxy(unittest.TestCase):
         self.session.add(ParameterOption('Trial', 'response', 'string'))
         self.session.commit()
         
+        
     def tearDown(self):
-        pass
+        self.session.close()
 
     def testCreateTables(self):
-        self.p.create_tables()
-#
+        self.p.create_tables(overwrite=True)
+        
+
     def testSave(self):
         valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
                        Experiment(project='MyProject',experimenter="John Doe"),
@@ -77,13 +79,13 @@ class TestProxy(unittest.TestCase):
         o1 = Observer(name="Maxime Mustermann", handedness="right", age=26)
         o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
         self.p.save(e,o1,o2)
-        
+#        
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
         obs.data['moredata']=(0,3,6,8)
         obs.data['otherredata']=(0,3,6,8)
         self.p.save(obs)
-        
+       
         #Test the settings of _cuncurrent
         obs = Observer(name="Max Mustermann")
         obs_by_object = self.p.load(obs)
