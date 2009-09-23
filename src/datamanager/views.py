@@ -475,12 +475,12 @@ class Entity(base):
    
     __tablename__ = 'entities'
     
-    relations = association_proxy('children', 'label', creator=_create_relation)
+    #relations = association_proxy('children', 'label', creator=_create_relation)
     
-    children = relation('Relation',
-        collection_class=attribute_mapped_collection('child'),
-        primaryjoin='Relation.parent_id==Entity.id')
-   
+#    children = relation('Relation',
+#        collection_class=attribute_mapped_collection('child'),
+#        primaryjoin='Relation.parent_id==Entity.id')
+#   
     # one to many Entity->Context
     context = relation('Context', backref=backref('entities', order_by=id))
     # many to many Entity<->Parameter
