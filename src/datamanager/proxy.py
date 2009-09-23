@@ -467,23 +467,18 @@ class Proxy(object):
             return return_value, msg
               
               
-    def __init__(self,host,user,db,pwd):
+    def __init__(self, configfile):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
+        @param configfile: A open file that contains the database access 
+            information in the fist line as required by sqylalchemy (e.g. 
+            sqldialect://username:password@host/database).
+        @type configfile: file in string format 
         '''
-#        self.host = "localhost"
-#        self.user = "root"
-#        self.passwd = "tin4u"
-#            
-#        self.host = "mach.cognition.tu-berlin.de"
-#        self.user = "psybaseuser"
-#        self.passwd = "psybasetest"
-        db = create_engine('mysql://%s@%s/%s'%(user,host,db),connect_args={'passwd':pwd})
-        #mysql_db = create_engine('mysql://scott:tiger@localhost/mydatabase', 
-         #                        connect_args = {'argument1':17, 'argument2':'bar'})
-        
-        self.engine = db#create_engine('sqlite:///:memory:', echo=False)
+        file = open(configfile)
+        eng = file.read()
+        self.engine = create_engine(eng, echo=False)
         self.Session = sessionmaker(bind=self.engine)
         self.viewhandler = self.ViewHandler()
     
@@ -492,7 +487,7 @@ class Proxy(object):
         if overwrite:
             base.metadata.drop_all(self.engine)
         base.metadata.create_all(self.engine)   
-        
+    
 #    @require('object_',ObjectDict)
 #    def save(self,object_):
     def save(self,*args):
