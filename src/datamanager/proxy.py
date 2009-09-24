@@ -28,6 +28,7 @@ from datamanager.objects import *
 from utils.decorators import require
 from utils.algorithms import levenshtein
 from datamanager import convert
+from sqlalchemy.pool import AssertionPool
 
 #http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
 #RICK COPELAND (23.09.2009)
@@ -478,7 +479,8 @@ class Proxy(object):
         '''
         file = open(configfile)
         eng = file.read()
-        self.engine = create_engine(eng, echo=False)
+        #self.engine = create_engine(eng, echo=False)
+        self.engine = create_engine(eng, poolclass=AssertionPool, echo=False)
         self.Session = sessionmaker(bind=self.engine)
         self.viewhandler = self.ViewHandler()
     
