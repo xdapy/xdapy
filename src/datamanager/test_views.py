@@ -317,16 +317,7 @@ class TestTimeParameter(unittest.TestCase):
             self.assertRaises(TypeError, TimeParameter, name, value)
             
 class TestEntity(unittest.TestCase):
-    """Testcase for Entity class
 
-    Longer class information....
-    Longer class information....
-    
-    Attributes:
-        something -- A boolean indicating if we like something.
-        somethingelse -- An integer count of the something else.
-    """
-    
     valid_input=('observer','experiment', 'observer')
     invalid_input_types=(0,0.0,None)
 
@@ -422,7 +413,7 @@ class TestParameterOption(unittest.TestCase):
                      ParameterOption.parameter_type==p_type)).one()
             self.assertEqual(parameter_option,parameter_option_reloaded)
             
-    def testInvalidInput(self):
+    def testInvalidInputType(self):
         for e_name, p_name, p_type in self.invalid_input:
             self.assertRaises(TypeError, ParameterOption, e_name, p_name, p_type)
 
@@ -436,5 +427,36 @@ class TestParameterOption(unittest.TestCase):
      
         
 if __name__ == "__main__":
-    import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()
+    tests = ['testValidInput', 'testInvalidInputType', 'testInvalidInputLength','testParametersAttribute','testPrimaryKeyConstrain']
+    
+    parameter_suite = unittest.TestSuite()
+    parameter_suite.addTest(TestParameter(tests[2]))
+    string_suite = unittest.TestSuite(map(TestStringParameter, tests[0:3]))
+    integer_suite = unittest.TestSuite(map(TestIntegerParameter, tests[0:2]))
+    float_suite = unittest.TestSuite(map(TestFloatParameter, tests[0:2]))
+    date_suite = unittest.TestSuite(map(TestDateParameter, tests[0:2]))
+    time_suite = unittest.TestSuite(map(TestTimeParameter, tests[0:2]))
+    #datetime_suite = unittest.TestSuite(map(TestDateTimeParameter, tests[0:2]))
+    #boolean_suite = unittest.TestSuite(map(TestBoolean, tests[0:2]))
+    
+    data_suite = unittest.TestSuite() 
+    data_suite.addTest(TestData(tests[0]))
+    entity_suite = unittest.TestSuite(map(TestEntity, tests[0:2]))
+    entity_suite.addTest(TestEntity(tests[3]))
+    parameteroption_suite = unittest.TestSuite(map(TestParameterOption, tests[0:2]))
+    parameteroption_suite.addTest(TestParameterOption(tests[4]))
+    
+    alltests = unittest.TestSuite([parameter_suite,
+                                   integer_suite,
+                                   string_suite, 
+                                   integer_suite,
+                                   float_suite,
+                                   date_suite,
+                                   time_suite,
+                                   data_suite,
+                                   entity_suite,
+                                   parameteroption_suite])
+    subtests = unittest.TestSuite([parameter_suite, data_suite, string_suite])
+    unittest.TextTestRunner(verbosity=2).run(subtests)
+    
+ 
