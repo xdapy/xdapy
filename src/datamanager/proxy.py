@@ -503,13 +503,15 @@ class Proxy(object):
         TypeError -- If the attribute is None
         """
         session = self.Session()
-        for arg in args:
-           entity = self.viewhandler.insert_object(session,convert(arg))
-           arg.set_concurrent(True)
-        #entity = self.viewhandler.insert_object(session,object_)
-        #object_.set_concurrent(True)
+        try:
+            for arg in args:
+               entity = self.viewhandler.insert_object(session,convert(arg))
+               arg.set_concurrent(True)
+        except Exception:
+            session.close()
+            raise 
         session.close()
-    
+        
     @require('argument', (int, long, ObjectDict))
     def load(self, argument):
         """Load instance inherited from ObjectTemplate from the database
@@ -525,16 +527,16 @@ class Proxy(object):
         RequestObjectError -- If the request does not yield a single objects 
         """   
         session = self.Session()
-        objects = self.viewhandler.select_object(session,argument)
-        
-        if len(objects)>1:
-            raise SelectionError("Found multiple objects that match requirements")#%object_.__class__.__name__)
-        
-        if not objects:
-            raise SelectionError("Found no object that matches requirements")#%object_.__class__.__name__)
-           
+        try:
+            objects = self.viewhandler.select_object(session,argument)
+            if len(objects)>1:
+                raise SelectionError("Found multiple objects that match requirements")#%object_.__class__.__name__)
+            if not objects:
+                raise SelectionError("Found no object that matches requirements")#%object_.__class__.__name__)
+        except Exception:
+            session.close()
+            raise
         session.close()  
-        
         return objects[0]
     
     @require('argument', ObjectDict)
@@ -562,13 +564,21 @@ class Proxy(object):
             not properly saved in the database
         """
         session = self.Session()
-        children = self.viewhandler.retrieve_children(session, parent, label, uniqueContext)
+        try:
+            children = self.viewhandler.retrieve_children(session, parent, label, uniqueContext)
+        except Exception:
+            session.close()
+            raise
         session.close()
         return children
              
     def get_data_matrix(self, conditions, items):
         session = self.Session()
-        matrix = self.viewhandler.get_data_matrix(session, conditions, items)
+        try:
+            matrix = self.viewhandler.get_data_matrix(session, conditions, items)
+        except Exception:
+            session.close()
+            raise
         session.close()
         return matrix
     
@@ -590,19 +600,16 @@ class Proxy(object):
         TODO: Maybe consider to save objects automatically 
         """
         session = self.Session()
-        if root:
-            self.viewhandler.append_child(session, parent, child, root)
-        else:
-            self.viewhandler.append_child(session, parent,child)
-#        try:
-#            parent_entity = self.viewhandler.select_entity(session,parent)
-#            child_entity = self.viewhandler.select_entity(session,child)
-#        except RequestObjectError:
-#            raise RequestObjectError("objects must be saved before they can be loaded")
-#        parent_entity.children.append(child_entity)
+        try:
+            if root:
+                self.viewhandler.append_child(session, parent, child, root)
+            else:
+                self.viewhandler.append_child(session, parent,child)
+        except Exception:
+            session.close()
+            raise
         session.commit()
         session.close()
-    
 
     @require('entity_name', str)
     @require('parameter_name', str)
@@ -620,10 +627,14 @@ class Proxy(object):
         Some SQL error -- If the same entry already exists
         """
         session = self.Session()
-        self.viewhandler.insert_parameter_option(session,
+        try:
+            self.viewhandler.insert_parameter_option(session,
                                                  entity_name,
                                                  parameter_name,
                                                  parameter_type)
+        except Exception:
+            session.close()
+            raise
         session.close()
         
 if __name__ == "__main__":
