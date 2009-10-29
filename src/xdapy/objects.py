@@ -11,7 +11,7 @@ TODO: self._concurrent find a better solution to in-place assignments as []
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-from utils.decorators import require
+from xdapy.utils.decorators import require
 
 class ObjectDict(dict):
     """Template class for object classes

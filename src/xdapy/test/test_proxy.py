@@ -8,11 +8,11 @@ TODO: Real test for create_tables
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.proxy import Proxy
-from datamanager.objects import ObjectDict, Observer, Experiment, Trial
-from datamanager.errors import InsertionError, SelectionError, ContextError
-from datamanager.views import ParameterOption
-from datamanager import convert
+from xdapy.proxy import Proxy
+from xdapy.objects import ObjectDict, Observer, Experiment, Trial
+from xdapy.errors import InsertionError, SelectionError, ContextError
+from xdapy.views import ParameterOption
+from xdapy import convert
 from sqlalchemy.exceptions import IntegrityError
 
 class TestProxy(unittest.TestCase):

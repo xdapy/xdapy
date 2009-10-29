@@ -13,6 +13,11 @@ import objects
 from pickle import dumps, loads
 
 def convert(convertible):
+    """Converts datamanager.objects to datamanager.views.Entities and vice versa
+        
+    @param convertible: object of entity to be converted
+    @type convertible: datamanager.object or datamanager.views.Entity
+    """
     if isinstance(convertible, objects.ObjectDict):
         #create entity of class
         entity = views.Entity(convertible.__class__.__name__)

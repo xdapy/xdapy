@@ -22,12 +22,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, session
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from datamanager.views import *
-from datamanager.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
-from datamanager.objects import *
-from utils.decorators import require
-from utils.algorithms import levenshtein
-from datamanager import convert
+from xdapy.views import *
+from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
+from xdapy.objects import *
+from xdapy.utils.decorators import require
+from xdapy.utils.algorithms import levenshtein
+from xdapy import convert
 from sqlalchemy.pool import AssertionPool
 
 #http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html

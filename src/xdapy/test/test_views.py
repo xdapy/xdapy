@@ -5,9 +5,9 @@ Created on Jun 17, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.views import (Data, Parameter, Entity, ParameterOption, Relation,
+from xdapy.views import (Data, Parameter, Entity, ParameterOption, Relation,
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, parameterlist)
-from datamanager.views import base
+from xdapy.views import base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, join, create_session
 from sqlalchemy.sql import and_, exists

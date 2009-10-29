@@ -6,7 +6,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """TODO: Load image into testSetData"""
                
 import unittest
-from datamanager.objects import ObjectDict
+from xdapy.objects import ObjectDict
 
 class TestObjectDict(unittest.TestCase):
     """ObjectDict"""
