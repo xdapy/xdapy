@@ -14,7 +14,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy import create_engine
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from sqlalchemy.orm import sessionmaker, session
+from sqlalchemy.orm import sessionmaker, session, scoped_session
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.pool import AssertionPool
 
@@ -60,7 +60,7 @@ class Proxy(object):
         eng = file.read()
         #self.engine = create_engine(eng, echo=False)
         self.engine = create_engine(eng, poolclass=AssertionPool, echo=False)
-        self.Session = sessionmaker(bind=self.engine)
+        self.Session = scoped_session(sessionmaker(bind=self.engine))
         self.viewhandler = ViewHandler()
     
     def create_tables(self,overwrite=False):
