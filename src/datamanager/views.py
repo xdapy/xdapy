@@ -15,14 +15,17 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 from sqlalchemy import (MetaData, Table, Column, ForeignKey, ForeignKeyConstraint,
                         Binary, String, Integer, Float, Date, Time, DateTime, 
                         Boolean)
+from  sqlalchemy import Sequence
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.orm import mapper, relation, backref, validates
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from datetime import date, time, datetime
 from pickle import dumps, loads
+from sqlalchemy.orm.interfaces import MapperExtension
         
 base = declarative_base()
         
@@ -33,12 +36,13 @@ class Data(base):
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
-    id = Column('id',Integer,primary_key=True)
-    name = Column('name',String(40))
+  #  id = Column('id',Integer, Sequence('data_id_seq',1,1), nullable=False,primary_key=True)
+    name = Column('name',String(40),primary_key=True)
     data = Column('data',Binary,nullable=False)
-    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'))
+    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'), primary_key=True)
     
     __tablename__ = 'data'
+    __table_args__ = {'mysql_engine':'InnoDB'}
     
     @validates('name')
     def validate_name(self, key, parameter):
@@ -60,7 +64,8 @@ class Data(base):
         self.data = data
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.data)
+        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.data, self.entity_id)
+#        return "<%s(%s,'%s','%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.data, self.entity_id)
 
 
 class Parameter(base):
@@ -72,11 +77,12 @@ class Parameter(base):
     adjacency list 'parameterlist'. The corresponding entities can be accessed via
     the entities attribute of the Parameter class.
     '''
-    id = Column('id',Integer, autoincrement=True, primary_key=True, unique=True)
+    id = Column('id',Integer, Sequence('parameter_id_seq'), autoincrement=True, unique=True, primary_key=True)
     name = Column('name',String(40), primary_key=True)
     type = Column('type',String(20),nullable=False)
     
     __tablename__ = 'parameters'
+    __table_args__ = {'mysql_engine':'InnoDB'}
     __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
     @validates('name')
@@ -106,13 +112,15 @@ class StringParameter(Parameter):
     a string. 
     '''
    
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, unique=True)
     name = Column('name', String(40), primary_key=True)
     value = Column('value',String(40), primary_key=True)
     
     __tablename__ = 'stringparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
-    __mapper_args__ = {'inherits':Parameter,'inherit_condition': Parameter.id == id,'polymorphic_identity':'string'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name'],onupdate="CASCADE", ondelete="CASCADE"),
+                      {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter,'inherit_condition': Parameter.id == id,
+                       'polymorphic_identity':'string'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -132,7 +140,16 @@ class StringParameter(Parameter):
         '''
         self.name = name
         self.value = value
-        
+    
+#    def __new__(cls, name=None, value=None): 
+#        if name and value: 
+#            try: 
+#                obj = session.query(cls).filter(cls.name==name).filter(cls.value==value).one() 
+#                return obj 
+#            except NoResultFound: 
+#                pass 
+#        return object.__new__(cls) 
+    
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
         
@@ -145,15 +162,15 @@ class IntegerParameter(Parameter):
     '''
     id = Column('id', Integer,  autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Integer, primary_key=True)
+    value = Column('value',Integer, autoincrement=False, primary_key=True)
 
     __tablename__ = 'integerparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'inherit_condition': Parameter.id == id,'polymorphic_identity':'integer'}
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, int):
+        if not (isinstance(parameter, int) or isinstance(parameter,long)):
             raise TypeError("Argument must be an integer")
         return parameter 
     
@@ -169,7 +186,16 @@ class IntegerParameter(Parameter):
         '''
         self.name = name
         self.value = value
-            
+    
+#    def __new__(cls, name=None, value=None): 
+#        if name and value: 
+#            try: 
+#                obj = session.query(cls).filter(cls.name==name).filter(cls.value==value).one() 
+#                return obj 
+#            except NoResultFound: 
+#                pass 
+#        return object.__new__(cls) 
+      
     def __repr__(self):
         return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
 
@@ -185,7 +211,7 @@ class FloatParameter(Parameter):
     value = Column('value',Float, primary_key=True)
 
     __tablename__ = 'floatparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'float'}
     
     @validates('value')
@@ -222,7 +248,7 @@ class DateParameter(Parameter):
     value = Column('value',Date, primary_key=True)
 
     __tablename__ = 'dateparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'date'}
     
     @validates('value')
@@ -261,7 +287,7 @@ class TimeParameter(Parameter):
     value = Column('value',Time, primary_key=True)
 
     __tablename__ = 'timeparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'time'}
     
     @validates('value')
@@ -297,7 +323,7 @@ class DateTimeParameter(Parameter):
     value = Column('value',DateTime, primary_key=True)
 
     __tablename__ = 'datetimeparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'datetime'}
     
     @validates('value')
@@ -333,7 +359,7 @@ class BooleanParameter(Parameter):
     value = Column('value',Boolean, primary_key=True)
 
     __tablename__ = 'booleanparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{})
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'boolean'}
     
     @validates('value')
@@ -368,6 +394,7 @@ parameterlist = Table('parameterlist', base.metadata,
      Column('parameter_id', Integer,ForeignKey('parameters.id'),primary_key=True),# ForeignKey('parameters.id'), 
   #   ForeignKeyConstraint(['parameter_id', 'name'],['parameters.id','parameters.name'])
    #   ForeignKeyConstraint(['parameter_id'],['parameters.id'])
+     mysql_engine='InnoDB'
      )
 
 '''
@@ -383,11 +410,12 @@ def _create_relation(child, label):
     return Relation(child=child, label=label)
 
 class Relation(base):
-    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True, unique=True)
-    child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True, unique=True)
+    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True)
     label = Column('label', String(500), primary_key=True)
     
     __tablename__ = 'relations'
+    __table_args__ = {'mysql_engine':'InnoDB'}
     
     parent = relation('Entity', 
                        primaryjoin='Relation.parent_id==Entity.id')
@@ -412,6 +440,7 @@ class Context(base):
     path = Column('path',String(500))
     
     __tablename__ = 'contexts'
+    __table_args__ = {'mysql_engine':'InnoDB'}
     
     @validates('path')
     def validate_path(self, key, parameter):
@@ -446,6 +475,7 @@ class Entity(base):
     name = Column('name',String(40)) 
    
     __tablename__ = 'entities'
+    __table_args__ = {'mysql_engine':'InnoDB'}
     
     #relations = association_proxy('children', 'label', creator=_create_relation)
     
@@ -455,10 +485,14 @@ class Entity(base):
 #   
     # one to many Entity->Context
     context = relation('Context', backref=backref('entities', order_by=id))
-    # many to many Entity<->Parameter
-    parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
+    # many to many Entity<->Parameter,deletion cascade is handled in session.flush()
+    parameters = relation('Parameter', secondary=parameterlist, 
+                        #primaryjoin = id == parameterlist.c.entity_id,
+                        #secondaryjoin = parameterlist.c.parameter_id == Parameter.id,
+                        backref=backref('entities', order_by=id))
     # one to many Entity->Data
-    data = relation('Data', backref=backref('entities', order_by=id))
+    data = relation('Data', backref=backref('entities', order_by=id),
+                    cascade='all,delete-orphan',single_parent=True)
     
     
     @validates('name')
@@ -494,7 +528,8 @@ class ParameterOption(base):
     parameter_type = Column('parameter_type',String(40), primary_key=True)
   
     __tablename__ = 'parameteroptions'
-
+    __table_args__ = {'mysql_engine':'InnoDB'}
+    
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):
         if not isinstance(p_name, str):

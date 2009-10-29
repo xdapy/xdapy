@@ -6,19 +6,19 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
 from datamanager.views import (Data, Parameter, Entity, ParameterOption, Relation,
-    StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter)
+    StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, parameterlist)
 from datamanager.views import base
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, join
-from sqlalchemy.sql import and_
-from sqlalchemy.exceptions import IntegrityError, DataError                
+from sqlalchemy.orm import sessionmaker, join, create_session
+from sqlalchemy.sql import and_, exists
+from sqlalchemy.exceptions import IntegrityError, DataError,InvalidRequestError                
 from pickle import dumps, loads
 import numpy as np
 from sqlalchemy.orm import exc as orm_exc
+from sqlalchemy.orm.interfaces import SessionExtension
 import datetime 
 import time
 db = 'postgres'
-
 
 #http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
 #RICK COPELAND (23.09.2009)
@@ -37,15 +37,28 @@ class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
 
 postgres.dialect.schemadropper = PGCascadeSchemaDropper
 
+##http://www.mail-archive.com/sqlalchemy@googlegroups.com/msg07513.html
+class MyExt(SessionExtension):
+        def after_flush(self, session, flush_context):
+                sess = create_session(bind=session.connection())
+                parameters = sess.query(Parameter).filter(~exists([1],  
+                        parameterlist.c.parameter_id==Parameter.id)).all()
+                for k in parameters:
+                        sess.delete(k)
+                sess.flush()
+                for k in parameters:
+                        if k in session:
+                                session.expunge(k)
+
 def return_engine():
     if db is 'mysql':
-        engine = create_engine(open('/Users/hannah/Documents/Coding/mysqlconfig.tex').read())
+        engine = create_engine(open('/Users/hannah/Documents/Coding/mysqlconfig.tex').read(),echo=True)
         base.metadata.drop_all(engine)
     elif db is 'sqlite':
         engine = create_engine('sqlite:///:memory:', echo=False)
     elif db is 'postgres':
         #'/Users/hannah/Documents/Coding/postgresconfig.tex'
-        engine = create_engine(open('/Users/hannah/Documents/Coding/postgresconfig.tex').read())
+        engine = create_engine(open('/Users/hannah/Documents/Coding/postgresconfig.tex').read(),echo=False)
     else:
         raise AttributeError('db type "%s" not defined'%db)
     return engine
@@ -75,18 +88,20 @@ class TestData(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
-
+        
         
     def testValidInput(self):
+        exp = Entity('name')
         for name, data in self.valid_input:
             d = Data(name=name,data=dumps(data))
+            exp.data.append(d)
             self.assertEqual(d.name,name)
             self.assertEqual(d.data,dumps(data))
             self.session.add(d)
@@ -101,12 +116,35 @@ class TestData(unittest.TestCase):
                 #testclass
                 self.assertEqual(data.test,loads(d_reloaded.data).test)
 
+    def testUpdate(self):
+        exp = Entity('experiment')
+        data = Data(name='someother',data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='somestring',data=dumps([0, 2, 3, 5]))
+        
+        exp.data.append(data)
+        exp.data.append(data2)
+        
+        self.session.add(exp)
+        self.session.commit()
+        
+        self.assertEqual([exp], self.session.query(Entity).all())
+        self.assertEqual([data,data2],self.session.query(Data).all())
+        
+        data.name = 'another'
+        data2.data = dumps([357])
+    
+        self.session.commit()
+        
+        self.assertEqual([exp], self.session.query(Entity).all())
+        self.assertEqual([data,data2],self.session.query(Data).order_by(Data.name).all())
+        
 class TestParameter(unittest.TestCase):
     string_exceeding_length = '*****************************************'
     
     def setUp(self):
         """Create test database"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -143,13 +181,13 @@ class TestStringParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
@@ -174,7 +212,23 @@ class TestStringParameter(unittest.TestCase):
             self.session.commit()
             self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
         
-
+#    def testUpdate(self):
+#        strparam1 = StringParameter('strname1', 'string1')
+#        strparam2 = StringParameter('strname2', 'string2')
+#        self.session.add(strparam1)
+#        self.session.add(strparam2)
+#        self.session.commit()
+#        
+#        self.assertEqual([strparam1, strparam2], self.session.query(Parameter).all())
+#        
+#        strparam1.value = 'str'
+#        strparam2.name = 'strname22'
+#        
+#        self.session.commit()
+#        print self.session.query(Parameter).all()
+#        
+#        self.assertEqual([strparam1,strparam2], self.session.query(Parameter).all())
+#        
 class TestIntegerParameter(unittest.TestCase):
     valid_input = (('name',26),
                   ('name',-1),
@@ -189,13 +243,13 @@ class TestIntegerParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
@@ -224,13 +278,13 @@ class TestFloatParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
@@ -248,9 +302,10 @@ class TestFloatParameter(unittest.TestCase):
 
 class TestDateParameter(unittest.TestCase):
     valid_input = (('name',datetime.date.today()),
-                  ('name',datetime.date.fromtimestamp(time.time())),
-                  ('****************************************',datetime.date(2009, 9, 22)),
-                  ('name',datetime.datetime.now().date()))
+                 # ('name',datetime.date.fromtimestamp(time.time())),
+                 # ('name',datetime.datetime.now().date()),
+                  ('****************************************',datetime.date(2009, 9, 22))
+                  )
                   
     invalid_input_types = (('name','0'),
                     ('name',0),
@@ -262,13 +317,13 @@ class TestDateParameter(unittest.TestCase):
         """Create test database in memory"""
         self.engine = return_engine()
         base.metadata.drop_all(self.engine)
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
@@ -295,13 +350,13 @@ class TestTimeParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
         
     def testValidInput(self):
         for name,value in self.valid_input:
@@ -315,7 +370,95 @@ class TestTimeParameter(unittest.TestCase):
     def testInvalidInputType(self):
         for name,value in self.invalid_input_types:
             self.assertRaises(TypeError, TimeParameter, name, value)
-            
+    
+class TestInheritance(unittest.TestCase):
+    name = ["hi",'bye','hi']
+    strvalue = ['there','there','where']
+    intvalue = [1,1,2]
+        
+    def setUp(self):
+        """Create test database in memory"""
+        self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.create_all(self.engine)
+        self.Session = sessionmaker(bind=self.engine)
+        self.session = self.Session()
+
+    def tearDown(self):         
+        self.session.close()         
+        
+        #Change DB engines to transactional (BDB or InnoDB).
+    def testRollback(self):
+        strpars = [StringParameter(self.name[i],self.strvalue[i]) for i,n in enumerate(self.name)]
+        intpars =[ IntegerParameter(self.name[i],self.intvalue[i]) for i,n in enumerate(self.intvalue)]
+        self.session.add_all(strpars)
+        #invoke a rollback
+        self.session.begin_nested()
+        self.session.add(StringParameter(self.name[i],self.strvalue[i]))
+        try:
+            self.session.commit()
+#IntegrityError
+        except IntegrityError:
+            self.session.rollback()
+            #print 'rollback'
+            self.session.commit()
+         
+        
+        self.session.add_all(intpars)
+        self.session.commit()
+        
+   #     self.assertEqual(intpars,self.session.query(IntegerParameter).all())
+        self.assertEqual(strpars, self.session.query(StringParameter).all())
+        pars = strpars 
+        pars.extend(intpars)
+        self.assertEqual(pars, self.session.query(Parameter).all())
+        
+        
+    def testDeletion(self):
+        strpars = [StringParameter(self.name[i],self.strvalue[i]) for i,n in enumerate(self.name)]
+        intpars =[ IntegerParameter(self.name[i],self.intvalue[i]) for i,n in enumerate(self.intvalue)]
+        
+        self.session.add_all(strpars)
+        self.session.commit()
+        self.session.add_all(intpars)
+        self.session.commit()
+        
+        #Deletion in sub exploiding sqlalchemy inheritance
+        self.session.delete(strpars[0])
+        self.session.commit()
+        self.assertEqual(intpars,self.session.query(IntegerParameter).all())
+        self.assertEqual(strpars[1:], self.session.query(StringParameter).all())
+        pars = strpars[1:] 
+        pars.extend(intpars)
+        self.assertEqual(pars, self.session.query(Parameter).all())
+        self.session.close()
+        
+        #Deletion in super 
+        #only persistent with new session afterwards
+        conn = self.engine.connect()
+        stat = "DELETE FROM parameters WHERE parameters.id =2 "
+        conn.execute(stat)
+        conn.close() 
+        
+        self.session = self.Session()
+        self.session.add_all(pars)
+        self.assertEqual(pars[1:], self.session.query(Parameter).all())
+        self.assertEqual(pars[1:2], self.session.query(StringParameter).all())
+        self.session.close()
+        
+        #Deletion in sub without sqlalchemy inheritance!
+        #DO NOT DO THIS, THIS DOES NOT DELETE THE EQUIVALENT IN SUPER CLASS
+        conn = self.engine.connect()
+        stat = "DELETE FROM stringparameters WHERE stringparameters.id =3 "
+        conn.execute(stat)
+        conn.close() 
+        
+        self.session = self.Session()
+        self.session.add_all(pars)
+        self.assertEqual([], self.session.query(StringParameter).all())
+        self.assertFalse(pars[2:] == self.session.query(Parameter).all())#!!!!
+        
+        
 class TestEntity(unittest.TestCase):
 
     valid_input=('observer','experiment', 'observer')
@@ -324,13 +467,14 @@ class TestEntity(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
+        #Session = sessionmaker(bind=self.engine)
+        Session = sessionmaker(bind=self.engine, extension=MyExt())
         self.session = Session()
-
+        
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
 
     def testValidInput(self):
         for name in self.valid_input:
@@ -358,13 +502,86 @@ class TestEntity(unittest.TestCase):
         
         exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
         ip_reloaded = self.session.query(Parameter).filter(Parameter.name=='intname').one()
-        sp_reloaded = self.session.query(Parameter).filter(Parameter.name=='strname').one()
+        sp_reloaded = self.session.query(Parameter).filter(Parameter.name=='strname').all()
         
         self.assertEqual(exp_reloaded.parameters, [intparam])
         self.assertEqual(ip_reloaded.entities,[exp])
-        self.assertEqual(sp_reloaded.entities,[])
+        self.assertEqual(sp_reloaded,[])
         
+    def testDeletion(self):
+        intparam = IntegerParameter('intname',1)
+        intparam2 = IntegerParameter('intname',2)
+        strparam = StringParameter('strname', 'string')
+        data = Data(name='somestring',data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='somestring',data=dumps([0, 2, 3, 5]))
+        data3 = Data(name='someother',data=dumps([0, 2, 3, 5]))
+        
+        exp = Entity('experiment')
+        exp2 = Entity('experiment')
 
+        exp.parameters.append(intparam)
+        exp.parameters.append(strparam)
+        exp.data.append(data)
+        #exp.data.append(data2)
+        self.session.add(exp)
+        self.session.commit()
+        
+        exp2.parameters.append(intparam2)
+        exp2.parameters.append(strparam)
+        exp2.data.append(data2)
+        exp2.data.append(data3)
+        
+        self.session.add(exp2)
+        self.session.commit()
+        
+        #database should only exp,exp2,intparam,intparam2,strparam 
+        self.assertEqual([intparam,strparam,intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
+        self.assertEqual([exp,exp2], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([data3,data,data2],self.session.query(Data).order_by(Data.name).all())
+        self.session.delete(exp)
+        self.session.commit()
+        
+        #database should only contain exp2,intparam2,strparam 
+        self.assertEqual([strparam, intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
+        self.assertEqual([exp2], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([data3,data2], self.session.query(Data).order_by(Data.name).all())
+        
+        #relationship is one-to-many and data allowed only for a single parent
+        self.assertRaises(InvalidRequestError,exp2.data.append,data)
+    
+    def testUpdate(self):
+        intparam = IntegerParameter('intname',1)
+        strparam = StringParameter('strname', 'string')
+        data = Data(name='somestring',data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='someother',data=dumps([0, 2, 3, 5]))
+        exp = Entity('experiment')
+        
+        exp.parameters.append(intparam)
+        exp.parameters.append(strparam)
+        exp.data.append(data)
+        exp.data.append(data2)
+        
+        self.session.add(exp)
+        self.session.commit()
+        
+        self.assertEqual([intparam,strparam], self.session.query(Parameter).order_by(Parameter.id).all())
+        self.assertEqual([exp], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([data2,data],self.session.query(Data).order_by(Data.name).all())
+        
+#        data.name = 'another'
+#        data2.data = dumps([357])
+#        intparam.name = 'integername'
+#        strparam.value = 'str'
+#        
+#        self.session.commit()
+#        
+#        self.assertEqual([intparam,strparam], self.session.query(Parameter).all())
+#        self.assertEqual([exp], self.session.query(Entity).all())
+#        self.assertEqual([data2,data],self.session.query(Data).all())
+#        
+#        print self.session.query(Parameter).all()
+        #database should only exp,exp2,intpa
+                    
         
 #    def testContextAttribute(self):
 #        exp = Entity('experiment')
@@ -393,13 +610,13 @@ class TestParameterOption(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
+        base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
     def tearDown(self):         
         self.session.close()         
-        base.metadata.drop_all(self.engine)
 
     def testValidInput(self):
         for e_name, p_name, p_type in self.valid_input:
@@ -428,35 +645,40 @@ class TestParameterOption(unittest.TestCase):
         
 if __name__ == "__main__":
     tests = ['testValidInput', 'testInvalidInputType', 'testInvalidInputLength','testParametersAttribute','testPrimaryKeyConstrain']
+#    
+#    parameter_suite = unittest.TestSuite()
+#    parameter_suite.addTest(TestParameter(tests[2]))
+#    string_suite = unittest.TestSuite(map(TestStringParameter, tests[0:3]))
+#    integer_suite = unittest.TestSuite(map(TestIntegerParameter, tests[0:2]))
+#    float_suite = unittest.TestSuite(map(TestFloatParameter, tests[0:2]))
+#    date_suite = unittest.TestSuite(map(TestDateParameter, tests[0:2]))
+#    time_suite = unittest.TestSuite(map(TestTimeParameter, tests[0:2]))
+#    #datetime_suite = unittest.TestSuite(map(TestDateTimeParameter, tests[0:2]))
+#    #boolean_suite = unittest.TestSuite(map(TestBoolean, tests[0:2]))
+#    
+#    data_suite = unittest.TestSuite() 
+#    data_suite.addTest(TestData(tests[0]))
+    entity_suite = unittest.TestSuite()
+    entity_suite.addTest(TestEntity('testDeletion'))
+
+#    entity_suite = unittest.TestSuite(map(TestEntity, tests[0:2]))
+#    entity_suite.addTest(TestEntity(tests[3]))
+#    parameteroption_suite = unittest.TestSuite(map(TestParameterOption, tests[0:2]))
+#    parameteroption_suite.addTest(TestParameterOption(tests[4]))
+#    inheritance_suite = unittest.TestSuite(map(TestInheritance,['testRollback','testDeletion']))
     
-    parameter_suite = unittest.TestSuite()
-    parameter_suite.addTest(TestParameter(tests[2]))
-    string_suite = unittest.TestSuite(map(TestStringParameter, tests[0:3]))
-    integer_suite = unittest.TestSuite(map(TestIntegerParameter, tests[0:2]))
-    float_suite = unittest.TestSuite(map(TestFloatParameter, tests[0:2]))
-    date_suite = unittest.TestSuite(map(TestDateParameter, tests[0:2]))
-    time_suite = unittest.TestSuite(map(TestTimeParameter, tests[0:2]))
-    #datetime_suite = unittest.TestSuite(map(TestDateTimeParameter, tests[0:2]))
-    #boolean_suite = unittest.TestSuite(map(TestBoolean, tests[0:2]))
-    
-    data_suite = unittest.TestSuite() 
-    data_suite.addTest(TestData(tests[0]))
-    entity_suite = unittest.TestSuite(map(TestEntity, tests[0:2]))
-    entity_suite.addTest(TestEntity(tests[3]))
-    parameteroption_suite = unittest.TestSuite(map(TestParameterOption, tests[0:2]))
-    parameteroption_suite.addTest(TestParameterOption(tests[4]))
-    
-    alltests = unittest.TestSuite([parameter_suite,
-                                   integer_suite,
-                                   string_suite, 
-                                   integer_suite,
-                                   float_suite,
-                                   date_suite,
-                                   time_suite,
-                                   data_suite,
-                                   entity_suite,
-                                   parameteroption_suite])
-    subtests = unittest.TestSuite([parameter_suite, data_suite, string_suite])
+#    alltests = unittest.TestSuite([parameter_suite,
+#                                   integer_suite,
+#                                   string_suite, 
+#                                   integer_suite,
+#                                   float_suite,
+#                                   date_suite,
+#                                   time_suite,
+#                                   data_suite,
+#                                   entity_suite,
+#                                   parameteroption_suite,
+#                                   inheritance_suite])
+    subtests = unittest.TestSuite([entity_suite])
     unittest.TextTestRunner(verbosity=2).run(subtests)
     
  
