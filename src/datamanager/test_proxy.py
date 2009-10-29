@@ -35,10 +35,9 @@ class TestProxy(unittest.TestCase):
         
     def tearDown(self):
         self.session.close()
-
+        
     def testCreateTables(self):
         self.p.create_tables(overwrite=True)
-        
 
     def testSave(self):
         valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
@@ -79,7 +78,7 @@ class TestProxy(unittest.TestCase):
         o1 = Observer(name="Maxime Mustermann", handedness="right", age=26)
         o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
         self.p.save(e,o1,o2)
-#        
+        
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
         obs.data['moredata']=(0,3,6,8)
@@ -168,28 +167,26 @@ class TestProxy(unittest.TestCase):
         t = Trial(rt=189, valid=0, response='right')
         self.p.save(e,o,t)
         self.p.connect_objects(o,t)
-#===============================================================================
-#        
-#        self.assertEqual(self.p.get_children(e), [])
-#        self.assertRaises(ContextError, self.p.get_children,e,e)
-#        self.assertRaises(ContextError, self.p.get_children,e,o)
-#        self.assertRaises(ContextError, self.p.get_children,e,1)
-#        self.assertRaises(ContextError, self.p.get_children,e,',1,')
-#        self.assertRaises(TypeError, self.p.get_children,e,'1')
-#        self.assertRaises(TypeError, self.p.get_children,e,',')
-#        
-#        self.assertEqual(self.p.get_children(o), [t])
-#        self.assertRaises(ContextError, self.p.get_children,o,o)
-#        self.assertRaises(ContextError, self.p.get_children,o,2)
-#        self.assertRaises(TypeError, self.p.get_children,o,'2')
-#        self.assertRaises(ContextError, self.p.get_children,o,',2,')
-#        self.assertRaises(ContextError, self.p.get_children,o,e)
-#        
-#        self.assertEqual(self.p.get_children(t,o), [])
-#        self.assertEqual(self.p.get_children(t,2), [])
-#        self.assertEqual(self.p.get_children(t,',2,'), [])
-#        
-#===============================================================================
+        
+        self.assertEqual(self.p.get_children(e), [])
+        self.assertRaises(ContextError, self.p.get_children,e,e)
+        self.assertRaises(ContextError, self.p.get_children,e,o)
+        self.assertRaises(ContextError, self.p.get_children,e,1)
+        self.assertRaises(ContextError, self.p.get_children,e,',1,')
+        self.assertRaises(TypeError, self.p.get_children,e,'1')
+        self.assertRaises(TypeError, self.p.get_children,e,',')
+        
+        self.assertEqual(self.p.get_children(o), [t])
+        self.assertRaises(ContextError, self.p.get_children,o,o)
+        self.assertRaises(ContextError, self.p.get_children,o,2)
+        self.assertRaises(TypeError, self.p.get_children,o,'2')
+        self.assertRaises(ContextError, self.p.get_children,o,',2,')
+        self.assertRaises(ContextError, self.p.get_children,o,e)
+        
+        self.assertEqual(self.p.get_children(t,o), [])
+        self.assertEqual(self.p.get_children(t,2), [])
+        self.assertEqual(self.p.get_children(t,',2,'), [])
+        
      
         self.p.connect_objects(e,o)
                 
@@ -274,21 +271,23 @@ class TestProxy(unittest.TestCase):
                           'Experiment', 'reference', 'string')
         
     def  testIsValid(self):
+        session = self.p.Session()
         e = Experiment(project='MyProject',experimenter="John Doe")
         exp = convert(e)
-        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),exp)
+        valid, msg = self.p.viewhandler._is_valid(session,exp)
         self.assertEqual(True,valid)
         
         o = Observer(name="Max Mustermann", handedness=1, age=26)
         obs = convert(o)
-        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),obs)
+        valid, msg = self.p.viewhandler._is_valid(session,obs)
         self.assertEqual(False,valid)
         
         o['glasses']="no"
         obs = convert(o)
-        valid, msg = self.p.viewhandler._is_valid(self.p.Session(),obs)
+        valid, msg = self.p.viewhandler._is_valid(session,obs)
         self.assertEqual(False,valid)
         
+        session.close()
 #===============================================================================
 #        
 # 
