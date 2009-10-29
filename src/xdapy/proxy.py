@@ -13,16 +13,17 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
 from sqlalchemy import create_engine
+from sqlalchemy.exceptions import InvalidRequestError, OperationalError
 from sqlalchemy.orm import sessionmaker, session
 from sqlalchemy.sql import and_, or_, not_, select
-from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from xdapy.views import *
-from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
-from xdapy.objects import *
-from xdapy.utils.decorators import require
-from xdapy.utils.algorithms import levenshtein
-from xdapy import convert
 from sqlalchemy.pool import AssertionPool
+
+from xdapy import convert
+from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError
+from xdapy.objects import *
+from xdapy.views import base
+
+from xdapy.viewhandler import ViewHandler
 
 #http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
 #RICK COPELAND (23.09.2009)
@@ -60,7 +61,7 @@ class Proxy(object):
         #self.engine = create_engine(eng, echo=False)
         self.engine = create_engine(eng, poolclass=AssertionPool, echo=False)
         self.Session = sessionmaker(bind=self.engine)
-        self.viewhandler = self.ViewHandler()
+        self.viewhandler = ViewHandler()
     
     def create_tables(self,overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""

@@ -11,6 +11,7 @@ import unittest
 from xdapy.proxy import Proxy
 from xdapy.objects import ObjectDict, Observer, Experiment, Trial
 from xdapy.errors import InsertionError, SelectionError, ContextError
+
 from xdapy.views import ParameterOption
 from xdapy import convert
 from sqlalchemy.exceptions import IntegrityError
