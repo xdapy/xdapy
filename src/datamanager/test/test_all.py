@@ -24,9 +24,8 @@ class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.p = Proxy('/Users/hannah/Documents/Coding/mysqlconfig.tex')
+        self.p = Proxy('/Users/hannah/Documents/Coding/postgresconfig.tex')
         self.p.create_tables(overwrite=True)
-        self.session = self.p.Session()
         
         #register params
         self.p.register_parameter('Observer','name','string')
@@ -100,7 +99,8 @@ class Test(unittest.TestCase):
         
         
     def tearDown(self):
-        self.session.close()
+        pass
+       
 
     def testReturn(self):
         self.assertEqual(self.p.get_children(Observer(name="Susanne Sorgenfrei")),[self.s8, self.s9, self.s10])
@@ -121,6 +121,8 @@ class Test(unittest.TestCase):
         
         e_o = convert(experiment_entity)
         e_e = convert(experiment_object)
+        
+        
         self.assertEqual(experiment_object, e_o)
         
         
