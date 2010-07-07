@@ -13,12 +13,12 @@ contain a brief description of exported classes and functions.
 __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 
 import unittest
-from datamanager.proxy import Proxy
-from datamanager.objects import Observer, Experiment, Session, Trial
-from datamanager.views import Entity, StringParameter, Data, Context
+from xdapy.proxy import Proxy
+from xdapy.objects import Observer, Experiment, Session, Trial
+from xdapy.views import Entity, StringParameter, Data, Context
 from random import randint
 from pickle import dumps, loads
-from datamanager import convert
+from xdapy import convert
 
 class Test(unittest.TestCase):
 
