@@ -4,6 +4,10 @@ Created on Jun 17, 2009
 """
 """
 TODO: Real test for create_tables
+As of Juli 7, 2010: 4Errors
+I ntegrityError: (IntegrityError) duplicate key value violates unique constraint "stringparameters_pkey"
+ 'INSERT INTO stringparameters (id, name, value) VALUES (%(id)s, %(name)s, %(value)s)' {'id': 4L, 'value': 'John Doe', 'name': 'experimenter'}
+
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
