@@ -18,7 +18,7 @@ from sqlalchemy.orm import sessionmaker, session, scoped_session
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.pool import AssertionPool
 
-from xdapy import convert
+from xdapy import convert, return_engine_string
 from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError
 from xdapy.objects import *
 from xdapy.views import base
@@ -47,7 +47,7 @@ from xdapy.viewhandler import ViewHandler
 class Proxy(object):
     """Handle database access and sessions"""
               
-    def __init__(self, configfile):
+    def __init__(self, configfile='../../../engine.ini'):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
@@ -56,10 +56,15 @@ class Proxy(object):
             sqldialect://username:password@host/database).
         @type configfile: file in string format 
         '''
-        file = open(configfile)
-        eng = file.read()
+#        file = open(configfile)
+#        eng = file.read()
+#        config = ConfigObj('../../../engine.ini')
+#        default_engine = ''.join([config['dialect'],'://',config['user'],
+#                              ':',config['password'],'@',config['host'],
+#                              '/',config['dbname']])
+
         #self.engine = create_engine(eng, echo=False)
-        self.engine = create_engine(eng, poolclass=AssertionPool, echo=False)
+        self.engine = create_engine(return_engine_string(), poolclass=AssertionPool, echo=False)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
         self.viewhandler = ViewHandler()
     

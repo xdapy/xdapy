@@ -8,6 +8,8 @@ import unittest
 from xdapy.views import (Data, Parameter, Entity, ParameterOption, Relation,
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, parameterlist)
 from xdapy.views import base
+from xdapy import return_engine_string
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, join, create_session
 from sqlalchemy.sql import and_, exists
@@ -50,16 +52,7 @@ class MyExt(SessionExtension):
                                 session.expunge(k)
 
 def return_engine():
-    if db is 'mysql':
-        engine = create_engine(open('/Users/hannah/Documents/Coding/mysqlconfig.tex').read(),echo=True)
-        base.metadata.drop_all(engine)
-    elif db is 'sqlite':
-        engine = create_engine('sqlite:///:memory:', echo=False)
-    elif db is 'postgres':
-        #'/Users/hannah/Documents/Coding/postgresconfig.tex'
-        engine = create_engine(open('/Users/hannah/Documents/Coding/postgresconfig.tex').read(),echo=False)
-    else:
-        raise AttributeError('db type "%s" not defined'%db)
+    engine = create_engine(return_engine_string(),echo=False)
     return engine
         
 class TestClass(object):

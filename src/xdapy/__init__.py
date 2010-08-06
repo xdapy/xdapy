@@ -9,8 +9,15 @@ __contact__ = 'hannah.dold@mailbox.tu-berlin.de'
 #import proxy
 import views 
 import objects
-
+from xdapy.utils.configobj import ConfigObj
 from pickle import dumps, loads
+
+def return_engine_string():
+    config = ConfigObj('../../../engine.ini')
+    default_engine = ''.join([config['dialect'],'://',config['user'],
+                              ':',config['password'],'@',config['host'],
+                              '/',config['dbname']])
+    return default_engine 
 
 def convert(convertible):
     """Converts datamanager.objects to datamanager.views.Entities and vice versa
