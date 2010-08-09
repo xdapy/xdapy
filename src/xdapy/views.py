@@ -18,7 +18,7 @@ from sqlalchemy import (MetaData, Table, Column, ForeignKey, ForeignKeyConstrain
 from  sqlalchemy import Sequence
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, and_
 from sqlalchemy.orm import mapper, relation, backref, validates
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
@@ -123,7 +123,7 @@ class StringParameter(Parameter):
     __tablename__ = 'stringparameters'
     __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name'],onupdate="CASCADE", ondelete="CASCADE"),
                       {'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'inherit_condition': Parameter.id == id,
+    __mapper_args__ = {'inherits':Parameter,'inherit_condition': and_(Parameter.id == id,Parameter.name == name),
                        'polymorphic_identity':'string'}
     
     @validates('value')

@@ -51,6 +51,7 @@ class MyExt(SessionExtension):
                         if k in session:
                                 session.expunge(k)
 
+
 def return_engine():
     engine = create_engine(return_engine_string(),echo=False)
     return engine
@@ -204,22 +205,23 @@ class TestStringParameter(unittest.TestCase):
             self.session.commit()
             self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
         
-#    def testUpdate(self):
-#        strparam1 = StringParameter('strname1', 'string1')
-#        strparam2 = StringParameter('strname2', 'string2')
-#        self.session.add(strparam1)
-#        self.session.add(strparam2)
-#        self.session.commit()
-#        
-#        self.assertEqual([strparam1, strparam2], self.session.query(Parameter).all())
-#        
-#        strparam1.value = 'str'
-#        strparam2.name = 'strname22'
-#        
-#        self.session.commit()
-#        print self.session.query(Parameter).all()
-#        
-#        self.assertEqual([strparam1,strparam2], self.session.query(Parameter).all())
+    def testUpdate(self):
+        strparam1 = StringParameter('strname1', 'string1')
+        strparam2 = StringParameter('strname2', 'string2')
+        self.session.add(strparam1)
+        self.session.add(strparam2)
+        self.session.commit()
+        
+        #commenting the following line in results in a ObjectDeletedError unless one also resets the value
+        #somehow sqlalchemy's order of selects and update is confounded 
+        
+        #self.assertEqual([strparam1, strparam2], self.session.query(Parameter).all())
+        #strparam2.value = strparam2.value
+       
+        strparam2.name = 'strname22'
+        self.session.commit()
+        
+        self.assertEqual([strparam1,strparam2], self.session.query(Parameter).all())
 #        
 class TestIntegerParameter(unittest.TestCase):
     valid_input = (('name',26),
