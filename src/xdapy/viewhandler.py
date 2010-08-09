@@ -29,7 +29,7 @@ class ViewHandler(object):
     
     def __init__(self):
         """Initialize ViewHandler"""
-        self.typelut={type('str'):'string',type(1):'integer'}
+        self.typelut={type('str'):'string',type(1):'integer', type(unicode('abc')):'string'}
                 
     @require('session', session.Session)
     @require('entity', Entity)

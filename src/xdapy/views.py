@@ -87,8 +87,12 @@ class Parameter(base):
     
     @validates('name')
     def validate_name(self, key, parameter):
-        if not isinstance(parameter, str):
-            raise TypeError("Argument must be a string")
+        if isinstance(parameter, str):
+            parameter = unicode(parameter)
+        else:
+            if not isinstance(parameter, unicode):
+                raise TypeError("Argument must be unicode or string")
+            
         return parameter 
     
     def __init__(self, name):
@@ -124,8 +128,11 @@ class StringParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, str):
-            raise TypeError("Argument must be a string")
+        if isinstance(parameter, str):
+            parameter = unicode(parameter)
+        else:
+            if not isinstance(parameter, unicode):
+                raise TypeError("Argument must be unicode or string")
         return parameter 
             
     def __init__(self, name, value):
