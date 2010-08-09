@@ -148,7 +148,7 @@ class TestParameter(unittest.TestCase):
     def testInvalidInputLength(self):
         parameter = Parameter(self.string_exceeding_length)
         self.session.add(parameter)
-        if db == 'postgres':
+        if self.engine.url.drivername == 'postgresql':
             self.assertRaises(DataError, self.session.commit)
         else:
             self.session.commit()
@@ -198,7 +198,7 @@ class TestStringParameter(unittest.TestCase):
         value = self.invalid_input_length[1]
         parameter = StringParameter(name,value)
         self.session.add(parameter)
-        if db == 'postgres':
+        if self.engine.url.drivername == 'postgresql':
             self.assertRaises(DataError,self.session.commit)
         else:
             self.session.commit()
