@@ -2,6 +2,7 @@
 
 Created on Jun 17, 2009
 """
+from xdapy.utils.algorithms import listequal
 """
 TODO: Real test for create_tables
 As of Juli 7, 2010: 4Errors
@@ -152,16 +153,17 @@ class TestProxy(unittest.TestCase):
         self.p.save(o2)
         self.p.connect_objects(e, o2)
         self.p.connect_objects(o2, t)
-      
-        self.assertEqual(self.p.get_children(e), [o,o2]) 
-        self.assertEqual(self.p.get_children(o,e), [t])
-        self.assertEqual(self.p.get_children(o,e2), [t2])
-        self.assertEqual(self.p.get_children(t,o),[])
-        self.assertEqual(self.p.get_children(t,o2),[])
-        self.assertEqual(self.p.get_children(e2), [o])
-        self.assertEqual(self.p.get_children(o2), [t])
-        self.assertEqual(self.p.get_children(t2), [])
-        self.assertEqual(self.p.get_children(o), [t,t2])
+        
+        self.assertTrue(listequal(self.p.get_children(e), [o,o2])) 
+        self.assertTrue(listequal(self.p.get_children(o,e), [t]))
+        self.assertTrue(listequal(self.p.get_children(o,e2), [t2]))
+        self.assertTrue(listequal(self.p.get_children(t,o),[]))
+        self.assertTrue(listequal(self.p.get_children(t,o2),[]))
+        self.assertTrue(listequal(self.p.get_children(e2), [o]))
+        self.assertTrue(listequal(self.p.get_children(o2), [t]))
+        self.assertTrue(listequal(self.p.get_children(t2), []))
+        #next statement raises ContextWarning: There are several contexts with this parent and ancestor
+        self.assertTrue(listequal(self.p.get_children(o), [t,t2]))
         self.assertRaises(ContextError, self.p.get_children, o, uniqueContext = True)
         self.assertRaises(ContextError, self.p.get_children, t, uniqueContext = True)
         
@@ -239,25 +241,26 @@ class TestProxy(unittest.TestCase):
         self.p.connect_objects(e2, o3)
         self.p.connect_objects(e2, o2)
         
-        self.assertEqual(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
-                                                [[26L], [38L]])
-        self.assertEqual(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
-                                                [[38L],[40]])
-        self.assertEqual(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age','name']}),
-                                                [[38,"Susanne Sorgenfrei"],[40,'Susi Sorgen']])
-        self.assertEqual(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age','name']}),
-                                                [[26,"Max Mustermann"],[38,"Susanne Sorgenfrei"]])
+        #make sure the correct data is retrieved
+        self.assertTrue(listequal(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
+                                                [[26L], [38L]]))
+        self.assertTrue(listequal(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
+                                                [[38L],[40]]))
+        self.assertTrue(listequal(self.p.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age','name']}),
+                                                [[38,"Susanne Sorgenfrei"],[40,'Susi Sorgen']]))
+        self.assertTrue(listequal(self.p.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age','name']}),
+                                                [[26,"Max Mustermann"],[38,"Susanne Sorgenfrei"]]))
         
-        self.assertEqual( self.p.get_data_matrix([Observer(handedness='left')], 
+        self.assertTrue(listequal( self.p.get_data_matrix([Observer(handedness='left')], 
                                                  {'Experiment':['project'],'Observer':['name']}),
                                                  [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-                                                  ['YourProject', "Susi Sorgen"]])
-        self.assertEqual( self.p.get_data_matrix([Observer(handedness='left')], 
+                                                  ['YourProject', "Susi Sorgen"]]))
+        self.assertTrue(listequal( self.p.get_data_matrix([Observer(handedness='left')], 
                                                  {'Observer':['name'],'Experiment':['project']}),
                                                  [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-                                                  ['YourProject', "Susi Sorgen"]])
+                                                  ['YourProject', "Susi Sorgen"]]))
         
-        
+
     def testRegisterParameter(self):
         valid_parameters=(('Observer', 'glasses', 'string'),
                           ('Experiment','reference','string'))
