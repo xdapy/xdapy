@@ -12,12 +12,12 @@ TODO: String similarity
 # alphabetical order by last name, please
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-from xdapy import convert
 from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
 from xdapy.utils.decorators import require
 from xdapy.utils.algorithms import levenshtein
 from xdapy.views import *
-
+from xdapy import views 
+from xdapy import objects
 
 from xdapy.objects import ObjectDict
 from sqlalchemy import create_engine
@@ -32,7 +32,8 @@ class ViewHandler(object):
         self.typelut={type('str'):'string',type(1):'integer', type(unicode('abc')):'string'}
                 
     @require('session', session.Session)
-    @require('entity', Entity)
+    @require('entity',ObjectDict)
+   # @require('entity', Entity)
     def insert_object(self,session,entity):
         """Save a specific entity.
         
@@ -45,10 +46,11 @@ class ViewHandler(object):
             match the constrains imposed by the database. 
         @raise InsertionError: If an object's parameter is not registered for the given object.
         """
+        entity = self.convert(session, entity)
         valid, msg = self._is_valid(session, entity)   
             
         if valid:
-            session.add(entity)
+            session.merge(entity)
             session.commit()
         else:
             raise InsertionError(msg)
@@ -75,7 +77,7 @@ class ViewHandler(object):
         elif isinstance(argument,int) or isinstance(argument,long):
             entities = self._select_entity_by_id(session,argument)
       
-        return [convert(entity) for entity in entities]
+        return [self.convert(session, entity) for entity in entities]
        
         
     @require('session', session.Session)
@@ -138,6 +140,68 @@ class ViewHandler(object):
             raise error(single)
         
         return True
+    
+        
+    def convert(self,session, convertible):
+        """Converts datamanager.objects to datamanager.views.Entities and vice versa
+            
+        @param convertible: object of entity to be converted
+        @type convertible: datamanager.object or datamanager.views.Entity
+        """
+        if isinstance(convertible, objects.ObjectDict):
+            #create entity of class
+            entity = views.Entity(convertible.__class__.__name__)
+            
+            #add parameters of different types to the entity
+            for key,value in  convertible.items():
+                if isinstance(value,str):
+                    strparam_list = session.query(views.StringParameter).filter(
+                        views.StringParameter.name == key).filter(
+                        views.StringParameter.value == value).all()
+                    
+                    if len(strparam_list)>1:
+                        raise SelectionError("But in table setup, this should not happen.") 
+                    elif strparam_list:
+                        strparam = views.StringParameter( key,value)
+                        strparam.id = strparam_list[0].id
+                        entity.parameters.append(strparam)
+                    else:
+                        entity.parameters.append(views.StringParameter(unicode(key),unicode(value)))
+                elif isinstance(value, int):
+                    entity.parameters.append(views.IntegerParameter(key,value))
+                else:
+                    raise TypeError("Type of attribute '%s' with value '%s' is not supported" %
+                                     (key, value))
+            #add data to the entity
+            for key,value in  convertible.data.items():
+                d = views.Data(key,dumps(value))
+                entity.data.append(d)
+            
+            #specify the entity as root
+            entity.context.append(views.Context(","))
+            return entity
+        elif isinstance(convertible,views.Entity):
+            #create class for entity
+            try:
+                exp_obj_class = getattr(objects, convertible.name)
+            except KeyError:
+                #occurs if the class definition is not know to proxy 
+                #that means if not saved in objects
+                raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
+                    
+            exp_obj = exp_obj_class()
+       
+            for parameter in convertible.parameters:
+                if isinstance(parameter.value,unicode):
+                    exp_obj[str(parameter.name)]=str(parameter.value)
+                else:
+                    exp_obj[str(parameter.name)]=parameter.value
+           
+            for data in convertible.data:
+                exp_obj.data[data.name]=loads(data.data)
+            
+            exp_obj.set_concurrent(True)
+            return exp_obj
         
     def insert_parameter_option(self, session, e_name, p_name, p_type):
         parameter_option = ParameterOption(e_name,p_name,p_type)
@@ -309,7 +373,7 @@ class ViewHandler(object):
         children_entities = session.query(Entity).filter(Entity.id.in_(children_id_subquery)).all()
         
         if isinstance(parent,ObjectDict):
-            return [convert(decendent) for decendent in children_entities]
+            return [self.convert(session, decendent) for decendent in children_entities]
         else:
             return children_entities
            

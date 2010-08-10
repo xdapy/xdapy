@@ -18,7 +18,7 @@ from sqlalchemy.orm import sessionmaker, session, scoped_session
 from sqlalchemy.sql import and_, or_, not_, select
 from sqlalchemy.pool import AssertionPool
 
-from xdapy import convert, return_engine_string
+from xdapy import return_engine_string
 from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError
 from xdapy.objects import *
 from xdapy.views import base
@@ -89,7 +89,8 @@ class Proxy(object):
         session = self.Session()
         try:
             for arg in args:
-               entity = self.viewhandler.insert_object(session,convert(arg))
+               entity = self.viewhandler.insert_object(session,arg)
+               #entity = self.viewhandler.insert_object(session,convert(arg))
                arg.set_concurrent(True)
         except Exception:
             session.close()
