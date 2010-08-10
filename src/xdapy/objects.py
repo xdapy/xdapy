@@ -55,6 +55,20 @@ class ObjectDict(dict):
     def __ne__(self, other):
         return not self.__eq__(other)
         
+    def __deepcopy__(self, memo=None):
+        if memo is None:
+            memo = {}
+        missing = object()
+        d = memo.get(id(self), missing)
+        if d is not missing:
+            return d
+        memo[id(self)] = d = self.__class__()
+        dict.__init__(d, deepcopy(self.items(), memo))
+        d.__data = deepcopy(self.__data,memo)
+        d.__concurrent[0] = self.__concurrent[0]
+        return d
+
+     
     def _set_items_from_arguments(self,d):
         """Insert function arguments as items""" 
         self = d.pop('self')
