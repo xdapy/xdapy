@@ -222,7 +222,22 @@ class TestStringParameter(unittest.TestCase):
         self.session.commit()
         
         self.assertEqual([strparam1,strparam2], self.session.query(Parameter).all())
-#        
+    
+    def testMerge(self):
+        Session = sessionmaker(bind=self.engine)
+        session = Session()
+        strparam = StringParameter('strname', 'string100')
+        session.add(strparam)
+        session.commit()
+        session.close()
+        
+        strparam2 = StringParameter('strname','string100')
+        strparam2.id = 1
+        strparam2 = self.session.merge(strparam2, load = True)
+        strparam2.value = 'test'
+       
+        self.session.commit()
+        
 class TestIntegerParameter(unittest.TestCase):
     valid_input = (('name',26),
                   ('name',-1),
