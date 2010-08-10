@@ -5,6 +5,7 @@ Created on Jul 30, 2009
    
 """
 # alphabetical order by last name, please
+import copy
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 def levenshtein(s1, s2):
@@ -35,3 +36,19 @@ def lev(a, b):
     if not a: return len(b)
     if not b: return len(a)
     return min(lev(a[1:], b[1:])+(a[0] != b[0]), lev(a[1:], b)+1, lev(a, b[1:])+1)
+
+def listequal(a,b):
+    if not isinstance(a,list) or not isinstance(b,list):
+        return False
+    if len(a) is not len(b):
+        return False
+    b_c = copy.deepcopy(b)
+    for item in a:
+        try:
+            b_c.remove(item)
+        except:
+            return False
+    if b_c:
+        return False
+    return True
+        
