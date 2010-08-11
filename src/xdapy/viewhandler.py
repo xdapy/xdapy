@@ -168,7 +168,18 @@ class ViewHandler(object):
                     else:
                         entity.parameters.append(views.StringParameter(unicode(key),unicode(value)))
                 elif isinstance(value, int):
-                    entity.parameters.append(views.IntegerParameter(key,value))
+                    intparam_list = session.query(views.IntegerParameter).filter(
+                        views.IntegerParameter.name == key).filter(
+                        views.IntegerParameter.value == value).all()
+                    
+                    if len(intparam_list)>1:
+                        raise SelectionError("But in table setup, this should not happen.") 
+                    
+                    intparam = views.IntegerParameter( key,value)
+                    if intparam_list:
+                        intparam.id = intparam_list[0].id
+                    entity.parameters.append(intparam)
+                    
                 else:
                     raise TypeError("Type of attribute '%s' with value '%s' is not supported" %
                                      (key, value))

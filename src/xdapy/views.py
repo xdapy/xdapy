@@ -121,7 +121,8 @@ class StringParameter(Parameter):
     value = Column('value',String(40), primary_key=True)
     
     __tablename__ = 'stringparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name'],onupdate="CASCADE", ondelete="CASCADE"),
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']
+                                           ,onupdate="CASCADE", ondelete="CASCADE"),
                       {'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Parameter,'inherit_condition': and_(Parameter.id == id,Parameter.name == name),
                        'polymorphic_identity':'string'}
@@ -172,8 +173,11 @@ class IntegerParameter(Parameter):
     value = Column('value',Integer, autoincrement=False, primary_key=True)
 
     __tablename__ = 'integerparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'inherit_condition': Parameter.id == id,'polymorphic_identity':'integer'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name'],
+                                           onupdate="CASCADE", ondelete="CASCADE"),
+                                           {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter,'inherit_condition': and_(Parameter.id == id,Parameter.name == name),
+                       'polymorphic_identity':'integer'}
     
     @validates('value')
     def validate_value(self, key, parameter):
