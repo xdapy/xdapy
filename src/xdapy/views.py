@@ -5,29 +5,29 @@ This module contains so called views - classes that are directly mapped onto the
 database through a object-relational-mapper (ORM).
 """
 """
-TODO:(Hannah) Figure out what to do with global variable base
+TODO: Figure out what to do with global variable base
 TODO: Make Data truncation an error
 """
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
-from sqlalchemy import (MetaData, Table, Column, ForeignKey, ForeignKeyConstraint,
-                        Binary, String, Integer, Float, Date, Time, DateTime, 
-                        Boolean)
-from  sqlalchemy import Sequence
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import select, and_
-from sqlalchemy.orm import mapper, relation, backref, validates
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension
-from sqlalchemy.orm.collections import attribute_mapped_collection
 from datetime import date, time, datetime
 from pickle import dumps, loads
-from sqlalchemy.orm.interfaces import MapperExtension
+from sqlalchemy import Sequence, MetaData, Table, Column, ForeignKey, \
+    ForeignKeyConstraint, Binary, String, Integer, Float, Date, Time, DateTime, \
+    Boolean
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import mapper, relation, backref, validates
+from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension, \
+    MapperExtension
+from sqlalchemy.sql import select, and_
         
 base = declarative_base()
+        
         
 class Data(base):
     '''
@@ -37,9 +37,9 @@ class Data(base):
     the entities attribute of the Data class.
     '''
   #  id = Column('id',Integer, Sequence('data_id_seq',1,1), nullable=False,primary_key=True)
-    name = Column('name',String(40),primary_key=True)
-    data = Column('data',Binary,nullable=False)
-    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'), primary_key=True)
+    name = Column('name', String(40), primary_key=True)
+    data = Column('data', Binary, nullable=False)
+    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
     
     __tablename__ = 'data'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -65,7 +65,6 @@ class Data(base):
         
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.data, self.entity_id)
-#        return "<%s(%s,'%s','%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.data, self.entity_id)
 
 
 class Parameter(base):
@@ -77,9 +76,9 @@ class Parameter(base):
     adjacency list 'parameterlist'. The corresponding entities can be accessed via
     the entities attribute of the Parameter class.
     '''
-    id = Column('id',Integer, Sequence('parameter_id_seq'), autoincrement=True, unique=True, primary_key=True)
-    name = Column('name',String(40), primary_key=True)
-    type = Column('type',String(20),nullable=False)
+    id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, unique=True, primary_key=True)
+    name = Column('name', String(40), primary_key=True)
+    type = Column('type', String(20), nullable=False)
     
     __tablename__ = 'parameters'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -109,6 +108,7 @@ class Parameter(base):
     def __repr__(self):
         return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
 
+
 class StringParameter(Parameter):
     '''
     The class 'StringParameter' is mapped on the table 'stringparameters' and 
@@ -118,13 +118,13 @@ class StringParameter(Parameter):
    
     id = Column('id', Integer, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',String(40), primary_key=True)
+    value = Column('value', String(40), primary_key=True)
     
     __tablename__ = 'stringparameters'
     __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']
-                                           ,onupdate="CASCADE", ondelete="CASCADE"),
+                                           , onupdate="CASCADE", ondelete="CASCADE"),
                       {'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'inherit_condition': and_(Parameter.id == id,Parameter.name == name),
+    __mapper_args__ = {'inherits':Parameter, 'inherit_condition': and_(Parameter.id == id, Parameter.name == name),
                        'polymorphic_identity':'string'}
     
     @validates('value')
@@ -148,16 +148,7 @@ class StringParameter(Parameter):
         '''
         self.name = name
         self.value = value
-    
-#    def __new__(cls, name=None, value=None): 
-#        if name and value: 
-#            try: 
-#                obj = session.query(cls).filter(cls.name==name).filter(cls.value==value).one() 
-#                return obj 
-#            except NoResultFound: 
-#                pass 
-#        return object.__new__(cls) 
-    
+
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
         
@@ -168,20 +159,20 @@ class IntegerParameter(Parameter):
     is derived from Parameter. The value assigned to an IntegerParameter must be
     an integer. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Integer, autoincrement=False, primary_key=True)
+    value = Column('value', Integer, autoincrement=False, primary_key=True)
 
     __tablename__ = 'integerparameters'
     __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name'],
                                            onupdate="CASCADE", ondelete="CASCADE"),
                                            {'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'inherit_condition': and_(Parameter.id == id,Parameter.name == name),
+    __mapper_args__ = {'inherits':Parameter, 'inherit_condition': and_(Parameter.id == id, Parameter.name == name),
                        'polymorphic_identity':'integer'}
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not (isinstance(parameter, int) or isinstance(parameter,long)):
+        if not (isinstance(parameter, int) or isinstance(parameter, long)):
             raise TypeError("Argument must be an integer")
         return parameter 
     
@@ -198,15 +189,6 @@ class IntegerParameter(Parameter):
         self.name = name
         self.value = value
     
-#    def __new__(cls, name=None, value=None): 
-#        if name and value: 
-#            try: 
-#                obj = session.query(cls).filter(cls.name==name).filter(cls.value==value).one() 
-#                return obj 
-#            except NoResultFound: 
-#                pass 
-#        return object.__new__(cls) 
-      
     def __repr__(self):
         return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
 
@@ -217,13 +199,13 @@ class FloatParameter(Parameter):
     is derived from 'Parameter'. The value assigned to a FloatParameter must be 
     a float. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Float, primary_key=True)
+    value = Column('value', Float, primary_key=True)
 
     __tablename__ = 'floatparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'float'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']), {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter, 'polymorphic_identity':'float'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -254,19 +236,19 @@ class DateParameter(Parameter):
     is derived from 'Parameter'. The value assigned to a DateParameter must be 
     a datetime.date. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Date, primary_key=True)
+    value = Column('value', Date, primary_key=True)
 
     __tablename__ = 'dateparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'date'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']), {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter, 'polymorphic_identity':'date'}
     
     @validates('value')
     def validate_value(self, key, parameter):
         if not isinstance(parameter, date) or parameter is None:
             raise TypeError("Argument must be a datetime.date")
-        elif isinstance(parameter, date) and parameter.timetuple()[3:6]!=(0,0,0):
+        elif isinstance(parameter, date) and parameter.timetuple()[3:6] != (0, 0, 0):
             raise TypeError("Argument must be a datetime.date")
         return parameter 
             
@@ -293,13 +275,13 @@ class TimeParameter(Parameter):
     is derived from 'Parameter'. The value assigned to a TimeParameter must be 
     a datetime.time. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Time, primary_key=True)
+    value = Column('value', Time, primary_key=True)
 
     __tablename__ = 'timeparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'time'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']), {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter, 'polymorphic_identity':'time'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -323,19 +305,20 @@ class TimeParameter(Parameter):
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
 
+
 class DateTimeParameter(Parameter):
     '''
     The class 'DateTimeParameter' is mapped on the table 'datetimeparameters' and 
     is derived from 'Parameter'. The value assigned to a DateTimeParameter must be 
     a datetime.datetime. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',DateTime, primary_key=True)
+    value = Column('value', DateTime, primary_key=True)
 
     __tablename__ = 'datetimeparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'datetime'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']), {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter, 'polymorphic_identity':'datetime'}
     
     @validates('value')
     def validate_value(self, key, parameter):
@@ -359,23 +342,24 @@ class DateTimeParameter(Parameter):
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
 
+
 class BooleanParameter(Parameter):
     '''
     The class 'BooleanParameter' is mapped on the table 'booleanparameters' and 
     is derived from 'Parameter'. The value assigned to a BooleanParameter must be 
     a boolean. 
     '''
-    id = Column('id', Integer,  autoincrement=True, unique=True)
+    id = Column('id', Integer, autoincrement=True, unique=True)
     name = Column('name', String(40), primary_key=True)
-    value = Column('value',Boolean, primary_key=True)
+    value = Column('value', Boolean, primary_key=True)
 
     __tablename__ = 'booleanparameters'
-    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']),{'mysql_engine':'InnoDB'})
-    __mapper_args__ = {'inherits':Parameter,'polymorphic_identity':'boolean'}
+    __table_args__ = (ForeignKeyConstraint(['id', 'name'], ['parameters.id', 'parameters.name']), {'mysql_engine':'InnoDB'})
+    __mapper_args__ = {'inherits':Parameter, 'polymorphic_identity':'boolean'}
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, boolean):
+        if not isinstance(parameter, Boolean):
             raise TypeError("Argument must be a boolean")
         return parameter 
             
@@ -395,18 +379,20 @@ class BooleanParameter(Parameter):
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
 
+
 '''
 The parameterlist is an association table. It relates an Entity and a Parameter 
 using their ids as foreign keys.
 '''
-parameterlist = Table('parameterlist', base.metadata,     
-     Column('entity_id', Integer,ForeignKey('entities.id'), primary_key=True),#
+parameterlist = Table('parameterlist', base.metadata,
+     Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True), #
    #  Column('name',String(40), primary_key=True),
-     Column('parameter_id', Integer,ForeignKey('parameters.id'),primary_key=True),# ForeignKey('parameters.id'), 
+     Column('parameter_id', Integer, ForeignKey('parameters.id'), primary_key=True), # ForeignKey('parameters.id'), 
   #   ForeignKeyConstraint(['parameter_id', 'name'],['parameters.id','parameters.name'])
    #   ForeignKeyConstraint(['parameter_id'],['parameters.id'])
      mysql_engine='InnoDB'
      )
+
 
 '''
 relations is an association table. It relates an Entity and another Entity 
@@ -428,7 +414,7 @@ class Relation(base):
     __tablename__ = 'relations'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    parent = relation('Entity', 
+    parent = relation('Entity',
                        primaryjoin='Relation.parent_id==Entity.id')
     child = relation('Entity',
                       primaryjoin='Relation.child_id==Entity.id')
@@ -446,9 +432,9 @@ class Context(base):
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
-    id = Column('id',Integer,primary_key=True)
-    entity_id = Column('entity_id',Integer, ForeignKey('entities.id'))
-    path = Column('path',String(500))
+    id = Column('id', Integer, primary_key=True)
+    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'))
+    path = Column('path', String(500))
     
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -482,8 +468,8 @@ class Entity(base):
     hierarchical structure (represented in a flat table!) via the children and 
     parents attributes.
     '''
-    id = Column('id',Integer,primary_key=True)
-    name = Column('name',String(40)) 
+    id = Column('id', Integer, primary_key=True)
+    name = Column('name', String(40)) 
    
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -497,13 +483,13 @@ class Entity(base):
     # one to many Entity->Context
     context = relation('Context', backref=backref('entities', order_by=id))
     # many to many Entity<->Parameter,deletion cascade is handled in session.flush()
-    parameters = relation('Parameter', secondary=parameterlist, 
+    parameters = relation('Parameter', secondary=parameterlist,
                         #primaryjoin = id == parameterlist.c.entity_id,
                         #secondaryjoin = parameterlist.c.parameter_id == Parameter.id,
                         backref=backref('entities', order_by=id))
     # one to many Entity->Data
     data = relation('Data', backref=backref('entities', order_by=id),
-                    cascade='all,delete-orphan',single_parent=True)
+                    cascade='all,delete-orphan', single_parent=True)
     
     
     @validates('name')
@@ -524,7 +510,8 @@ class Entity(base):
         self.name = name
                 
     def __repr__(self):
-        return "<Entity('%s','%s')>" % (self.id,self.name)
+        return "<Entity('%s','%s')>" % (self.id, self.name)
+
 
 class ParameterOption(base):
     '''
@@ -534,9 +521,9 @@ class ParameterOption(base):
     creation. And only if at a later moment the need for a new parameter emerges, 
     then this parameter can be added to the list of allowed parameters.
     '''
-    parameter_name = Column('parameter_name',String(40), primary_key=True)
-    entity_name = Column('entity_name',String(40), primary_key=True)
-    parameter_type = Column('parameter_type',String(40), primary_key=True)
+    parameter_name = Column('parameter_name', String(40), primary_key=True)
+    entity_name = Column('entity_name', String(40), primary_key=True)
+    parameter_type = Column('parameter_type', String(40), primary_key=True)
   
     __tablename__ = 'parameteroptions'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -582,52 +569,6 @@ class ParameterOption(base):
                                                        self.parameter_name,
                                                        self.parameter_type)
 
-#        
-#class Entity(base):
-#    '''
-#    The class 'Entity' is mapped on the table 'entities'. The name column 
-#    contains unique information about the object type (e.g. 'Observer', 
-#    'Experiment'). Each Entity is connected to a set of parameters through the 
-#    adjacency list parameterlist. Those parameters can be accessed via the 
-#    parameters attribute of the Entity class. Additionally entities can build a 
-#    hierarchical structure (represented in a flat table!) via the children and 
-#    parents attributes.
-#    '''
-#    id = Column('id',Integer,primary_key=True)
-#    name = Column('name',String(40)) 
-#    # many to many Entity<->Parameter
-#    parameters = relation('Parameter', secondary=parameterlist, backref=backref('entities', order_by=id))
-#    # one to many Entity->Data
-#    data = relation('Data', backref=backref('entities', order_by=id))
-#    # many to many Entity<->Entity
-#    children = relation('Entity',
-#                        secondary = relations,
-#                        primaryjoin = id == relations.c.id,
-#                        secondaryjoin = relations.c.child_id == id,
-#                        backref=backref('parents',primaryjoin = id == relations.c.child_id,
-#                                        secondaryjoin= relations.c.id == id))
-#
-#    __tablename__ = 'entities'
-#    
-#    @validates('name')
-#    def validate_name(self, key, e_name):
-#        if not isinstance(e_name, str):
-#            raise TypeError("Argument must be a string")
-#        return e_name 
-#    
-#    def __init__(self, name):
-#        '''Initialize an entity corresponding to an experimental object.
-#        
-#        Argument:
-#        name -- A one-word-description of the experimental object
-#        
-#        Raises:
-#        TypeError -- Occurs if name is not a string or value is no an integer.
-#        '''
-#        self.name = name
-#                
-#    def __repr__(self):
-#        return "<Entity('%s','%s')>" % (self.id,self.name)
-    
+
 if __name__ == "__main__":
     pass
