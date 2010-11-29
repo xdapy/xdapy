@@ -5,6 +5,7 @@ This module provides the template class for all container classes to be stored
 in the database. Two exemplary container classes "observer" and "experiment" are
 provided.
 """
+from numpy import logical_and
 
 """ 
 TODO: self._concurrent find a better solution to in-place assignments as []
@@ -26,13 +27,11 @@ class ObjectDict(dict):
     class __dataDict(dict):
         
         def __init__(self):
-            pass
-#        def __init__(self, concurrent):
-#            self.concurrent = concurrent
-#        
-#        def __setitem__(self, key, value):
-#            dict.__setitem__(self, key, value)
-#            self.concurrent[0] = False 
+            self.__concurrent=[True]
+        
+        def __setitem__(self, key, value):
+            dict.__setitem__(self, key, value)
+            self.__concurrent[0] = False 
             
     def __init__(self):
         """Constructor"""
@@ -89,7 +88,7 @@ class ObjectDict(dict):
 #       
     def get_concurrent(self):
         """Return _cuncurrent attribute"""
-        return self.__concurrent[0]
+        return logical_and(self.__concurrent[0],self.__data._dataDict__concurrent[0])
     
     
     def getData(self):
