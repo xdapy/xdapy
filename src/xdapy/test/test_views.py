@@ -390,7 +390,11 @@ class TestInheritance(unittest.TestCase):
         self.engine = return_engine()
         base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
+        #Do not use the Extension here, because it would delete all the 
+        #parameters right away. This case of 'free' parameters that are not
+        #associated to an object would not be allowed normally.
         self.Session = sessionmaker(bind=self.engine)
+        
         self.session = self.Session()
 
     def tearDown(self):         
@@ -406,7 +410,7 @@ class TestInheritance(unittest.TestCase):
         self.session.add(StringParameter(self.name[i],self.strvalue[i]))
         try:
             self.session.commit()
-#IntegrityError
+            #IntegrityError
         except IntegrityError:
             self.session.rollback()
             #print 'rollback'
@@ -621,7 +625,8 @@ class TestParameterOption(unittest.TestCase):
         self.engine = return_engine()
         base.metadata.drop_all(self.engine,checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
+        #Session = sessionmaker(bind=self.engine)
+        Session = sessionmaker(bind=self.engine, extension=MyExt())
         self.session = Session()
 
     def tearDown(self):         

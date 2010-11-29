@@ -42,6 +42,18 @@ from xdapy.views import base, Parameter, parameterlist, ParameterOption
 #
 #postgres.dialect.schemadropper = PGCascadeSchemaDropper
 
+##http://www.mail-archive.com/sqlalchemy@googlegroups.com/msg07513.html
+class MyExt(SessionExtension):
+        def after_flush(self, session, flush_context):
+                sess = create_session(bind=session.connection())
+                parameters = sess.query(Parameter).filter(~exists([1],  
+                        parameterlist.c.parameter_id==Parameter.id)).all()
+                for k in parameters:
+                        sess.delete(k)
+                sess.flush()
+                for k in parameters:
+                        if k in session:
+                                session.expunge(k)
 
 
 class Proxy(object):
@@ -54,7 +66,7 @@ class Proxy(object):
         '''
         #self.engine = create_engine(eng, echo=False)
         self.engine = create_engine(return_engine_string(), poolclass=AssertionPool, echo=False)
-        self.Session = scoped_session(sessionmaker(bind=self.engine))
+        self.Session = scoped_session(sessionmaker(bind=self.engine, extension=MyExt()))
         self.viewhandler = ViewHandler()
     
     def create_tables(self,overwrite=False):
