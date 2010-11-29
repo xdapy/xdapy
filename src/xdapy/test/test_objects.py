@@ -64,7 +64,7 @@ class TestObjectDict(unittest.TestCase):
     def testSetData(self):
         dic = ObjectDict()
         #Sideeffects of insertions
-        dic.set_concurrent(True)
+        dic.data._dataDict__concurrent[0]=True
         dic.data['default']=2
         dic.data['input']=1
         self.assertEqual(dic.data['default'],2)
