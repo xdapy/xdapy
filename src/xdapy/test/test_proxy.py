@@ -18,13 +18,13 @@ from xdapy.objects import ObjectDict, Observer, Experiment, Trial
 from xdapy.errors import InsertionError, SelectionError, ContextError
 
 from xdapy.views import ParameterOption
-from xdapy import convert
+#from xdapy import convert
 from sqlalchemy.exceptions import IntegrityError
 
 class TestProxy(unittest.TestCase):
 
     def setUp(self):
-        self.p = Proxy('/Users/hannah/Documents/Coding/postgresconfig.tex')
+        self.p = Proxy()
         self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         self.session.add(ParameterOption('Observer','name','string'))
@@ -281,17 +281,17 @@ class TestProxy(unittest.TestCase):
     def  testIsValid(self):
         session = self.p.Session()
         e = Experiment(project='MyProject',experimenter="John Doe")
-        exp = convert(e)
+        exp = self.p.viewhandler.convert(session,e)
         valid, msg = self.p.viewhandler._is_valid(session,exp)
         self.assertEqual(True,valid)
         
         o = Observer(name="Max Mustermann", handedness=1, age=26)
-        obs = convert(o)
+        obs = self.p.viewhandler.convert(session,o)
         valid, msg = self.p.viewhandler._is_valid(session,obs)
         self.assertEqual(False,valid)
         
         o['glasses']="no"
-        obs = convert(o)
+        obs = self.p.viewhandler.convert(session,o)
         valid, msg = self.p.viewhandler._is_valid(session,obs)
         self.assertEqual(False,valid)
         

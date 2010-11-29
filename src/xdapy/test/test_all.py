@@ -18,13 +18,12 @@ from xdapy.objects import Observer, Experiment, Session, Trial
 from xdapy.views import Entity, StringParameter, Data, Context
 from random import randint
 from pickle import dumps, loads
-from xdapy import convert
 
 class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.p = Proxy('/Users/hannah/Documents/Coding/postgresconfig.tex')
+        self.p = Proxy()
         self.p.create_tables(overwrite=True)
         
         #register params
@@ -109,7 +108,7 @@ class Test(unittest.TestCase):
         
    #     print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], {'Session':['date']})
         
-    def testConvert(self):
+    def testReturnConvert(self):
         experiment_object = Experiment(project="Test",experimenter="Maxim Muster")
         experiment_object.data['light']=[[0,1],[2,3]]
         
@@ -118,13 +117,11 @@ class Test(unittest.TestCase):
         experiment_entity.parameters.append(StringParameter('experimenter','Maxim Muster'))
         experiment_entity.data.append(Data('light',dumps([[0,1],[2,3]])))
         experiment_entity.context.append(Context(","))
-        
-        e_o = convert(experiment_entity)
-        e_e = convert(experiment_object)
-        
-        
-        self.assertEqual(experiment_object, e_o)
-        
+
+        e_o = self.p.viewhandler.convert(self.p.Session(), experiment_entity)
+        e_e = self.p.viewhandler.convert(self.p.Session(), experiment_object)
+        self.assertEqual(experiment_object['project'], e_o['project'])
+        self.assertEqual(experiment_object['experimenter'], e_o['experimenter'])
         
         #entity can not be compared that easily, because they are only equal if 
         # they are the same entities in the db.
@@ -140,19 +137,19 @@ class Test(unittest.TestCase):
         
         dat = {}
         for param in experiment_entity.data:
-            par[param.name]=param.data
+            dat[param.name]=param.data
         dat2 = {}    
         for param in e_e.data:
-            par2[param.name]=param.data
+            dat2[param.name]=param.data
         self.assertEqual(dat,dat2)
         
         con = [cont.path for cont in experiment_entity.context]
         con2 = [cont.path for cont in e_e.context]
         self.assertEqual(con,con2)
        
-        o = Observer(name="Max Mustermann", age=2.6)
-        self.assertRaises(TypeError,convert,o)
-        
+#        o = Observer(name="Max Mustermann", age=2.6)
+#        self.assertRaises(TypeError,self.p.viewhandler.convert,self.p.Session(),o)
+#   
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

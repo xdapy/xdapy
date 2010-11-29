@@ -14,16 +14,16 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy import create_engine
 from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from sqlalchemy.orm import sessionmaker, session, scoped_session
-from sqlalchemy.sql import and_, or_, not_, select
+from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
+from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.pool import AssertionPool
-
+from sqlalchemy.sql import and_, exists, and_, or_, not_, select
 from xdapy import return_engine_string
-from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError
+from xdapy.errors import AmbiguousObjectError, RequestObjectError, \
+    SelectionError
 from xdapy.objects import *
-from xdapy.views import base
-
 from xdapy.viewhandler import ViewHandler
+from xdapy.views import base, Parameter, parameterlist, ParameterOption
 
 ##http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
 ##RICK COPELAND (23.09.2009)
@@ -47,22 +47,11 @@ from xdapy.viewhandler import ViewHandler
 class Proxy(object):
     """Handle database access and sessions"""
               
-    def __init__(self, configfile='../../../engine.ini'):
+    def __init__(self):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
-        @param configfile: A open file that contains the database access 
-            information in the fist line as required by sqylalchemy (e.g. 
-            sqldialect://username:password@host/database).
-        @type configfile: file in string format 
         '''
-#        file = open(configfile)
-#        eng = file.read()
-#        config = ConfigObj('../../../engine.ini')
-#        default_engine = ''.join([config['dialect'],'://',config['user'],
-#                              ':',config['password'],'@',config['host'],
-#                              '/',config['dbname']])
-
         #self.engine = create_engine(eng, echo=False)
         self.engine = create_engine(return_engine_string(), poolclass=AssertionPool, echo=False)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
@@ -223,7 +212,7 @@ class Proxy(object):
         session.close()
         
 if __name__ == "__main__":
-    p = Proxy('localhost','root','unittestDB','tin4u')
+    p = Proxy()
     p.create_tables(overwrite=True)
     session = p.Session()
     session.add(ParameterOption('Observer','name','string'))

@@ -15,6 +15,8 @@ from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.exceptions import IntegrityError
 from sqlalchemy import Table
 from sqlalchemy.orm.session import SessionExtension
+from xdapy import return_engine_string
+from sqlalchemy.sql import select, and_
 
 base = declarative_base()
 
@@ -40,17 +42,8 @@ class UpdateExt(SessionExtension):
                 
 metadata = MetaData()
 def return_engine(db):
-    if db is 'mysql':
-        engine = create_engine(open('/Users/hannah/Documents/Coding/mysqlconfig.tex').read(), echo=False)
-        metadata.drop_all(engine)
-    elif db is 'sqlite':
-        engine = create_engine('sqlite:///:memory:', echo=False)
-    elif db is 'postgres':
-        #'/Users/hannah/Documents/Coding/postgresconfig.tex'
-        engine = create_engine(open('/Users/hannah/Documents/Coding/postgresconfig.tex').read(), echo=False)
-        metadata.drop_all(engine)
-    else:
-        raise AttributeError('db type "%s" not defined'%db)
+    engine = create_engine(return_engine_string(), echo=False)
+    metadata.drop_all(engine)
     return engine
 
 class Employee(base):
@@ -80,15 +73,14 @@ class Engineer(Employee):
     __mapper_args__ = {'inherits':Employee,
                        'inherit_condition': Employee.employee_id == employee_id,
                        'polymorphic_identity':'engineer'}
-    
+
     def __init__(self, name, engineer_info):
         self.name = name
         self.engineer_info = engineer_info
    
 
 if __name__ == "__main__":
-    dbs = ['mysql','postgres']
-    engine = return_engine(dbs[0])
+    engine = return_engine()
     base.metadata.bind = engine
     base.metadata.drop_all(engine,checkfirst=True)
     base.metadata.create_all(engine)
