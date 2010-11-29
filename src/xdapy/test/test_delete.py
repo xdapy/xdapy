@@ -20,25 +20,25 @@ from sqlalchemy.sql import select, and_
 
 base = declarative_base()
 
-class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
-    def visit_table(self, table):
-        for column in table.columns:
-            if column.default is not None:
-                self.traverse_single(column.default)
-        self.append("\nDROP TABLE " +
-                    self.preparer.format_table(table) +
-                    " CASCADE")
-        self.execute()
-postgres.dialect.schemadropper = PGCascadeSchemaDropper
+#class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+#    def visit_table(self, table):
+#        for column in table.columns:
+#            if column.default is not None:
+#                self.traverse_single(column.default)
+#        self.append("\nDROP TABLE " +
+#                    self.preparer.format_table(table) +
+#                    " CASCADE")
+#        self.execute()
+#postgres.dialect.schemadropper = PGCascadeSchemaDropper
 
-class UpdateExt(SessionExtension):
-    def before_flush(self, session, flush_context,instances):
-        for employee in session.dirty:
-            if isinstance(employee, Employee):
-                table = Table('employees', base.metadata, autoload=True)
-                upd = table.update(values={'name': employee.name})
-                base.metadata.bind.execute(upd)
-                session.refresh(employee)
+#class UpdateExt(SessionExtension):
+#    def before_flush(self, session, flush_context,instances):
+#        for employee in session.dirty:
+#            if isinstance(employee, Employee):
+#                table = Table('employees', base.metadata, autoload=True)
+#                upd = table.update(values={'name': employee.name})
+#                base.metadata.bind.execute(upd)
+#                session.refresh(employee)
                 
 metadata = MetaData()
 def return_engine(db):
@@ -71,7 +71,7 @@ class Engineer(Employee):
                                            onupdate="CASCADE", ondelete="CASCADE"),
                       {'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Employee,
-                       'inherit_condition': Employee.employee_id == employee_id,
+                       'inherit_condition': and_(Employee.employee_id == employee_id,Employee.name == name),
                        'polymorphic_identity':'engineer'}
 
     def __init__(self, name, engineer_info):
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     base.metadata.drop_all(engine,checkfirst=True)
     base.metadata.create_all(engine)
 
-    Session = sessionmaker(bind=engine, extension=UpdateExt())
+    Session = sessionmaker(bind=engine)#, extension=UpdateExt())
     session = Session()
     
     joe = Engineer('Joe','Engineer of the month')
