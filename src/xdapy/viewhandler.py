@@ -6,7 +6,6 @@ Created on Oct 29, 2009
 TODO: insert check if same object exists, if yes, use this object
         print "WARNING: The object %s is already contained in the database!"% object 
 TODO: Update: split node if necessary
-TODO: Delete
 TODO: String similarity
 """
 # alphabetical order by last name, please
@@ -212,6 +211,7 @@ class ViewHandler(object):
                 exp_obj.data[data.name]=loads(data.data)
             
             exp_obj.set_concurrent(True)
+            exp_obj.data._dataDict__concurrent[0]=True
             return exp_obj
         
     def insert_parameter_option(self, session, e_name, p_name, p_type):
