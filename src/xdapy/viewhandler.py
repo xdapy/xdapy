@@ -2,6 +2,17 @@
 
 Created on Oct 29, 2009
 """
+from pickle import dumps, loads
+from sqlalchemy.orm import session
+from sqlalchemy.sql import or_, and_
+from sqlalchemy.sql.expression import select
+from xdapy import objects, views
+from xdapy.errors import SelectionError, ContextError, InsertionError, \
+    ContextWarning
+from xdapy.objects import ObjectDict
+from xdapy.utils.decorators import require
+from xdapy.views import Entity, StringParameter, IntegerParameter, \
+    ParameterOption, Context
 """
 TODO: insert check if same object exists, if yes, use this object
         print "WARNING: The object %s is already contained in the database!"% object 
@@ -11,19 +22,7 @@ TODO: String similarity
 # alphabetical order by last name, please
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-from xdapy.errors import AmbiguousObjectError, RequestObjectError, SelectionError, ContextError, InsertionError, ContextWarning
-from xdapy.utils.decorators import require
-from xdapy.utils.algorithms import levenshtein
-from xdapy.views import *
-from xdapy import views 
-from xdapy import objects
 
-from xdapy.objects import ObjectDict
-from sqlalchemy import create_engine
-from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from sqlalchemy.orm import sessionmaker, session
-from sqlalchemy.sql import and_, or_, not_, select
-from sqlalchemy.pool import AssertionPool
 class ViewHandler(object):
     
     def __init__(self):
@@ -477,7 +476,9 @@ class ViewHandler(object):
         return_value = True
         msg = ""
         
-        s = select([ParameterOption.parameter_name,
+        s = select([ParameterOption.parameter_name, 
+
+
                     ParameterOption.parameter_type], 
                    ParameterOption.entity_name==entity.name)
         result = session.execute(s).fetchall()

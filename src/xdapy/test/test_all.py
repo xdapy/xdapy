@@ -12,12 +12,12 @@ contain a brief description of exported classes and functions.
 # alphabetical order by last name, please
 __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 
-import unittest
-from xdapy.proxy import Proxy
-from xdapy.objects import Observer, Experiment, Session, Trial
-from xdapy.views import Entity, StringParameter, Data, Context
+from pickle import dumps
 from random import randint
-from pickle import dumps, loads
+from xdapy.objects import Observer, Experiment, Session, Trial
+from xdapy.proxy import Proxy
+from xdapy.views import Entity, StringParameter, Data, Context
+import unittest
 
 class Test(unittest.TestCase):
 
@@ -27,24 +27,24 @@ class Test(unittest.TestCase):
         self.p.create_tables(overwrite=True)
         
         #register params
-        self.p.register_parameter('Observer','name','string')
-        self.p.register_parameter('Observer','age','integer')
-        self.p.register_parameter('Observer','handedness','string')
-        self.p.register_parameter('Experiment','project','string')
-        self.p.register_parameter('Experiment','experimenter','string')
-        self.p.register_parameter('Session', 'date','string')
-        self.p.register_parameter('Trial', 'time','string')
+        self.p.register_parameter('Observer', 'name', 'string')
+        self.p.register_parameter('Observer', 'age', 'integer')
+        self.p.register_parameter('Observer', 'handedness', 'string')
+        self.p.register_parameter('Experiment', 'project', 'string')
+        self.p.register_parameter('Experiment', 'experimenter', 'string')
+        self.p.register_parameter('Session', 'date', 'string')
+        self.p.register_parameter('Trial', 'time', 'string')
         self.p.register_parameter('Trial', 'rt', 'integer')
         self.p.register_parameter('Trial', 'valid', 'integer')
         self.p.register_parameter('Trial', 'response', 'string')
         
         #create hierarchy
-        self.e1 = Experiment(project='MyProject',experimenter="John Doe")
-        self.e2 = Experiment(project='YourProject',experimenter="Jeanne Done")
+        self.e1 = Experiment(project='MyProject', experimenter="John Doe")
+        self.e2 = Experiment(project='YourProject', experimenter="Jeanne Done")
         
         self.o3 = Observer(name="Max Mustermann", handedness="right", age=26)
-        self.o4 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)
-        self.o5 = Observer(name="Susi Sorgen", handedness='left',age=40)
+        self.o4 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
+        self.o5 = Observer(name="Susi Sorgen", handedness='left', age=40)
         
         self.s6 = Session(date='2009-09-20')
         self.s7 = Session(date='2009-09-21')
@@ -52,22 +52,22 @@ class Test(unittest.TestCase):
         self.s9 = Session(date='2009-09-23')
         self.s10 = Session(date='2009-09-24')
         
-        self.t11 = Trial(rt=int(randint(100, 3000)), valid = 1, response='left')
-        self.t12 = Trial(rt=randint(100, 3000), valid = 1, response='right')
-        self.t13 = Trial(rt=randint(100, 3000), valid = 1, response='left')
-        self.t14 = Trial(rt=randint(100, 3000), valid = 1, response='right')
-        self.t15 = Trial(rt=randint(100, 3000), valid = 1, response='left')
-        self.t16 = Trial(rt=randint(100, 3000), valid = 1, response='right')
-        self.t17 = Trial(rt=randint(100, 3000), valid = 1, response='left')
-        self.t18 = Trial(rt=randint(100, 3000), valid = 0, response='right')
-        self.t19 = Trial(rt=randint(100, 3000), valid = 0, response='left')
-        self.t20 = Trial(rt=randint(100, 3000), valid = 0, response='right')
-        self.t21 = Trial(rt=randint(100, 3000), valid = 0, response='left')
-        self.t22 = Trial(rt=randint(100, 3000), valid = 0, response='right')
-        self.t23 = Trial(rt=randint(100, 3000), valid = 0, response='left')
-        self.t24 = Trial(rt=randint(100, 3000), valid = 0, response='right')
+        self.t11 = Trial(rt=int(randint(100, 3000)), valid=1, response='left')
+        self.t12 = Trial(rt=randint(100, 3000), valid=1, response='right')
+        self.t13 = Trial(rt=randint(100, 3000), valid=1, response='left')
+        self.t14 = Trial(rt=randint(100, 3000), valid=1, response='right')
+        self.t15 = Trial(rt=randint(100, 3000), valid=1, response='left')
+        self.t16 = Trial(rt=randint(100, 3000), valid=1, response='right')
+        self.t17 = Trial(rt=randint(100, 3000), valid=1, response='left')
+        self.t18 = Trial(rt=randint(100, 3000), valid=0, response='right')
+        self.t19 = Trial(rt=randint(100, 3000), valid=0, response='left')
+        self.t20 = Trial(rt=randint(100, 3000), valid=0, response='right')
+        self.t21 = Trial(rt=randint(100, 3000), valid=0, response='left')
+        self.t22 = Trial(rt=randint(100, 3000), valid=0, response='right')
+        self.t23 = Trial(rt=randint(100, 3000), valid=0, response='left')
+        self.t24 = Trial(rt=randint(100, 3000), valid=0, response='right')
         
-        self.p.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6, 
+        self.p.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6,
                     self.s7, self.s8, self.s9, self.s10, self.t11, self.t12,
                     self.t13, self.t14, self.t15, self.t16, self.t17, self.t18,
                     self.t19, self.t20, self.t21, self.t22, self.t23, self.t24)
@@ -102,20 +102,20 @@ class Test(unittest.TestCase):
        
 
     def testReturn(self):
-        self.assertEqual(self.p.get_children(Observer(name="Susanne Sorgenfrei")),[self.s8, self.s9, self.s10])
-        self.assertEqual(self.p.get_children(Observer(name="Susi Sorgen")),[])
-        self.assertEqual(self.p.get_children(Observer(name="Max Mustermann")),[self.s6, self.s7])
+        self.assertEqual(self.p.get_children(Observer(name="Susanne Sorgenfrei")), [self.s8, self.s9, self.s10])
+        self.assertEqual(self.p.get_children(Observer(name="Susi Sorgen")), [])
+        self.assertEqual(self.p.get_children(Observer(name="Max Mustermann")), [self.s6, self.s7])
         
    #     print self.p.get_data_matrix([Observer(name="Susanne Sorgenfrei")], {'Session':['date']})
         
     def testReturnConvert(self):
-        experiment_object = Experiment(project="Test",experimenter="Maxim Muster")
-        experiment_object.data['light']=[[0,1],[2,3]]
+        experiment_object = Experiment(project="Test", experimenter="Maxim Muster")
+        experiment_object.data['light'] = [[0, 1], [2, 3]]
         
         experiment_entity = Entity('Experiment')
-        experiment_entity.parameters.append(StringParameter('project','Test'))
-        experiment_entity.parameters.append(StringParameter('experimenter','Maxim Muster'))
-        experiment_entity.data.append(Data('light',dumps([[0,1],[2,3]])))
+        experiment_entity.parameters.append(StringParameter('project', 'Test'))
+        experiment_entity.parameters.append(StringParameter('experimenter', 'Maxim Muster'))
+        experiment_entity.data.append(Data('light', dumps([[0, 1], [2, 3]])))
         experiment_entity.context.append(Context(","))
 
         e_o = self.p.viewhandler.convert(self.p.Session(), experiment_entity)
@@ -129,23 +129,23 @@ class Test(unittest.TestCase):
         
         par = {}
         for param in experiment_entity.parameters:
-            par[param.name]=param.value
+            par[param.name] = param.value
         par2 = {}    
         for param in e_e.parameters:
-            par2[param.name]=param.value
-        self.assertEqual(par,par2)
+            par2[param.name] = param.value
+        self.assertEqual(par, par2)
         
         dat = {}
         for param in experiment_entity.data:
-            dat[param.name]=param.data
+            dat[param.name] = param.data
         dat2 = {}    
         for param in e_e.data:
-            dat2[param.name]=param.data
-        self.assertEqual(dat,dat2)
+            dat2[param.name] = param.data
+        self.assertEqual(dat, dat2)
         
         con = [cont.path for cont in experiment_entity.context]
         con2 = [cont.path for cont in e_e.context]
-        self.assertEqual(con,con2)
+        self.assertEqual(con, con2)
        
 #        o = Observer(name="Max Mustermann", age=2.6)
 #        self.assertRaises(TypeError,self.p.viewhandler.convert,self.p.Session(),o)

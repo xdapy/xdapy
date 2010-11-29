@@ -4,19 +4,15 @@ Created on Sep 28, 2009
 As of juli 7, 2010:
 sqlalchemy.orm.exc.ObjectDeletedError: Instance '<Engineer at 0xd5d0b0>' has been deleted.
 """
-from sqlalchemy import (MetaData, Table, Column, ForeignKey, ForeignKeyConstraint,
-                        Binary, String, Integer, Float, Date, Time, DateTime, 
-                        Boolean)
-from sqlalchemy.orm import mapper
+from sqlalchemy import MetaData, Column, ForeignKeyConstraint, String, Integer, \
+    create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.databases import postgres
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, create_session
-from sqlalchemy.exceptions import IntegrityError
-from sqlalchemy import Table
-from sqlalchemy.orm.session import SessionExtension
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import and_
 from xdapy import return_engine_string
-from sqlalchemy.sql import select, and_
+
+
+
 
 base = declarative_base()
 
@@ -48,7 +44,7 @@ def return_engine(db):
 
 class Employee(base):
     employee_id = Column('employee_id', Integer, primary_key=True, autoincrement=True)
-    name = Column('name', String(50),primary_key=True)
+    name = Column('name', String(50), primary_key=True)
     type = Column('type', String(30), nullable=False)
     
     __tablename__ = 'employees'
@@ -62,16 +58,16 @@ class Employee(base):
 
 class Engineer(Employee):
     employee_id = Column('employee_id', Integer, unique=True)
-    name = Column('name', String(50),primary_key=True)
-    engineer_info = Column('engineer_info', String(50), primary_key =True)
+    name = Column('name', String(50), primary_key=True)
+    engineer_info = Column('engineer_info', String(50), primary_key=True)
    
     __tablename__ = 'engineers'
-    __table_args__ = (ForeignKeyConstraint(['employee_id', 'name'], 
+    __table_args__ = (ForeignKeyConstraint(['employee_id', 'name'],
                                            ['employees.employee_id', 'employees.name'],
                                            onupdate="CASCADE", ondelete="CASCADE"),
                       {'mysql_engine':'InnoDB'})
     __mapper_args__ = {'inherits':Employee,
-                       'inherit_condition': and_(Employee.employee_id == employee_id,Employee.name == name),
+                       'inherit_condition': and_(Employee.employee_id == employee_id, Employee.name == name),
                        'polymorphic_identity':'engineer'}
 
     def __init__(self, name, engineer_info):
@@ -82,13 +78,13 @@ class Engineer(Employee):
 if __name__ == "__main__":
     engine = return_engine()
     base.metadata.bind = engine
-    base.metadata.drop_all(engine,checkfirst=True)
+    base.metadata.drop_all(engine, checkfirst=True)
     base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)#, extension=UpdateExt())
     session = Session()
     
-    joe = Engineer('Joe','Engineer of the month')
+    joe = Engineer('Joe', 'Engineer of the month')
     
     session.add(joe)
     session.commit()

@@ -17,12 +17,12 @@
 # Comments, suggestions and bug reports welcome.
 
 from __future__ import generators
-
+from codecs import BOM_UTF8, BOM_UTF16, BOM_UTF16_BE, BOM_UTF16_LE
 import os
 import re
 import sys
 
-from codecs import BOM_UTF8, BOM_UTF16, BOM_UTF16_BE, BOM_UTF16_LE
+
 
 
 # imported lazily to avoid startup performance hit if it isn't used
@@ -195,14 +195,14 @@ class Builder(object):
             raise UnknownType('Add')
         if not isinstance(imag, complex) or imag.real != 0.0:
             raise UnknownType('Add')
-        return real+imag
+        return real + imag
     
     def build_Getattr(self, o):
         parent = self.build(o.expr)
         return getattr(parent, o.attrname)
     
     def build_UnarySub(self, o):
-        return -self.build_Const(o.getChildren()[0])
+        return - self.build_Const(o.getChildren()[0])
     
     def build_UnaryAdd(self, o):
         return self.build_Const(o.getChildren()[0])
@@ -687,7 +687,7 @@ class Section(dict):
         if not sequence:
             raise KeyError(": 'popitem(): dictionary is empty'")
         key = sequence[0]
-        val =  self[key]
+        val = self[key]
         del self[key]
         return key, val
 
@@ -1787,7 +1787,7 @@ class ConfigObj(Section):
             return '""'
         
         no_lists_no_quotes = not self.list_values and '\n' not in value and '#' not in value
-        need_triple = multiline and ((("'" in value) and ('"' in value)) or ('\n' in value ))
+        need_triple = multiline and ((("'" in value) and ('"' in value)) or ('\n' in value))
         hash_triple_quote = multiline and not need_triple and ("'" in value) and ('"' in value) and ('#' in value)
         check_for_single = (no_lists_no_quotes or not need_triple) and not hash_triple_quote
         
@@ -2247,7 +2247,7 @@ class ConfigObj(Section):
                 missing = False
                 val = section[entry]
             
-            ret_true, ret_false = validate_entry(entry, configspec[entry], val, 
+            ret_true, ret_false = validate_entry(entry, configspec[entry], val,
                                                  missing, ret_true, ret_false)
         
         many = None

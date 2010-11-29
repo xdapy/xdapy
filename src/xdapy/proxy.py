@@ -2,6 +2,17 @@
 
 Created on Jun 17, 2009
 """
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
+from sqlalchemy.orm.interfaces import SessionExtension
+from sqlalchemy.pool import AssertionPool
+from sqlalchemy.sql import exists
+from xdapy import return_engine_string
+from xdapy.errors import SelectionError
+from xdapy.objects import ObjectDict, Experiment, Observer
+from xdapy.utils.decorators import require
+from xdapy.viewhandler import ViewHandler
+from xdapy.views import base, Parameter, parameterlist, ParameterOption
 """
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
@@ -12,18 +23,6 @@ TODO: Error if the commiting fails
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
-from sqlalchemy import create_engine
-from sqlalchemy.exceptions import InvalidRequestError, OperationalError
-from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
-from sqlalchemy.orm.interfaces import SessionExtension
-from sqlalchemy.pool import AssertionPool
-from sqlalchemy.sql import and_, exists, and_, or_, not_, select
-from xdapy import return_engine_string
-from xdapy.errors import AmbiguousObjectError, RequestObjectError, \
-    SelectionError
-from xdapy.objects import *
-from xdapy.viewhandler import ViewHandler
-from xdapy.views import base, Parameter, parameterlist, ParameterOption
 
 ##http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
 ##RICK COPELAND (23.09.2009)
@@ -46,8 +45,8 @@ from xdapy.views import base, Parameter, parameterlist, ParameterOption
 class MyExt(SessionExtension):
         def after_flush(self, session, flush_context):
                 sess = create_session(bind=session.connection())
-                parameters = sess.query(Parameter).filter(~exists([1],  
-                        parameterlist.c.parameter_id==Parameter.id)).all()
+                parameters = sess.query(Parameter).filter(~exists([1],
+                        parameterlist.c.parameter_id == Parameter.id)).all()
                 for k in parameters:
                         sess.delete(k)
                 sess.flush()
@@ -69,7 +68,7 @@ class Proxy(object):
         self.Session = scoped_session(sessionmaker(bind=self.engine, extension=MyExt()))
         self.viewhandler = ViewHandler()
     
-    def create_tables(self,overwrite=False):
+    def create_tables(self, overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
         if overwrite:
             base.metadata.drop_all(self.engine, checkfirst=True)
@@ -77,7 +76,7 @@ class Proxy(object):
     
 #    @require('object_',ObjectDict)
 #    def save(self,object_):
-    def save(self,*args):
+    def save(self, *args):
         """Save instances inherited from ObjectDict into database.
         
         Attribute:
@@ -90,7 +89,7 @@ class Proxy(object):
         session = self.Session()
         try:
             for arg in args:
-               entity = self.viewhandler.insert_object(session,arg)
+               entity = self.viewhandler.insert_object(session, arg)
                #entity = self.viewhandler.insert_object(session,convert(arg))
                arg.set_concurrent(True)
         except Exception:
@@ -114,8 +113,8 @@ class Proxy(object):
         """   
         session = self.Session()
         try:
-            objects = self.viewhandler.select_object(session,argument)
-            if len(objects)>1:
+            objects = self.viewhandler.select_object(session, argument)
+            if len(objects) > 1:
                 raise SelectionError("Found multiple objects that match requirements")#%object_.__class__.__name__)
             if not objects:
                 raise SelectionError("Found no object that matches requirements")#%object_.__class__.__name__)
@@ -133,12 +132,12 @@ class Proxy(object):
         argument -- An object derived from datamanager.objects.ObjectTemplate 
         """   
         session = self.Session()
-        objects = self.viewhandler.select_object(session,argument)
+        objects = self.viewhandler.select_object(session, argument)
         session.close()  
         return objects
  
     @require('parent', (int, long, ObjectDict))
-    def get_children(self,parent, label=None, uniqueContext=False):
+    def get_children(self, parent, label=None, uniqueContext=False):
         """Load the children of an object from the database
         
         Attribute:
@@ -170,7 +169,7 @@ class Proxy(object):
     
     @require('parent', (int, long, ObjectDict))
     @require('child', (int, long, ObjectDict))
-    def connect_objects(self,parent,child,root=None):
+    def connect_objects(self, parent, child, root=None):
         """Connect two related objects
         
         Attribute:
@@ -190,7 +189,7 @@ class Proxy(object):
             if root:
                 self.viewhandler.append_child(session, parent, child, root)
             else:
-                self.viewhandler.append_child(session, parent,child)
+                self.viewhandler.append_child(session, parent, child)
         except Exception:
             session.close()
             raise
@@ -200,7 +199,7 @@ class Proxy(object):
     @require('entity_name', str)
     @require('parameter_name', str)
     @require('parameter_type', str)
-    def register_parameter(self,entity_name,parameter_name,parameter_type):
+    def register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
         
         Attribute:
@@ -227,25 +226,25 @@ if __name__ == "__main__":
     p = Proxy()
     p.create_tables(overwrite=True)
     session = p.Session()
-    session.add(ParameterOption('Observer','name','string'))
-    session.add(ParameterOption('Observer','age','integer'))
-    session.add(ParameterOption('Observer','handedness','string'))
-    session.add(ParameterOption('Experiment','project','string'))
-    session.add(ParameterOption('Experiment','experimenter','string'))
+    session.add(ParameterOption('Observer', 'name', 'string'))
+    session.add(ParameterOption('Observer', 'age', 'integer'))
+    session.add(ParameterOption('Observer', 'handedness', 'string'))
+    session.add(ParameterOption('Experiment', 'project', 'string'))
+    session.add(ParameterOption('Experiment', 'experimenter', 'string'))
     session.commit()
-    e1 = Experiment(project='MyProject',experimenter="John Doe")
-    e2 = Experiment(project='YourProject',experimenter="John Doe")
+    e1 = Experiment(project='MyProject', experimenter="John Doe")
+    e2 = Experiment(project='YourProject', experimenter="John Doe")
     o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-    o2 = Observer(name="Susanne Sorgenfrei", handedness='left',age=38)   
-    o3 = Observer(name="Susi Sorgen", handedness='left',age=40)
+    o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
+    o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     
     #all objects are root
     p.save(e1, e2, o1, o2, o3)
     
-    p.connect_objects(e1,o1)
-    p.connect_objects(o1,o2)
+    p.connect_objects(e1, o1)
+    p.connect_objects(o1, o2)
     print p.get_children(e1)
-    print p.get_children(o1,1)
+    print p.get_children(o1, 1)
     
     
     # print p.get_data_matrix([], {'Observer':['age','name']})

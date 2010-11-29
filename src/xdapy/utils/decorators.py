@@ -20,7 +20,7 @@ def accepts(*types):
             
             for (a, t) in zip(args, types):
                 assert isinstance(a, t), \
-                       "arg %r does not match %s" % (a,t)
+                       "arg %r does not match %s" % (a, t)
             return f(*args, **kwds)
         new_f.func_name = f.func_name
         return new_f
@@ -32,7 +32,7 @@ def returns(rtype):
         def new_f(*args, **kwds):
             result = f(*args, **kwds)
             assert isinstance(result, rtype), \
-                   "return value %r does not match %s" % (result,rtype)
+                   "return value %r does not match %s" % (result, rtype)
             return result
         new_f.func_name = f.func_name
         return new_f
@@ -77,10 +77,10 @@ def require(arg_name, *allowed_types):
 @require("x", int, float)
 @require("y", float)
 def foo(x, y):
-    return x+y
+    return x + y
 
-@accepts(int, (int,float))
-@returns((int,float))
+@accepts(int, (int, float))
+@returns((int, float))
 def func(arg1, arg2):
     return arg1 * arg2
 
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     #print foo("asdf", 2.5) # Raises TypeError exception.
     #print foo(1, 2)        # Raises TypeError exception.
     
-    print func(1,2.5)
-    print func(1,2)
+    print func(1, 2.5)
+    print func(1, 2)
     print foo("asdf", 2.5) # Raises TypeError exception.
     print foo(1, 2)        # Raises TypeError exception.
     

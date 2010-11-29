@@ -4,21 +4,21 @@ Created on Jun 17, 2009
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-import unittest
-from xdapy.views import (Data, Parameter, Entity, ParameterOption, Relation,
-    StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, parameterlist)
-from xdapy.views import base
-from xdapy import return_engine_string
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, join, create_session
-from sqlalchemy.sql import and_, exists
-from sqlalchemy.exceptions import IntegrityError, DataError,InvalidRequestError                
 from pickle import dumps, loads
-import numpy as np
-from sqlalchemy.orm import exc as orm_exc
+from sqlalchemy import create_engine
+from sqlalchemy.exceptions import IntegrityError, DataError, InvalidRequestError
+from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
-import datetime 
+from sqlalchemy.sql import and_, exists
+from xdapy import return_engine_string
+from xdapy.views import Data, Parameter, Entity, ParameterOption, \
+    StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, \
+    parameterlist, base
+import datetime
+import numpy as np
+import unittest
+
+
 
 
 ##http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
@@ -42,8 +42,8 @@ import datetime
 class MyExt(SessionExtension):
         def after_flush(self, session, flush_context):
                 sess = create_session(bind=session.connection())
-                parameters = sess.query(Parameter).filter(~exists([1],  
-                        parameterlist.c.parameter_id==Parameter.id)).all()
+                parameters = sess.query(Parameter).filter(~exists([1],
+                        parameterlist.c.parameter_id == Parameter.id)).all()
                 for k in parameters:
                         sess.delete(k)
                 sess.flush()
@@ -53,7 +53,7 @@ class MyExt(SessionExtension):
 
 
 def return_engine():
-    engine = create_engine(return_engine_string(),echo=False)
+    engine = create_engine(return_engine_string(), echo=False)
     return engine
         
 class TestClass(object):
@@ -65,23 +65,23 @@ class TestClass(object):
 class TestData(unittest.TestCase):
 
     # images, class, 
-    valid_input = (('somestring','SomeString'),
-                   ('someint',1),
-                   ('somefloat',1.2),
-                   ('somelist',[0, 2, 3, 5]),
-                   ('sometuple',(0, 2, 3, 5)),
-                   ('somearray1',np.array([2,3,1,0])),
-                   ('somearray2', np.array([[ 1.+0.j, 2.+0.j], [ 0.+0.j, 0.+0.j], [ 1.+1.j, 3.+0.j]])),
-                   ('somearray3', np.array([[1,2,3],(4,5,6)])),
-                   ('somedict',{'jack': 4098, 'sape': 4139}),
-                   ('someclass',TestClass()))
+    valid_input = (('somestring', 'SomeString'),
+                   ('someint', 1),
+                   ('somefloat', 1.2),
+                   ('somelist', [0, 2, 3, 5]),
+                   ('sometuple', (0, 2, 3, 5)),
+                   ('somearray1', np.array([2, 3, 1, 0])),
+                   ('somearray2', np.array([[ 1. + 0.j, 2. + 0.j], [ 0. + 0.j, 0. + 0.j], [ 1. + 1.j, 3. + 0.j]])),
+                   ('somearray3', np.array([[1, 2, 3], (4, 5, 6)])),
+                   ('somedict', {'jack': 4098, 'sape': 4139}),
+                   ('someclass', TestClass()))
     
-    invalid_input = (('name',None))
+    invalid_input = (('name', None))
     
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)
+        base.metadata.drop_all(self.engine, checkfirst=True)
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -93,26 +93,26 @@ class TestData(unittest.TestCase):
     def testValidInput(self):
         exp = Entity('name')
         for name, data in self.valid_input:
-            d = Data(name=name,data=dumps(data))
+            d = Data(name=name, data=dumps(data))
             exp.data.append(d)
-            self.assertEqual(d.name,name)
-            self.assertEqual(d.data,dumps(data))
+            self.assertEqual(d.name, name)
+            self.assertEqual(d.data, dumps(data))
             self.session.add(d)
             self.session.commit()
-            d_reloaded =  self.session.query(Data).filter(Data.name==name).one()
+            d_reloaded = self.session.query(Data).filter(Data.name == name).one()
             try:
-                self.assertEqual(data,loads(d_reloaded.data))
+                self.assertEqual(data, loads(d_reloaded.data))
             except ValueError:
                 #arrays
-                self.assertEqual(data.all(),loads(d_reloaded.data).all())
+                self.assertEqual(data.all(), loads(d_reloaded.data).all())
             except AssertionError:
                 #testclass
-                self.assertEqual(data.test,loads(d_reloaded.data).test)
+                self.assertEqual(data.test, loads(d_reloaded.data).test)
 
     def testUpdate(self):
         exp = Entity('experiment')
-        data = Data(name='someother',data=dumps([0, 2, 3, 5]))
-        data2 = Data(name='somestring',data=dumps([0, 2, 3, 5]))
+        data = Data(name='someother', data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='somestring', data=dumps([0, 2, 3, 5]))
         
         exp.data.append(data)
         exp.data.append(data2)
@@ -121,7 +121,7 @@ class TestData(unittest.TestCase):
         self.session.commit()
         
         self.assertEqual([exp], self.session.query(Entity).all())
-        self.assertEqual([data,data2],self.session.query(Data).all())
+        self.assertEqual([data, data2], self.session.query(Data).all())
         
         data.name = 'another'
         data2.data = dumps([357])
@@ -129,7 +129,7 @@ class TestData(unittest.TestCase):
         self.session.commit()
         
         self.assertEqual([exp], self.session.query(Entity).all())
-        self.assertEqual([data,data2],self.session.query(Data).order_by(Data.name).all())
+        self.assertEqual([data, data2], self.session.query(Data).order_by(Data.name).all())
         
 class TestParameter(unittest.TestCase):
     string_exceeding_length = '*****************************************'
@@ -137,7 +137,7 @@ class TestParameter(unittest.TestCase):
     def setUp(self):
         """Create test database"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -153,28 +153,28 @@ class TestParameter(unittest.TestCase):
             self.assertRaises(DataError, self.session.commit)
         else:
             self.session.commit()
-            self.assertEqual([], self.session.query(Parameter).filter(Parameter.name==self.string_exceeding_length).all())
+            self.assertEqual([], self.session.query(Parameter).filter(Parameter.name == self.string_exceeding_length).all())
        
 class TestStringParameter(unittest.TestCase):
-    valid_input = (('name','Value'),
-                  ('name','value'),
-                  ('****************************************','Value'),
-                  ('name','****************************************'))
-    invalid_input_types = (('name',0),
-                    ('name',0.0),
-                    ('name',None),
-                    (0,None),
-                    ('name',datetime.date.today()),
-                    ('name',datetime.datetime.now().time()),
-                    ('name',datetime.datetime.now()))
+    valid_input = (('name', 'Value'),
+                  ('name', 'value'),
+                  ('****************************************', 'Value'),
+                  ('name', '****************************************'))
+    invalid_input_types = (('name', 0),
+                    ('name', 0.0),
+                    ('name', None),
+                    (0, None),
+                    ('name', datetime.date.today()),
+                    ('name', datetime.datetime.now().time()),
+                    ('name', datetime.datetime.now()))
                     #,('Name','value'))
     
-    invalid_input_length = ('name','******************************************************************************************************')
+    invalid_input_length = ('name', '******************************************************************************************************')
     
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -183,27 +183,27 @@ class TestStringParameter(unittest.TestCase):
         self.session.close()         
         
     def testValidInput(self):
-        for name,value in self.valid_input:
-            parameter = StringParameter(name,value)
+        for name, value in self.valid_input:
+            parameter = StringParameter(name, value)
             self.session.add(parameter)
             self.session.commit()
             self.assertEqual(parameter.name, name)
             self.assertEqual(parameter.value, value)
         
     def testInvalidInputType(self):
-        for name,value in self.invalid_input_types:
+        for name, value in self.invalid_input_types:
             self.assertRaises(TypeError, StringParameter, name, value)
         
     def testInvalidInputLength(self):
         name = self.invalid_input_length[0]
         value = self.invalid_input_length[1]
-        parameter = StringParameter(name,value)
+        parameter = StringParameter(name, value)
         self.session.add(parameter)
         if self.engine.url.drivername == 'postgresql':
-            self.assertRaises(DataError,self.session.commit)
+            self.assertRaises(DataError, self.session.commit)
         else:
             self.session.commit()
-            self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name==name,StringParameter.value==value)).all())
+            self.assertEqual([], self.session.query(StringParameter).filter(and_(StringParameter.name == name, StringParameter.value == value)).all())
         
     def testUpdate(self):
         strparam1 = StringParameter('strname1', 'string1')
@@ -221,7 +221,7 @@ class TestStringParameter(unittest.TestCase):
         strparam2.name = 'strname22'
         self.session.commit()
         
-        self.assertEqual([strparam1,strparam2], self.session.query(Parameter).all())
+        self.assertEqual([strparam1, strparam2], self.session.query(Parameter).all())
     
     def testMerge(self):
         Session = sessionmaker(bind=self.engine)
@@ -231,28 +231,28 @@ class TestStringParameter(unittest.TestCase):
         session.commit()
         session.close()
         
-        strparam2 = StringParameter('strname','string100')
+        strparam2 = StringParameter('strname', 'string100')
         strparam2.id = 1
-        strparam2 = self.session.merge(strparam2, load = True)
+        strparam2 = self.session.merge(strparam2, load=True)
         strparam2.value = 'test'
        
         self.session.commit()
         
 class TestIntegerParameter(unittest.TestCase):
-    valid_input = (('name',26),
-                  ('name',-1),
-                  ('****************************************',0))
-    invalid_input_types = (('name','0'),
-                    ('name',0.0),
-                    ('name',datetime.datetime.now().date()),
-                    ('name',datetime.datetime.now().time()),
-                    ('name',datetime.datetime.now()),
-                    ('name',None))
+    valid_input = (('name', 26),
+                  ('name', -1),
+                  ('****************************************', 0))
+    invalid_input_types = (('name', '0'),
+                    ('name', 0.0),
+                    ('name', datetime.datetime.now().date()),
+                    ('name', datetime.datetime.now().time()),
+                    ('name', datetime.datetime.now()),
+                    ('name', None))
 
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -261,33 +261,33 @@ class TestIntegerParameter(unittest.TestCase):
         self.session.close()         
         
     def testValidInput(self):
-        for name,value in self.valid_input:
-            parameter = IntegerParameter(name,value)
+        for name, value in self.valid_input:
+            parameter = IntegerParameter(name, value)
             self.session.add(parameter)
             self.session.commit()
             self.assertEqual(parameter.name, name)
             self.assertEqual(parameter.value, value)
         
     def testInvalidInputType(self):
-        for name,value in self.invalid_input_types:
+        for name, value in self.invalid_input_types:
             self.assertRaises(TypeError, IntegerParameter, name, value)
     
 
 class TestFloatParameter(unittest.TestCase):
-    valid_input = (('name',1.02),
-                  ('name',-256.),
-                  ('****************************************',0.))
-    invalid_input_types = (('name','0'),
-                    ('name',0),
-                    ('name',datetime.datetime.now().date()),
-                    ('name',datetime.datetime.now().time()),
-                    ('name',datetime.datetime.now()),
-                    ('name',None))
+    valid_input = (('name', 1.02),
+                  ('name', -256.),
+                  ('****************************************', 0.))
+    invalid_input_types = (('name', '0'),
+                    ('name', 0),
+                    ('name', datetime.datetime.now().date()),
+                    ('name', datetime.datetime.now().time()),
+                    ('name', datetime.datetime.now()),
+                    ('name', None))
 
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -296,8 +296,8 @@ class TestFloatParameter(unittest.TestCase):
         self.session.close()         
         
     def testValidInput(self):
-        for name,value in self.valid_input:
-            parameter = FloatParameter(name,value)
+        for name, value in self.valid_input:
+            parameter = FloatParameter(name, value)
             self.session.add(parameter)
             self.session.commit()
             self.assertEqual(parameter.name, name)
@@ -305,28 +305,28 @@ class TestFloatParameter(unittest.TestCase):
        
         
     def testInvalidInputType(self):
-        for name,value in self.invalid_input_types:
+        for name, value in self.invalid_input_types:
             self.assertRaises(TypeError, FloatParameter, name, value)
             
 
 class TestDateParameter(unittest.TestCase):
-    valid_input = (('name',datetime.date.today()),
+    valid_input = (('name', datetime.date.today()),
                  # ('name',datetime.date.fromtimestamp(time.time())),
                  # ('name',datetime.datetime.now().date()),
-                  ('****************************************',datetime.date(2009, 9, 22))
+                  ('****************************************', datetime.date(2009, 9, 22))
                   )
                   
-    invalid_input_types = (('name','0'),
-                    ('name',0),
-                    ('name',datetime.datetime.now().time()),
-                    ('name',datetime.datetime.now()),
-                    ('name',None))
+    invalid_input_types = (('name', '0'),
+                    ('name', 0),
+                    ('name', datetime.datetime.now().time()),
+                    ('name', datetime.datetime.now()),
+                    ('name', None))
 
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
         base.metadata.drop_all(self.engine)
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -335,8 +335,8 @@ class TestDateParameter(unittest.TestCase):
         self.session.close()         
         
     def testValidInput(self):
-        for name,value in self.valid_input:
-            parameter = DateParameter(name,value)
+        for name, value in self.valid_input:
+            parameter = DateParameter(name, value)
             self.session.add(parameter)
             self.session.commit()
             self.assertEqual(parameter.name, name)
@@ -344,22 +344,22 @@ class TestDateParameter(unittest.TestCase):
          
         
     def testInvalidInputType(self):
-        for name,value in self.invalid_input_types:
+        for name, value in self.invalid_input_types:
             self.assertRaises(TypeError, DateParameter, name, value)
             
 class TestTimeParameter(unittest.TestCase):
-    valid_input = (('name',datetime.time(23,6,2,635)),
-                  ('name',datetime.datetime.now().time()))
-    invalid_input_types = (('name','0'),
-                    ('name',0),
-                    ('name',datetime.datetime.now().date()),
-                    ('name',datetime.datetime.now()),
-                    ('name',None))
+    valid_input = (('name', datetime.time(23, 6, 2, 635)),
+                  ('name', datetime.datetime.now().time()))
+    invalid_input_types = (('name', '0'),
+                    ('name', 0),
+                    ('name', datetime.datetime.now().date()),
+                    ('name', datetime.datetime.now()),
+                    ('name', None))
 
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
@@ -368,8 +368,8 @@ class TestTimeParameter(unittest.TestCase):
         self.session.close()         
         
     def testValidInput(self):
-        for name,value in self.valid_input:
-            parameter = TimeParameter(name,value)
+        for name, value in self.valid_input:
+            parameter = TimeParameter(name, value)
             self.session.add(parameter)
             self.session.commit()
             self.assertEqual(parameter.name, name)
@@ -377,18 +377,18 @@ class TestTimeParameter(unittest.TestCase):
             
         
     def testInvalidInputType(self):
-        for name,value in self.invalid_input_types:
+        for name, value in self.invalid_input_types:
             self.assertRaises(TypeError, TimeParameter, name, value)
     
 class TestInheritance(unittest.TestCase):
-    name = ["hi",'bye','hi']
-    strvalue = ['there','there','where']
-    intvalue = [1,1,2]
+    name = ["hi", 'bye', 'hi']
+    strvalue = ['there', 'there', 'where']
+    intvalue = [1, 1, 2]
         
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         #Do not use the Extension here, because it would delete all the 
         #parameters right away. This case of 'free' parameters that are not
@@ -402,12 +402,12 @@ class TestInheritance(unittest.TestCase):
         
         #Change DB engines to transactional (BDB or InnoDB).
     def testRollback(self):
-        strpars = [StringParameter(self.name[i],self.strvalue[i]) for i,n in enumerate(self.name)]
-        intpars =[ IntegerParameter(self.name[i],self.intvalue[i]) for i,n in enumerate(self.intvalue)]
+        strpars = [StringParameter(self.name[i], self.strvalue[i]) for i, n in enumerate(self.name)]
+        intpars = [ IntegerParameter(self.name[i], self.intvalue[i]) for i, n in enumerate(self.intvalue)]
         self.session.add_all(strpars)
         #invoke a rollback
         self.session.begin_nested()
-        self.session.add(StringParameter(self.name[i],self.strvalue[i]))
+        self.session.add(StringParameter(self.name[i], self.strvalue[i]))
         try:
             self.session.commit()
             #IntegrityError
@@ -428,8 +428,8 @@ class TestInheritance(unittest.TestCase):
         
         
     def testDeletion(self):
-        strpars = [StringParameter(self.name[i],self.strvalue[i]) for i,n in enumerate(self.name)]
-        intpars =[ IntegerParameter(self.name[i],self.intvalue[i]) for i,n in enumerate(self.intvalue)]
+        strpars = [StringParameter(self.name[i], self.strvalue[i]) for i, n in enumerate(self.name)]
+        intpars = [ IntegerParameter(self.name[i], self.intvalue[i]) for i, n in enumerate(self.intvalue)]
         
         self.session.add_all(strpars)
         self.session.commit()
@@ -439,7 +439,7 @@ class TestInheritance(unittest.TestCase):
         #Deletion in sub exploiding sqlalchemy inheritance
         self.session.delete(strpars[0])
         self.session.commit()
-        self.assertEqual(intpars,self.session.query(IntegerParameter).all())
+        self.assertEqual(intpars, self.session.query(IntegerParameter).all())
         self.assertEqual(strpars[1:], self.session.query(StringParameter).all())
         pars = strpars[1:] 
         pars.extend(intpars)
@@ -474,13 +474,13 @@ class TestInheritance(unittest.TestCase):
         
 class TestEntity(unittest.TestCase):
 
-    valid_input=('observer','experiment', 'observer')
-    invalid_input_types=(0,0.0,None)
+    valid_input = ('observer', 'experiment', 'observer')
+    invalid_input_types = (0, 0.0, None)
 
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         #Session = sessionmaker(bind=self.engine)
         Session = sessionmaker(bind=self.engine, extension=MyExt())
@@ -495,15 +495,15 @@ class TestEntity(unittest.TestCase):
             self.assertEqual(entity.name, name)
             self.session.add(entity)
             self.session.commit()
-            entity_reloaded =  self.session.query(Entity).filter(and_(Entity.name==name,Entity.id==entity.id)).one()
-            self.assertEqual(entity,entity_reloaded)
+            entity_reloaded = self.session.query(Entity).filter(and_(Entity.name == name, Entity.id == entity.id)).one()
+            self.assertEqual(entity, entity_reloaded)
             
     def testInvalidInputType(self):
         for name in self.invalid_input_types:
             self.assertRaises(TypeError, Entity, name)
     
     def testParametersAttribute(self):
-        intparam = IntegerParameter('intname',1)
+        intparam = IntegerParameter('intname', 1)
         strparam = StringParameter('strname', 'string')
         exp = Entity('experiment')
         
@@ -513,21 +513,21 @@ class TestEntity(unittest.TestCase):
         exp.parameters.append(intparam)
         self.session.commit()
         
-        exp_reloaded =  self.session.query(Entity).filter(Entity.name=='experiment').one()
-        ip_reloaded = self.session.query(Parameter).filter(Parameter.name=='intname').one()
-        sp_reloaded = self.session.query(Parameter).filter(Parameter.name=='strname').all()
+        exp_reloaded = self.session.query(Entity).filter(Entity.name == 'experiment').one()
+        ip_reloaded = self.session.query(Parameter).filter(Parameter.name == 'intname').one()
+        sp_reloaded = self.session.query(Parameter).filter(Parameter.name == 'strname').all()
         
         self.assertEqual(exp_reloaded.parameters, [intparam])
-        self.assertEqual(ip_reloaded.entities,[exp])
-        self.assertEqual(sp_reloaded,[])
+        self.assertEqual(ip_reloaded.entities, [exp])
+        self.assertEqual(sp_reloaded, [])
         
     def testDeletion(self):
-        intparam = IntegerParameter('intname',1)
-        intparam2 = IntegerParameter('intname',2)
+        intparam = IntegerParameter('intname', 1)
+        intparam2 = IntegerParameter('intname', 2)
         strparam = StringParameter('strname', 'string')
-        data = Data(name='somestring',data=dumps([0, 2, 3, 5]))
-        data2 = Data(name='somestring',data=dumps([0, 2, 3, 5]))
-        data3 = Data(name='someother',data=dumps([0, 2, 3, 5]))
+        data = Data(name='somestring', data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='somestring', data=dumps([0, 2, 3, 5]))
+        data3 = Data(name='someother', data=dumps([0, 2, 3, 5]))
         
         exp = Entity('experiment')
         exp2 = Entity('experiment')
@@ -548,25 +548,25 @@ class TestEntity(unittest.TestCase):
         self.session.commit()
         
         #database should only exp,exp2,intparam,intparam2,strparam 
-        self.assertEqual([intparam,strparam,intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
-        self.assertEqual([exp,exp2], self.session.query(Entity).order_by(Entity.id).all())
-        self.assertEqual([data3,data,data2],self.session.query(Data).order_by(Data.name).all())
+        self.assertEqual([intparam, strparam, intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
+        self.assertEqual([exp, exp2], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([data3, data, data2], self.session.query(Data).order_by(Data.name).all())
         self.session.delete(exp)
         self.session.commit()
         
         #database should only contain exp2,intparam2,strparam 
         self.assertEqual([strparam, intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
         self.assertEqual([exp2], self.session.query(Entity).order_by(Entity.id).all())
-        self.assertEqual([data3,data2], self.session.query(Data).order_by(Data.name).all())
+        self.assertEqual([data3, data2], self.session.query(Data).order_by(Data.name).all())
         
         #relationship is one-to-many and data allowed only for a single parent
-        self.assertRaises(InvalidRequestError,exp2.data.append,data)
+        self.assertRaises(InvalidRequestError, exp2.data.append, data)
     
     def testUpdate(self):
-        intparam = IntegerParameter('intname',1)
+        intparam = IntegerParameter('intname', 1)
         strparam = StringParameter('strname', 'string')
-        data = Data(name='somestring',data=dumps([0, 2, 3, 5]))
-        data2 = Data(name='someother',data=dumps([0, 2, 3, 5]))
+        data = Data(name='somestring', data=dumps([0, 2, 3, 5]))
+        data2 = Data(name='someother', data=dumps([0, 2, 3, 5]))
         exp = Entity('experiment')
         
         exp.parameters.append(intparam)
@@ -577,9 +577,9 @@ class TestEntity(unittest.TestCase):
         self.session.add(exp)
         self.session.commit()
         
-        self.assertEqual([intparam,strparam], self.session.query(Parameter).order_by(Parameter.id).all())
+        self.assertEqual([intparam, strparam], self.session.query(Parameter).order_by(Parameter.id).all())
         self.assertEqual([exp], self.session.query(Entity).order_by(Entity.id).all())
-        self.assertEqual([data2,data],self.session.query(Data).order_by(Data.name).all())
+        self.assertEqual([data2, data], self.session.query(Data).order_by(Data.name).all())
         
 #        data.name = 'another'
 #        data2.data = dumps([357])
@@ -610,11 +610,11 @@ class TestEntity(unittest.TestCase):
 class TestParameterOption(unittest.TestCase):
     """Testcase for ParameterOption class"""
     
-    valid_input=(('observer', 'name', 'string'),
+    valid_input = (('observer', 'name', 'string'),
                  ('experiment', 'project', 'string'),
                  ('observer', 'age', 'integer'))
     
-    invalid_input=((26, 'name', 'string'),
+    invalid_input = ((26, 'name', 'string'),
                    ('experiment', 2.3, 'string'),
                    ('observer', 'age', 90),
                    ('observer', 'age', 'int'))
@@ -623,7 +623,7 @@ class TestParameterOption(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.engine = return_engine()
-        base.metadata.drop_all(self.engine,checkfirst=True)         
+        base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         #Session = sessionmaker(bind=self.engine)
         Session = sessionmaker(bind=self.engine, extension=MyExt())
@@ -638,11 +638,11 @@ class TestParameterOption(unittest.TestCase):
             self.assertEqual(parameter_option.parameter_name, p_name)
             self.session.add(parameter_option)
             self.session.commit()
-            parameter_option_reloaded =  self.session.query(ParameterOption).filter(
-                and_(ParameterOption.entity_name==e_name,
-                     ParameterOption.parameter_name==p_name,
-                     ParameterOption.parameter_type==p_type)).one()
-            self.assertEqual(parameter_option,parameter_option_reloaded)
+            parameter_option_reloaded = self.session.query(ParameterOption).filter(
+                and_(ParameterOption.entity_name == e_name,
+                     ParameterOption.parameter_name == p_name,
+                     ParameterOption.parameter_type == p_type)).one()
+            self.assertEqual(parameter_option, parameter_option_reloaded)
             
     def testInvalidInputType(self):
         for e_name, p_name, p_type in self.invalid_input:
@@ -658,7 +658,7 @@ class TestParameterOption(unittest.TestCase):
      
         
 if __name__ == "__main__":
-    tests = ['testValidInput', 'testInvalidInputType', 'testInvalidInputLength','testParametersAttribute','testPrimaryKeyConstrain']
+    tests = ['testValidInput', 'testInvalidInputType', 'testInvalidInputLength', 'testParametersAttribute', 'testPrimaryKeyConstrain']
 #    
 #    parameter_suite = unittest.TestSuite()
 #    parameter_suite.addTest(TestParameter(tests[2]))

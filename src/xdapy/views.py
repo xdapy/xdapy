@@ -13,18 +13,11 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
 from datetime import date, time, datetime
-from pickle import dumps, loads
-from sqlalchemy import Sequence, MetaData, Table, Column, ForeignKey, \
-    ForeignKeyConstraint, Binary, String, Integer, Float, Date, Time, DateTime, \
-    Boolean
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
+    Binary, String, Integer, Float, Date, Time, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import mapper, relation, backref, validates
-from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm.interfaces import AttributeExtension, MapperExtension, \
-    MapperExtension
-from sqlalchemy.sql import select, and_
+from sqlalchemy.orm import relation, backref, validates
+from sqlalchemy.sql import and_
         
 base = declarative_base()
         

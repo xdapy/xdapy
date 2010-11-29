@@ -5,7 +5,9 @@ This module provides the template class for all container classes to be stored
 in the database. Two exemplary container classes "observer" and "experiment" are
 provided.
 """
+from copy import deepcopy
 from numpy import logical_and
+from xdapy.utils.decorators import require
 
 """ 
 TODO: self._concurrent find a better solution to in-place assignments as []
@@ -13,8 +15,6 @@ TODO: self._concurrent find a better solution to in-place assignments as []
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-from xdapy.utils.decorators import require
-from copy import deepcopy
 
 class ObjectDict(dict):
     """Template class for object classes
@@ -27,7 +27,7 @@ class ObjectDict(dict):
     class __dataDict(dict):
         
         def __init__(self):
-            self.__concurrent=[True]
+            self.__concurrent = [True]
         
         def __setitem__(self, key, value):
             dict.__setitem__(self, key, value)
@@ -63,17 +63,17 @@ class ObjectDict(dict):
             return d
         memo[id(self)] = d = self.__class__()
         dict.__init__(d, deepcopy(self.items(), memo))
-        d.__data = deepcopy(self.__data,memo)
+        d.__data = deepcopy(self.__data, memo)
         d.__concurrent[0] = self.__concurrent[0]
         return d
 
      
-    def _set_items_from_arguments(self,d):
+    def _set_items_from_arguments(self, d):
         """Insert function arguments as items""" 
         self = d.pop('self')
-        for n, v in d.iteritems( ):
+        for n, v in d.iteritems():
             if v:
-                self[n]=v
+                self[n] = v
         
     def __setitem__(self, key, item):
         """Set dictionary item and update _concurrent attribute"""
@@ -88,18 +88,18 @@ class ObjectDict(dict):
 #       
     def get_concurrent(self):
         """Return _cuncurrent attribute"""
-        return logical_and(self.__concurrent[0],self.__data._dataDict__concurrent[0])
+        return logical_and(self.__concurrent[0], self.__data._dataDict__concurrent[0])
     
     
     def getData(self):
         return self.__data
     
     @require('x', dict)
-    def setData(self,x):
+    def setData(self, x):
         self.__concurrent[0] = False
         self.__data = self.__dataDict()
-        for key,value in x.items():
-            self.__data[key] =  value
+        for key, value in x.items():
+            self.__data[key] = value
    
     data = property(getData, setData)
     
