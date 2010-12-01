@@ -14,6 +14,7 @@ __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 
 from pickle import dumps
 from random import randint
+from xdapy import Settings
 from xdapy.objects import Observer, Experiment, Session, Trial
 from xdapy.proxy import Proxy
 from xdapy.views import Entity, StringParameter, Data, Context
@@ -23,7 +24,8 @@ class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.p = Proxy()
+        db = Settings().test_db
+        self.p = Proxy(db)
         self.p.create_tables(overwrite=True)
         
         #register params

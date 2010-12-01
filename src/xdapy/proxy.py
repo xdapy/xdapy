@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.pool import AssertionPool
 from sqlalchemy.sql import exists
-from xdapy import return_engine_string
+from xdapy import Settings
 from xdapy.errors import SelectionError
 from xdapy.objects import ObjectDict, Experiment, Observer
 from xdapy.utils.decorators import require
@@ -54,17 +54,15 @@ class MyExt(SessionExtension):
                         if k in session:
                                 session.expunge(k)
 
-
 class Proxy(object):
     """Handle database access and sessions"""
               
-    def __init__(self):
+    def __init__(self, db):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
         '''
-        #self.engine = create_engine(eng, echo=False)
-        self.engine = create_engine(return_engine_string(), poolclass=AssertionPool, echo=False)
+        self.engine = create_engine(db, poolclass=AssertionPool, echo=False)
         self.Session = scoped_session(sessionmaker(bind=self.engine, extension=MyExt()))
         self.viewhandler = ViewHandler()
     
@@ -89,9 +87,10 @@ class Proxy(object):
         session = self.Session()
         try:
             for arg in args:
-               entity = self.viewhandler.insert_object(session, arg)
-               #entity = self.viewhandler.insert_object(session,convert(arg))
-               arg.set_concurrent(True)
+                entity = self.viewhandler.insert_object(session, arg)
+                #entity = self.viewhandler.insert_object(session,convert(arg))
+                arg.set_concurrent(True)
+            session.commit()
         except Exception:
             session.close()
             raise 
@@ -223,7 +222,8 @@ class Proxy(object):
         session.close()
         
 if __name__ == "__main__":
-    p = Proxy()
+    db = Settings().db
+    p = Proxy(db)
     p.create_tables(overwrite=True)
     session = p.Session()
     session.add(ParameterOption('Observer', 'name', 'string'))
@@ -241,11 +241,10 @@ if __name__ == "__main__":
     #all objects are root
     p.save(e1, e2, o1, o2, o3)
     
-    p.connect_objects(e1, o1)
-    p.connect_objects(o1, o2)
-    print p.get_children(e1)
-    print p.get_children(o1, 1)
-    
+#    p.connect_objects(e1, o1)
+#    p.connect_objects(o1, o2)
+#    print p.get_children(e1)
+#    print p.get_children(o1, 1)   
     
     # print p.get_data_matrix([], {'Observer':['age','name']})
     
@@ -254,7 +253,8 @@ if __name__ == "__main__":
     p.connect_objects(e1, o2)
     p.connect_objects(e2, o3)
     p.connect_objects(e1, o3)
-   # print p.get_data_matrix([Observer(handedness='left')], {'Experiment':['project'],'Observer':['age','name']})
+    session.commit()
+    print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================
 # 

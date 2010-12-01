@@ -10,7 +10,7 @@ from sqlalchemy.exceptions import IntegrityError, DataError, InvalidRequestError
 from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.sql import and_, exists
-from xdapy import return_engine_string
+from xdapy import Settings
 from xdapy.views import Data, Parameter, Entity, ParameterOption, \
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, \
     parameterlist, base
@@ -53,7 +53,7 @@ class MyExt(SessionExtension):
 
 
 def return_engine():
-    engine = create_engine(return_engine_string(), echo=False)
+    engine = create_engine(Settings().db, echo=False)
     return engine
         
 class TestClass(object):

@@ -10,84 +10,58 @@ from xdapy.utils.configobj import ConfigObj
 import objects
 import views
 
-def return_engine_string():
-    """
-    Create file ~/.xdapy/engine.ini with the following content and replace  
-    your username, password, host and dbname:
-    
-    dialect = postgresql
-    user = hannah
-    password = ""
-    host = localhost
-    dbname = xdapy
-    """
-    ini_file = path.join(path.expanduser('~'), '.xdapy', 'engine.ini')
-    if not path.isfile(ini_file):
-        raise Exception('the engine ini file does not exist. please create file \n'\
-                        ' ~/.xdapy/engine.ini with following content and replace \n'\
-                        'with your settings: \n\n'\
-                        'dialect = postgresql\n'\
-                        'user = myname\n'\
-                        'password = mypassword\n'\
-                        'host = localhost\n'\
-                        'dbname = xdapy')
-    
-    config = ConfigObj(ini_file)
-    try:
-        default_engine = ''.join([config['dialect'], '://', config['user'],
-                              ':', config['password'], '@', config['host'],
-                              '/', config['dbname']])
-    except:
-        raise Exception("Can not create engine with information from engine.ini")
+class Settings(object):
+    default_path = '~/.xdapy/engine.ini'
+    def __init__(self, filename=None):
+        """
+        Reads the settings from the file ~/.xdapy/engine.ini or the path value.
+
+        Create file ~/.xdapy/engine.ini with the following content and replace  
+        your username, password, host and dbname:
+
+        dialect = postgresql
+        user = hannah
+        password = ""
+        host = localhost
+        dbname = xdapy
+        [test]
+        dbname = xdapy_test
         
-    return default_engine 
+        Public attributes:
+        self.db ~ the database URL
+        self.test_db ~ the database URL used for testing
+        """
+        if not filename:
+            filename = self.default_path
+        self.filename = path.expanduser(filename)
+        if not path.isfile(self.filename):
+            raise Exception('the engine ini file does not exist. please create file \n'\
+                            ' ~/.xdapy/engine.ini with following content and replace \n'\
+                            'with your settings: \n\n'\
+                            'dialect = postgresql\n'\
+                            'user = myname\n'\
+                            'password = mypassword\n'\
+                            'host = localhost\n'\
+                            'dbname = xdapy')
 
+        self.config = ConfigObj(self.filename)
 
+    @property
+    def db(self):
+        try:
+            return """{dialect}://{user}:{password}@{host}/{dbname}""".format(**self.config)
+        except:
+            raise Exception("Cannot create engine with information from engine.ini")
 
-#
-#def convert(convertible):
-#    """Converts datamanager.objects to datamanager.views.Entities and vice versa
-#        
-#    @param convertible: object of entity to be converted
-#    @type convertible: datamanager.object or datamanager.views.Entity
-#    """
-#    if isinstance(convertible, objects.ObjectDict):
-#        #create entity of class
-#        entity = views.Entity(convertible.__class__.__name__)
-#        
-#        #add parameters of different types to the entity
-#        for key, value in  convertible.items():
-#            if isinstance(value, str):
-#                entity.parameters.append(views.StringParameter(key, value))
-#            elif isinstance(value, int):
-#                entity.parameters.append(views.IntegerParameter(key, value))
-#            else:
-#                raise TypeError("Type of attribute '%s' with value '%s' is not supported" % 
-#                                 (key, value))
-#        #add data to the entity
-#        for key, value in  convertible.data.items():
-#            d = views.Data(key, dumps(value))
-#            entity.data.append(d)
-#        
-#        #specify the entity as root
-#        entity.context.append(views.Context(","))
-#        return entity
-#    elif isinstance(convertible, views.Entity):
-#        #create class for entity
-#        try:
-#            exp_obj_class = getattr(objects, convertible.name)
-#        except KeyError:
-#            #occurs if the class definition is not know to proxy 
-#            #that means if not saved in objects
-#            raise KeyError("Experimental object class definitions must be saved in datamanager.objects")
-#                
-#        exp_obj = exp_obj_class()
-#   
-#        for parameter in convertible.parameters:
-#            exp_obj[parameter.name] = parameter.value
-#       
-#        for data in convertible.data:
-#            exp_obj.data[data.name] = loads(data.data)
-#        
-#        exp_obj.set_concurrent(True)
-#        return exp_obj
+    @property
+    def test_db(self):
+        try:
+            # update the dict with the 'test' section
+            testconfig = self.config.dict()
+            testdefaults = {'dbname': testconfig['dbname'] + "_test"}
+            testconfig.update(testconfig.get('test', testdefaults))
+
+            return """{dialect}://{user}:{password}@{host}/{dbname}""".format(**testconfig)
+        except:
+            raise Exception("Cannot create engine with information from engine.ini")
+

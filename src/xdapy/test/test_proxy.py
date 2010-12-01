@@ -3,6 +3,7 @@
 Created on Jun 17, 2009
 """
 from sqlalchemy.exceptions import IntegrityError
+from xdapy import Settings
 from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy.objects import Observer, Experiment, Trial
 from xdapy.proxy import Proxy
@@ -24,7 +25,8 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 class TestProxy(unittest.TestCase):
 
     def setUp(self):
-        self.p = Proxy()
+        db = Settings().test_db
+        self.p = Proxy(db)
         self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         self.session.add(ParameterOption('Observer', 'name', 'string'))
