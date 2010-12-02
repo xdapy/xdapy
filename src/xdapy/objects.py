@@ -87,7 +87,7 @@ class ObjectDict(dict):
         self.__concurrent[0] = boolean
 #       
     def get_concurrent(self):
-        """Return _cuncurrent attribute"""
+        """Return _concurrent attribute"""
         return logical_and(self.__concurrent[0], self.__data._dataDict__concurrent[0])
     
     

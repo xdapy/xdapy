@@ -10,7 +10,21 @@ This module provides different Decorator functions:
         require()            Defines type constrains for each input variables in 
                              seperate decorator using a keyword
 """
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
+
+from functools import wraps
+
+def lazyprop(f):
+    """Sets a lazy property the value of which is generated only once"""
+    attr_name = '_lazy_' + f.__name__
+    @property
+    @wraps(f)
+    def wrapper(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, f(self))
+        return getattr(self, attr_name)
+    return wrapper
 
 def accepts(*types):
     """http://www.python.org/dev/peps/pep-0318/"""

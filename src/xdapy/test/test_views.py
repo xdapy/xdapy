@@ -50,11 +50,7 @@ class MyExt(SessionExtension):
                 for k in parameters:
                         if k in session:
                                 session.expunge(k)
-
-
-def return_engine():
-    engine = create_engine(Settings().db, echo=False)
-    return engine
+                    
         
 class TestClass(object):
     def __init__(self):
@@ -80,11 +76,13 @@ class TestData(unittest.TestCase):
     
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        
+        self.connection = Settings.engine.connect()
+        
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -136,11 +134,11 @@ class TestParameter(unittest.TestCase):
     
     def setUp(self):
         """Create test database"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -173,11 +171,11 @@ class TestStringParameter(unittest.TestCase):
     
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -224,8 +222,8 @@ class TestStringParameter(unittest.TestCase):
         self.assertEqual([strparam1, strparam2], self.session.query(Parameter).all())
     
     def testMerge(self):
-        Session = sessionmaker(bind=self.engine)
-        session = Session()
+        self.session = Settings.Session(bind=self.connection)
+
         strparam = StringParameter('strname', 'string100')
         session.add(strparam)
         session.commit()
@@ -251,12 +249,12 @@ class TestIntegerParameter(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
-
+        
+        self.session = Settings.Session(bind=self.connection)
+        
     def tearDown(self):         
         self.session.close()         
         
@@ -286,11 +284,11 @@ class TestFloatParameter(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -324,12 +322,12 @@ class TestDateParameter(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine)
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+    
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -358,11 +356,11 @@ class TestTimeParameter(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         
@@ -387,7 +385,7 @@ class TestInheritance(unittest.TestCase):
         
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         #Do not use the Extension here, because it would delete all the 
@@ -453,7 +451,7 @@ class TestInheritance(unittest.TestCase):
         conn.execute(stat)
         conn.close() 
         
-        self.session = self.Session()
+        self.session = Settings.Session(bind=self.connection)
         self.session.add_all(pars)
         self.assertEqual(pars[1:], self.session.query(Parameter).all())
         self.assertEqual(pars[1:2], self.session.query(StringParameter).all())
@@ -466,7 +464,7 @@ class TestInheritance(unittest.TestCase):
         conn.execute(stat)
         conn.close() 
         
-        self.session = self.Session()
+        self.session = Settings.Session(bind=self.connection)
         self.session.add_all(pars)
         self.assertEqual([], self.session.query(StringParameter).all())
         self.assertFalse(pars[2:] == self.session.query(Parameter).all())#!!!!
@@ -479,7 +477,7 @@ class TestEntity(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
         #Session = sessionmaker(bind=self.engine)
@@ -622,12 +620,11 @@ class TestParameterOption(unittest.TestCase):
 
     def setUp(self):
         """Create test database in memory"""
-        self.engine = return_engine()
+        self.engine = Settings.test_engine
         base.metadata.drop_all(self.engine, checkfirst=True)         
         base.metadata.create_all(self.engine)
-        #Session = sessionmaker(bind=self.engine)
-        Session = sessionmaker(bind=self.engine, extension=MyExt())
-        self.session = Session()
+
+        self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
         self.session.close()         

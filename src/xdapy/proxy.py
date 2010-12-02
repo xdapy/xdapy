@@ -41,19 +41,6 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 #
 #postgres.dialect.schemadropper = PGCascadeSchemaDropper
 
-##http://www.mail-archive.com/sqlalchemy@googlegroups.com/msg07513.html
-class MyExt(SessionExtension):
-        def after_flush(self, session, flush_context):
-                sess = create_session(bind=session.connection())
-                parameters = sess.query(Parameter).filter(~exists([1],
-                        parameterlist.c.parameter_id == Parameter.id)).all()
-                for k in parameters:
-                        sess.delete(k)
-                sess.flush()
-                for k in parameters:
-                        if k in session:
-                                session.expunge(k)
-
 class Proxy(object):
     """Handle database access and sessions"""
               
@@ -253,7 +240,34 @@ if __name__ == "__main__":
     p.connect_objects(e1, o2)
     p.connect_objects(e2, o3)
     p.connect_objects(e1, o3)
-    session.commit()
+
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    G=nx.DiGraph()
+    experiments = p.load_all(Experiment())
+    
+    for experiment in experiments:
+        for child in p.get_children(experiment):
+            G.add_edge(experiment['project'], child['name'])
+    
+    pos=nx.circular_layout(G) # positions for all nodes
+
+    # nodes
+    nx.draw_networkx_nodes(G,pos)
+
+    # edges
+    nx.draw_networkx_edges(G,pos)
+
+    # labels
+    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
+
+    plt.axis('off')
+    plt.savefig("weighted_graph.png") # save as png
+    plt.show() # display
+    
+    
+    #session.commit()
     print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================

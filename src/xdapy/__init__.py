@@ -6,11 +6,30 @@ __contact__ = 'hannah.dold@mailbox.tu-berlin.de'
 
 from os import path
 from pickle import dumps, loads
+from sqlalchemy.pool import AssertionPool
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, session, scoped_session
+from sqlalchemy.orm.interfaces import SessionExtension
 from xdapy.utils.configobj import ConfigObj
 import objects
 import views
+from utils.decorators import lazyprop
 
-class Settings(object):
+
+##http://www.mail-archive.com/sqlalchemy@googlegroups.com/msg07513.html
+class OrphanDeletion(SessionExtension):
+    def after_flush(self, session, flush_context):
+        sess = create_session(bind=session.connection())
+        parameters = sess.query(Parameter).filter(~exists([1],
+            parameterlist.c.parameter_id == Parameter.id)).all()
+        for k in parameters:
+            sess.delete(k)
+        sess.flush()
+        for k in parameters:
+            if k in session:
+                    session.expunge(k)
+
+class _Settings(object):
     default_path = '~/.xdapy/engine.ini'
     def __init__(self, filename=None):
         """
@@ -45,6 +64,17 @@ class Settings(object):
                             'dbname = xdapy')
 
         self.config = ConfigObj(self.filename)
+    
+        self.Session = scoped_session(sessionmaker(extension=OrphanDeletion()))
+        self._engine = None
+    
+    @lazyprop
+    def engine(self):
+        return create_engine(self.db, poolclass=AssertionPool, echo=False)
+    
+    @lazyprop
+    def test_engine(self):
+        return create_engine(self.test_db, poolclass=AssertionPool, echo=False)
 
     @property
     def db(self):
@@ -65,3 +95,4 @@ class Settings(object):
         except:
             raise Exception("Cannot create engine with information from engine.ini")
 
+Settings = _Settings()

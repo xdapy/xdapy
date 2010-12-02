@@ -158,7 +158,7 @@ class ViewHandler(object):
                         views.StringParameter.value == value).all()
                     
                     if len(strparam_list)>1:
-                        raise SelectionError("But in table setup, this should not happen.") 
+                        raise SelectionError("Bug in table setup, this should not happen.") 
                     elif strparam_list:
                         strparam = views.StringParameter( key,value)
                         strparam.id = strparam_list[0].id
@@ -171,7 +171,7 @@ class ViewHandler(object):
                         views.IntegerParameter.value == value).all()
                     
                     if len(intparam_list)>1:
-                        raise SelectionError("But in table setup, this should not happen.") 
+                        raise SelectionError("Bug in table setup, this should not happen.") 
                     
                     intparam = views.IntegerParameter( key,value)
                     if intparam_list:
@@ -476,9 +476,7 @@ class ViewHandler(object):
         return_value = True
         msg = ""
         
-        s = select([ParameterOption.parameter_name, 
-
-
+        s = select([ParameterOption.parameter_name,
                     ParameterOption.parameter_type], 
                    ParameterOption.entity_name==entity.name)
         result = session.execute(s).fetchall()
