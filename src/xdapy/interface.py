@@ -20,8 +20,10 @@ class Interface(object):
 
 """
 Demo session.
+I = new Interface()
 
-I.find_experiment({experimenter})
+exp = I.find_experiment({experimenter:"name"})[0]
+obs = I.find_observer(experiment: exp, observer)
 
 
 

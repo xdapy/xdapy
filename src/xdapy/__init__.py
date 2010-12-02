@@ -8,8 +8,9 @@ from os import path
 from pickle import dumps, loads
 from sqlalchemy.pool import AssertionPool
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, session, scoped_session
+from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
+from sqlalchemy.sql import exists
 from xdapy.utils.configobj import ConfigObj
 import objects
 import views
@@ -20,14 +21,14 @@ from utils.decorators import lazyprop
 class OrphanDeletion(SessionExtension):
     def after_flush(self, session, flush_context):
         sess = create_session(bind=session.connection())
-        parameters = sess.query(Parameter).filter(~exists([1],
-            parameterlist.c.parameter_id == Parameter.id)).all()
+        parameters = sess.query(views.Parameter).filter(~exists([1],
+            views.parameterlist.c.parameter_id == views.Parameter.id)).all()
         for k in parameters:
             sess.delete(k)
         sess.flush()
         for k in parameters:
             if k in session:
-                    session.expunge(k)
+                session.expunge(k)
 
 class _Settings(object):
     default_path = '~/.xdapy/engine.ini'

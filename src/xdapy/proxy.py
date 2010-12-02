@@ -22,35 +22,16 @@ TODO: Error if the commiting fails
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
-
-
-##http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
-##RICK COPELAND (23.09.2009)
-#
-#from sqlalchemy.databases import postgres
-#
-#class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
-#     def visit_table(self, table):
-#        for column in table.columns:
-#            if column.default is not None:
-#                self.traverse_single(column.default)
-#        self.append("\nDROP TABLE " +
-#                    self.preparer.format_table(table) +
-#                    " CASCADE")
-#        self.execute()
-#
-#postgres.dialect.schemadropper = PGCascadeSchemaDropper
-
 class Proxy(object):
     """Handle database access and sessions"""
               
-    def __init__(self, db):
+    def __init__(self, engine):
         '''Constructor
         
         Creates the engine for a specific database and a session factory
         '''
-        self.engine = create_engine(db, poolclass=AssertionPool, echo=False)
-        self.Session = scoped_session(sessionmaker(bind=self.engine, extension=MyExt()))
+        self.engine = engine
+        self.session = Settings.Session(bind=engine)
         self.viewhandler = ViewHandler()
     
     def create_tables(self, overwrite=False):
@@ -71,7 +52,7 @@ class Proxy(object):
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
         """
-        session = self.Session()
+        session = self.session
         try:
             for arg in args:
                 entity = self.viewhandler.insert_object(session, arg)
@@ -97,7 +78,7 @@ class Proxy(object):
         TypeError -- If the argument does not match the requirements.
         RequestObjectError -- If the request does not yield a single objects 
         """   
-        session = self.Session()
+        session = self.session
         try:
             objects = self.viewhandler.select_object(session, argument)
             if len(objects) > 1:
@@ -117,7 +98,7 @@ class Proxy(object):
         Attribute:
         argument -- An object derived from datamanager.objects.ObjectTemplate 
         """   
-        session = self.Session()
+        session = self.session
         objects = self.viewhandler.select_object(session, argument)
         session.close()  
         return objects
@@ -134,7 +115,7 @@ class Proxy(object):
         RequestObjectError -- If the objects whos children should be loaded is 
             not properly saved in the database
         """
-        session = self.Session()
+        session = self.session
         try:
             children = self.viewhandler.retrieve_children(session, parent, label, uniqueContext)
         except Exception:
@@ -144,7 +125,9 @@ class Proxy(object):
         return children
              
     def get_data_matrix(self, conditions, items):
-        session = self.Session()
+        import pdb
+        pdb.set_trace()
+        session = self.session
         try:
             matrix = self.viewhandler.get_data_matrix(session, conditions, items)
         except Exception:
@@ -170,7 +153,7 @@ class Proxy(object):
             
         TODO: Maybe consider to save objects automatically 
         """
-        session = self.Session()
+        session = self.session
         try:
             if root:
                 self.viewhandler.append_child(session, parent, child, root)
@@ -197,7 +180,7 @@ class Proxy(object):
         TypeError -- If the parameters are not correctly specified
         Some SQL error -- If the same entry already exists
         """
-        session = self.Session()
+        session = self.session
         try:
             self.viewhandler.insert_parameter_option(session,
                                                  entity_name,
@@ -209,10 +192,10 @@ class Proxy(object):
         session.close()
         
 if __name__ == "__main__":
-    db = Settings().db
-    p = Proxy(db)
+    engine = Settings.engine
+    p = Proxy(engine)
     p.create_tables(overwrite=True)
-    session = p.Session()
+    session = p.session
     session.add(ParameterOption('Observer', 'name', 'string'))
     session.add(ParameterOption('Observer', 'age', 'integer'))
     session.add(ParameterOption('Observer', 'handedness', 'string'))
@@ -241,7 +224,7 @@ if __name__ == "__main__":
     p.connect_objects(e2, o3)
     p.connect_objects(e1, o3)
 
-    import matplotlib.pyplot as plt
+#    import matplotlib.pyplot as plt
     import networkx as nx
 
     G=nx.DiGraph()
@@ -254,17 +237,17 @@ if __name__ == "__main__":
     pos=nx.circular_layout(G) # positions for all nodes
 
     # nodes
-    nx.draw_networkx_nodes(G,pos)
+#    nx.draw_networkx_nodes(G,pos)
 
     # edges
-    nx.draw_networkx_edges(G,pos)
+#    nx.draw_networkx_edges(G,pos)
 
     # labels
-    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
+#    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
 
-    plt.axis('off')
-    plt.savefig("weighted_graph.png") # save as png
-    plt.show() # display
+#    plt.axis('off')
+#    plt.savefig("weighted_graph.png") # save as png
+#    plt.show() # display
     
     
     #session.commit()
