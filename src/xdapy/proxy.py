@@ -92,16 +92,34 @@ class Proxy(object):
         return objects[0]
     
     @require('argument', ObjectDict)
-    def load_all(self, argument):
+    def load_all(self, argument, filter=None):
         """Load all matching instances inherited from ObjectTemplate from the database
         
-        Attribute:
+        Attributes:
         argument -- An object derived from datamanager.objects.ObjectTemplate 
         """   
         session = self.session
-        objects = self.viewhandler.select_object(session, argument)
-        session.close()  
-        return objects
+        objects = self.viewhandler.select_object(session, argument, filter)
+        filter = None
+        session.close()
+        if filter is None:
+            return objects
+        else:
+            return self.filter(objects, filter)
+        
+    def filter(self, objects, filter):
+        def smart_matches(needle, hay):
+            if needle == hay:
+                return True
+            try:
+                # TODO refine
+                # assume we have been given a range or list
+                if needle in hay:
+                    return True
+            except Exception:
+                return False
+            
+        return [o for o in objects for (key, val) in filter.iteritems() if smart_matches(o[key], val)]
  
     @require('parent', (int, long, ObjectDict))
     def get_children(self, parent, label=None, uniqueContext=False):
@@ -125,8 +143,6 @@ class Proxy(object):
         return children
              
     def get_data_matrix(self, conditions, items):
-        import pdb
-        pdb.set_trace()
         session = self.session
         try:
             matrix = self.viewhandler.get_data_matrix(session, conditions, items)
@@ -191,20 +207,34 @@ class Proxy(object):
             raise
         session.close()
         
+    @require("entity", ObjectDict)
+    def registered_parameters(self, entity):
+        session = self.session
+        entity = self.viewhandler.convert(session, entity)
+        return dict((p.name, p.value) for p in entity.parameters)
+        
 if __name__ == "__main__":
     engine = Settings.engine
     p = Proxy(engine)
     p.create_tables(overwrite=True)
-    session = p.session
-    session.add(ParameterOption('Observer', 'name', 'string'))
-    session.add(ParameterOption('Observer', 'age', 'integer'))
-    session.add(ParameterOption('Observer', 'handedness', 'string'))
-    session.add(ParameterOption('Experiment', 'project', 'string'))
-    session.add(ParameterOption('Experiment', 'experimenter', 'string'))
-    session.commit()
-    e1 = Experiment(project='MyProject', experimenter="John Doe")
+    
+    p.register_parameter('Observer', 'name', 'string')
+    p.register_parameter('Observer', 'nam', 'integer')
+    p.register_parameter('Observer', 'age', 'string')
+    p.register_parameter('Observer', 'age', 'integer')
+    p.register_parameter('Observer', 'handedness', 'string')
+    p.register_parameter('Experiment', 'name', 'string')
+    p.register_parameter('Experiment', 'nam', 'string')
+    p.register_parameter('Experiment', 'project', 'string')
+    p.register_parameter('Experiment', 'experimenter', 'string')
+    p.register_parameter('Experiment', 'countme', 'integer')
+    
+    e1 = Experiment(project='MyProject', experimenter="John Do")
+    e1['name'] = "PPPP"
+    e1['nam'] = "QQQQ"
     e2 = Experiment(project='YourProject', experimenter="John Doe")
     o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+    o1['nam'] = 9999
     o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
     o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     
@@ -224,33 +254,20 @@ if __name__ == "__main__":
     p.connect_objects(e2, o3)
     p.connect_objects(e1, o3)
 
-#    import matplotlib.pyplot as plt
-    import networkx as nx
-
-    G=nx.DiGraph()
     experiments = p.load_all(Experiment())
     
-    for experiment in experiments:
-        for child in p.get_children(experiment):
-            G.add_edge(experiment['project'], child['name'])
-    
-    pos=nx.circular_layout(G) # positions for all nodes
+    for num, experiment in enumerate(experiments):
+        experiment["countme"] = num
+        experiment["project"] = "kjhkhkjhkjhkjhjk"
+        p.save(experiment)
+        p.registered_parameters(experiment)
+        
+        print p.registered_parameters(experiment)
+#            import pdb
+#    pdb.set_trace()
 
-    # nodes
-#    nx.draw_networkx_nodes(G,pos)
-
-    # edges
-#    nx.draw_networkx_edges(G,pos)
-
-    # labels
-#    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
-
-#    plt.axis('off')
-#    plt.savefig("weighted_graph.png") # save as png
-#    plt.show() # display
-    
-    
-    #session.commit()
+    print p.load_all(Observer(), filter={"age": range(30, 50), "name": ["Sor%"]})
+#    print p.load_all(Observer(), filter={"name": range(1,100)})
     print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================

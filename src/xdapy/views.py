@@ -15,6 +15,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 from datetime import date, time, datetime
 from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
     Binary, String, Integer, Float, Date, Time, DateTime, Boolean
+from sqlalchemy.schema import UniqueConstraint, CheckConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, backref, validates
 from sqlalchemy.sql import and_
@@ -517,9 +518,10 @@ class ParameterOption(base):
     parameter_name = Column('parameter_name', String(40), primary_key=True)
     entity_name = Column('entity_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40), primary_key=True)
-  
+    
     __tablename__ = 'parameteroptions'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = (UniqueConstraint(parameter_name, entity_name),
+                      {'mysql_engine':'InnoDB'})
     
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):

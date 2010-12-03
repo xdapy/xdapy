@@ -56,7 +56,7 @@ class ViewHandler(object):
     
     @require('session', session.Session)
     @require('argument',(int, long, ObjectDict))
-    def select_object(self,session,argument):
+    def select_object(self, session, argument, filter=None):
         """Search for and return a specific entity.
         
         @type session: sqlalchemy.orm.session.Session
@@ -71,33 +71,48 @@ class ViewHandler(object):
         @return: Experimental objects (List with instances of datamanager.objects.ObjectDict)
         """
         if isinstance(argument,ObjectDict):
-            entities = self._select_entity_by_object(session,argument)
+            entities = self._select_entity_by_object(session, argument, filter)
         elif isinstance(argument,int) or isinstance(argument,long):
-            entities = self._select_entity_by_id(session,argument)
+            entities = self._select_entity_by_id(session, argument, filter)
       
         return [self.convert(session, entity) for entity in entities]
        
         
     @require('session', session.Session)
     @require('object_',ObjectDict)
-    def _select_entity_by_object(self,session,object_):
-        pars  = []
-        for key,value in  object_.items():
+    def _select_entity_by_object(self, session, object_, filter=None):
+        if filter is None:
+            filter = {}
+        filter.update(dict(object_.items()))
+        pars = []
+        for key,value in filter.iteritems():
             if value is not None:
                 if isinstance(value,str):
-                    pars.append(Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value== value ,StringParameter.name==key)))
+                    pars.append(Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value.like(value), StringParameter.name == key)))
                 elif isinstance(value,int) or isinstance(value,long):
-                    pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value== value ,IntegerParameter.name==key)))
+                    pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value == value, IntegerParameter.name == key)))
+                elif isinstance(value, list) or isinstance(value, range) or isinstance(value, tuple):
+                    pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value.in_(value), IntegerParameter.name == key)))
                 else:
                     raise TypeError("Attribute type '%s' is not supported" %
                                      type(value))     
             
         if pars:
-            result = session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()
+            pre_result = session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars))
         else:
-            result = session.query(Entity).filter_by(name=object_.__class__.__name__).all()#one()
+            pre_result = session.query(Entity).filter_by(name=object_.__class__.__name__)
+            
+#        pars = []
+#        for key, value in dict.iteritems():
+#            if isinstance(value,str):
+#                pars.append(Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value == value ,StringParameter.name == key)))
+#            elif isinstance(value,int) or isinstance(value,long):
+#                pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value == value ,IntegerParameter.name == key)))
+#            else:
+#                raise TypeError("Filtering on attribute type '%s' is not supported" %
+#                                 type(value))
         
-        return result
+        return pre_result.all() # one()
         
     
     @require('session', session.Session)
@@ -423,7 +438,7 @@ class ViewHandler(object):
         item_num = 0
         for object_type,object_params in items.items():
             if cmp(object_type, node.name) is 0:
-                "TODO: Select th55e required items"
+                "TODO: Select the required items"
                 #if item provided, register and continue
                 #if not, continue
                 param_num = 0
