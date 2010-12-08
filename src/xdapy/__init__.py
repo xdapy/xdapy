@@ -12,8 +12,13 @@ from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.sql import exists
 from xdapy.utils.configobj import ConfigObj
+
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
+
 import objects
 import views
+from parameterstore import Parameter
 from utils.decorators import lazyprop
 
 
@@ -21,8 +26,8 @@ from utils.decorators import lazyprop
 class OrphanDeletion(SessionExtension):
     def after_flush(self, session, flush_context):
         sess = create_session(bind=session.connection())
-        parameters = sess.query(views.Parameter).filter(~exists([1],
-            views.parameterlist.c.parameter_id == views.Parameter.id)).all()
+        parameters = sess.query(Parameter).filter(~exists([1],
+            views.parameterlist.c.parameter_id == Parameter.id)).all()
         for k in parameters:
             sess.delete(k)
         sess.flush()

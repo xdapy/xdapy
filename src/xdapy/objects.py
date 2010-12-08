@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Contains template class for experimental objects and some concrete classes.
 
 Created on Jun 17, 2009
@@ -23,6 +24,8 @@ class ObjectDict(dict):
     classes such as dictionary like variable access for parameters, a data object 
     (dictionary as well) to store binary data and a boolean variable monitoring the 
     concurrency with the database.
+    
+    Note that only parameters which have been declared and given a type are allowed.
     """  
     class __dataDict(dict):
         
@@ -38,8 +41,6 @@ class ObjectDict(dict):
         dict.__init__(self)
         self.__concurrent = [False]#:boolean value indicating the concurrency with the database
         self.__data = self.__dataDict()
-    
-    
     
     def __eq__(self, other):
         if (isinstance(other, ObjectDict) and
@@ -70,13 +71,15 @@ class ObjectDict(dict):
      
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items""" 
-        self = d.pop('self')
+#        self = d.pop('self')
         for n, v in d.iteritems():
             if v:
                 self[n] = v
         
     def __setitem__(self, key, item):
         """Set dictionary item and update _concurrent attribute"""
+        if key not in self.parameters():
+            raise KeyError("Parameter '%s' not declared for class %s" % (key, self.__class__.__name__))
         if not self.has_key(key) or self[key] is not item:
             dict.__setitem__(self, key, item)
             self.__concurrent[0] = False
@@ -85,7 +88,7 @@ class ObjectDict(dict):
     def set_concurrent(self, boolean):
         """Set _concurrent attribute to a boolean value"""
         self.__concurrent[0] = boolean
-#       
+
     def get_concurrent(self):
         """Return _concurrent attribute"""
         return logical_and(self.__concurrent[0], self.__data._dataDict__concurrent[0])
@@ -103,38 +106,69 @@ class ObjectDict(dict):
    
     data = property(getData, setData)
     
-        
+    @classmethod
+    def _collect_all_instances(cls, klass):
+        """Returns all instances of klass which are defined in cls."""
+        instances = {}
+        for base in cls.__mro__:
+            for name, obj in vars(base).items():
+                if isinstance(obj, klass):
+                    instances[name] = obj
+        return instances
+    
+    @classmethod
+    def parameters(cls):
+        return cls._collect_all_instances(Parameter)
+
+class Parameter(object):
+    def __init__(self, parameter_type, default=None):
+        self.parameter_type = parameter_type
+        self.default_value = default
+
 class Experiment(ObjectDict):
     """Concrete class for experiments"""
     
-    def __init__(self, experimenter=None, project=None):
+    experimenter = Parameter('string', None)
+    project = Parameter('string', None)
+    
+    def __init__(self, **kwargs):
         """Constructor"""
         ObjectDict.__init__(self)
-        self._set_items_from_arguments(locals())
+        self._set_items_from_arguments(kwargs)
 
 class Observer(ObjectDict):
     """Concrete class for observers"""
     
-    def __init__(self, name=None, age=None, handedness=None):
+    name = Parameter('string', None)
+    age = Parameter('integer', None)
+    handedness = Parameter('string', None)
+
+    def __init__(self, **kwargs):
         """Constructor"""
         ObjectDict.__init__(self)
-        self._set_items_from_arguments(locals())
+        self._set_items_from_arguments(kwargs)
      
 class Session(ObjectDict):
     """Concrete class for sessions"""
     
-    def __init__(self, date=None):
+    date = Parameter('date', None)
+    
+    def __init__(self, **kwargs):
         """Constructor"""
         ObjectDict.__init__(self)
-        self._set_items_from_arguments(locals())
+        self._set_items_from_arguments(kwargs)
 
 class Trial(ObjectDict):
     """Concrete class for trials"""
     
-    def __init__(self, rt=None, valid=None, response=None):
+    rt = Parameter('string', None)
+    valid = Parameter('boolean', None)
+    response = Parameter('string', None)
+    
+    def __init__(self, **kwargs):
         """Constructor"""
         ObjectDict.__init__(self)
-        self._set_items_from_arguments(locals())
+        self._set_items_from_arguments(kwargs)
         
   
 if __name__ == "__main__":

@@ -11,8 +11,8 @@ from xdapy.errors import SelectionError, ContextError, InsertionError, \
     ContextWarning
 from xdapy.objects import ObjectDict
 from xdapy.utils.decorators import require
-from xdapy.views import Entity, StringParameter, IntegerParameter, \
-    ParameterOption, Context
+from xdapy.views import Entity, ParameterOption, Context
+from xdapy.parameterstore import StringParameter, IntegerParameter
 """
 TODO: insert check if same object exists, if yes, use this object
         print "WARNING: The object %s is already contained in the database!"% object 
@@ -85,18 +85,19 @@ class ViewHandler(object):
             filter = {}
         filter.update(dict(object_.items()))
         pars = []
-        for key,value in filter.iteritems():
-            if value is not None:
-                if isinstance(value,str):
-                    pars.append(Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value.like(value), StringParameter.name == key)))
-                elif isinstance(value,int) or isinstance(value,long):
-                    pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value == value, IntegerParameter.name == key)))
-                elif isinstance(value, list) or isinstance(value, range) or isinstance(value, tuple):
-                    pars.append(Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value.in_(value), IntegerParameter.name == key)))
-                else:
-                    raise TypeError("Attribute type '%s' is not supported" %
-                                     type(value))     
-            
+        for key,value in filter.iteritems():    
+            def makeParam(key, value):
+                if not (isinstance(value, list) or isinstance(value, tuple)):
+                    return makeParam(key, [value])
+                for v in value:
+                    if isinstance(v, str):
+                        return Entity.parameters.of_type(StringParameter).any(and_(StringParameter.value.like(v), StringParameter.name == key))
+                    elif isinstance(v, int) or isinstance(v, long):
+                        return Entity.parameters.of_type(IntegerParameter).any(and_(IntegerParameter.value == v, IntegerParameter.name == key))
+                    else:
+                        raise TypeError("Attribute type '%s' is not supported" %
+                                        type(v))     
+            pars.append(makeParam(key, value))
         if pars:
             pre_result = session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars))
         else:
@@ -168,27 +169,27 @@ class ViewHandler(object):
             #add parameters of different types to the entity
             for key,value in  convertible.items():
                 if isinstance(value,str):
-                    strparam_list = session.query(views.StringParameter).filter(
-                        views.StringParameter.name == key).filter(
-                        views.StringParameter.value == value).all()
+                    strparam_list = session.query(StringParameter).filter(
+                        StringParameter.name == key).filter(
+                        StringParameter.value == value).all()
                     
                     if len(strparam_list)>1:
                         raise SelectionError("Bug in table setup, this should not happen.") 
                     elif strparam_list:
-                        strparam = views.StringParameter( key,value)
+                        strparam = StringParameter( key,value)
                         strparam.id = strparam_list[0].id
                         entity.parameters.append(strparam)
                     else:
-                        entity.parameters.append(views.StringParameter(unicode(key),unicode(value)))
+                        entity.parameters.append(StringParameter(unicode(key),unicode(value)))
                 elif isinstance(value, int):
-                    intparam_list = session.query(views.IntegerParameter).filter(
-                        views.IntegerParameter.name == key).filter(
-                        views.IntegerParameter.value == value).all()
+                    intparam_list = session.query(IntegerParameter).filter(
+                        IntegerParameter.name == key).filter(
+                        IntegerParameter.value == value).all()
                     
                     if len(intparam_list)>1:
                         raise SelectionError("Bug in table setup, this should not happen.") 
                     
-                    intparam = views.IntegerParameter( key,value)
+                    intparam = IntegerParameter( key,value)
                     if intparam_list:
                         intparam.id = intparam_list[0].id
                     entity.parameters.append(intparam)
@@ -230,7 +231,9 @@ class ViewHandler(object):
         
     def insert_parameter_option(self, session, e_name, p_name, p_type):
         parameter_option = ParameterOption(e_name,p_name,p_type)
-        session.add(parameter_option)
+#        if session.query(ParameterOption).filter(ParameterOption==parameter_option).one():
+#            print "FOOOOOUNDDD"
+        session.merge(parameter_option)
         session.commit()
     
     @require('session', session.Session)
@@ -493,7 +496,7 @@ class ViewHandler(object):
         
         s = select([ParameterOption.parameter_name,
                     ParameterOption.parameter_type], 
-                   ParameterOption.entity_name==entity.name)
+                    ParameterOption.entity_name==entity.name)
         result = session.execute(s).fetchall()
             
         optionlut={}

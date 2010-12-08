@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module provides the code to access a database on an abstract level. 
 
 Created on Jun 17, 2009
@@ -7,12 +8,13 @@ from sqlalchemy.orm import sessionmaker, session, scoped_session, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.pool import AssertionPool
 from sqlalchemy.sql import exists
-from xdapy import Settings
+from xdapy import Settings, Base
 from xdapy.errors import SelectionError
-from xdapy.objects import ObjectDict, Experiment, Observer
+from xdapy.objects import ObjectDict, Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.viewhandler import ViewHandler
-from xdapy.views import base, Parameter, parameterlist, ParameterOption
+from xdapy.views import parameterlist, ParameterOption
+from xdapy.parameterstore import Parameter
 """
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
@@ -37,8 +39,8 @@ class Proxy(object):
     def create_tables(self, overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
         if overwrite:
-            base.metadata.drop_all(self.engine, checkfirst=True)
-        base.metadata.create_all(self.engine)   
+            Base.metadata.drop_all(self.engine, checkfirst=True)
+        Base.metadata.create_all(self.engine)   
     
 #    @require('object_',ObjectDict)
 #    def save(self,object_):
@@ -207,6 +209,12 @@ class Proxy(object):
             raise
         session.close()
         
+        
+    def register(self, klass):
+        """Registers the class and the class’s parameters."""
+        for name, param in klass.parameters().iteritems():
+            self.register_parameter(klass.__name__, name, param.parameter_type)
+        
     @require("entity", ObjectDict)
     def registered_parameters(self, entity):
         session = self.session
@@ -217,29 +225,26 @@ if __name__ == "__main__":
     engine = Settings.engine
     p = Proxy(engine)
     p.create_tables(overwrite=True)
-    
-    p.register_parameter('Observer', 'name', 'string')
-    p.register_parameter('Observer', 'nam', 'integer')
-    p.register_parameter('Observer', 'age', 'string')
-    p.register_parameter('Observer', 'age', 'integer')
-    p.register_parameter('Observer', 'handedness', 'string')
-    p.register_parameter('Experiment', 'name', 'string')
-    p.register_parameter('Experiment', 'nam', 'string')
-    p.register_parameter('Experiment', 'project', 'string')
-    p.register_parameter('Experiment', 'experimenter', 'string')
-    p.register_parameter('Experiment', 'countme', 'integer')
-    
+
+    p.register(Observer)
+    p.register(Experiment)
+    p.register(Trial)
+    p.register(Session)
+
     e1 = Experiment(project='MyProject', experimenter="John Do")
-    e1['name'] = "PPPP"
-    e1['nam'] = "QQQQ"
-    e2 = Experiment(project='YourProject', experimenter="John Doe")
-    o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-    o1['nam'] = 9999
-    o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
-    o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
+    e1['project'] = "NoProject"
+    p.save(e1)
+    p.save(e1)
+    p.save(e1)
+    p.save(e1)
+    print e1.project
+#    e2 = Experiment(project='YourProject', experimenter="John Doe")
+#    o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+#    o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
+#    o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     
     #all objects are root
-    p.save(e1, e2, o1, o2, o3)
+#    p.save(e1, e2, o1, o2, o3)
     
 #    p.connect_objects(e1, o1)
 #    p.connect_objects(o1, o2)
@@ -249,18 +254,23 @@ if __name__ == "__main__":
     # print p.get_data_matrix([], {'Observer':['age','name']})
     
     #only e1 and e2 are root
-    p.connect_objects(e1, o1)
-    p.connect_objects(e1, o2)
-    p.connect_objects(e2, o3)
-    p.connect_objects(e1, o3)
+#    p.connect_objects(e1, o1)
+#    p.connect_objects(e1, o2)
+#    p.connect_objects(e2, o3)
+#    p.connect_objects(e1, o3)
 
     experiments = p.load_all(Experiment())
     
+    from xdapy.objects import Parameter
+    Experiment.countme = Parameter('integer')
+    Experiment.project = Parameter('integer')
+    p.register(Experiment)
+    
     for num, experiment in enumerate(experiments):
         experiment["countme"] = num
-        experiment["project"] = "kjhkhkjhkjhkjhjk"
-        p.save(experiment)
-        p.registered_parameters(experiment)
+        experiment["project"] = 123
+        experiment.save()
+#        p.registered_parameters(experiment)
         
         print p.registered_parameters(experiment)
 #            import pdb
