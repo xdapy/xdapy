@@ -238,26 +238,26 @@ if __name__ == "__main__":
     p.save(e1)
     p.save(e1)
     print e1.project
-#    e2 = Experiment(project='YourProject', experimenter="John Doe")
-#    o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-#    o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
-#    o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
+    e2 = Experiment(project='YourProject', experimenter="John Doe")
+    o1 = Observer(name="Max Mustermann", handedness="right", age=26)#
+    o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
+    o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     
     #all objects are root
-#    p.save(e1, e2, o1, o2, o3)
+    p.save(e1, e2, o1, o2, o3)
     
-#    p.connect_objects(e1, o1)
-#    p.connect_objects(o1, o2)
+    p.connect_objects(e1, o1)
+    p.connect_objects(o1, o2)
 #    print p.get_children(e1)
 #    print p.get_children(o1, 1)   
     
     # print p.get_data_matrix([], {'Observer':['age','name']})
     
     #only e1 and e2 are root
-#    p.connect_objects(e1, o1)
-#    p.connect_objects(e1, o2)
-#    p.connect_objects(e2, o3)
-#    p.connect_objects(e1, o3)
+    p.connect_objects(e1, o1)
+    p.connect_objects(e1, o2)
+    p.connect_objects(e2, o3)
+    p.connect_objects(e1, o3)
 
     experiments = p.load_all(Experiment())
     
