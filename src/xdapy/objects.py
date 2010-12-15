@@ -125,7 +125,18 @@ class Parameter(object):
         self.parameter_type = parameter_type
         self.default_value = default
 
-class Experiment(ObjectDict):
+from xdapy.views import Entity
+
+class EntityObject(Entity):
+    def __init__(self, **kwargs):
+        self.entity_id = None
+    @classmethod
+    def parameters(cls):
+        return {}
+    def _set_items_from_arguments(self, rest):
+        pass
+
+class Experiment(EntityObject):
     """Concrete class for experiments"""
     
     experimenter = Parameter('string', None)
@@ -133,10 +144,11 @@ class Experiment(ObjectDict):
     
     def __init__(self, **kwargs):
         """Constructor"""
-        ObjectDict.__init__(self)
+        EntityObject.__init__(self)
         self._set_items_from_arguments(kwargs)
+        self.param = {}
 
-class Observer(ObjectDict):
+class Observer(EntityObject):
     """Concrete class for observers"""
     
     name = Parameter('string', None)
@@ -145,20 +157,20 @@ class Observer(ObjectDict):
 
     def __init__(self, **kwargs):
         """Constructor"""
-        ObjectDict.__init__(self)
+        EntityObject.__init__(self)
         self._set_items_from_arguments(kwargs)
      
-class Session(ObjectDict):
+class Session(EntityObject):
     """Concrete class for sessions"""
     
     date = Parameter('date', None)
     
     def __init__(self, **kwargs):
         """Constructor"""
-        ObjectDict.__init__(self)
+        EntityObject.__init__(self)
         self._set_items_from_arguments(kwargs)
 
-class Trial(ObjectDict):
+class Trial(EntityObject):
     """Concrete class for trials"""
     
     rt = Parameter('string', None)
@@ -167,7 +179,7 @@ class Trial(ObjectDict):
     
     def __init__(self, **kwargs):
         """Constructor"""
-        ObjectDict.__init__(self)
+        EntityObject.__init__(self)
         self._set_items_from_arguments(kwargs)
         
   

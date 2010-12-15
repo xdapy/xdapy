@@ -57,9 +57,10 @@ class Proxy(object):
         session = self.session
         try:
             for arg in args:
-                entity = self.viewhandler.insert_object(session, arg)
+                #entity = self.viewhandler.insert_object(session, arg)
                 #entity = self.viewhandler.insert_object(session,convert(arg))
-                arg.set_concurrent(True)
+                #arg.set_concurrent(True)
+                session.merge(arg)
             session.commit()
         except Exception:
             session.close()
@@ -154,9 +155,9 @@ class Proxy(object):
         session.close()
         return matrix
     
-    @require('parent', (int, long, ObjectDict))
-    @require('child', (int, long, ObjectDict))
-    def connect_objects(self, parent, child, root=None):
+#    @require('parent', (int, long, ObjectDict))
+#    @require('child', (int, long, ObjectDict))
+    def connect_objects(self, parent, child, force=False):
         """Connect two related objects
         
         Attribute:
@@ -173,10 +174,7 @@ class Proxy(object):
         """
         session = self.session
         try:
-            if root:
-                self.viewhandler.append_child(session, parent, child, root)
-            else:
-                self.viewhandler.append_child(session, parent, child)
+            self.viewhandler.append_child(session, parent, child, force)
         except Exception:
             session.close()
             raise
@@ -232,7 +230,7 @@ if __name__ == "__main__":
     p.register(Session)
 
     e1 = Experiment(project='MyProject', experimenter="John Do")
-    e1['project'] = "NoProject"
+    e1.param['project'] = "NoProject"
     p.save(e1)
     p.save(e1)
     p.save(e1)
@@ -244,7 +242,8 @@ if __name__ == "__main__":
     o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     
     #all objects are root
-    p.save(e1, e2, o1, o2, o3)
+    p.save(e1)
+    p.save(e2, o1, o2, o3)
     
     p.connect_objects(e1, o1)
     p.connect_objects(o1, o2)
@@ -254,8 +253,8 @@ if __name__ == "__main__":
     # print p.get_data_matrix([], {'Observer':['age','name']})
     
     #only e1 and e2 are root
-    p.connect_objects(e1, o1)
-    p.connect_objects(e1, o2)
+#    p.connect_objects(e1, o1)
+    p.connect_objects(e1, o2, True)
     p.connect_objects(e2, o3)
     p.connect_objects(e1, o3)
 
@@ -267,15 +266,13 @@ if __name__ == "__main__":
     p.register(Experiment)
     
     for num, experiment in enumerate(experiments):
-        experiment["countme"] = num
-        experiment["project"] = 123
+        experiment.param["countme"] = num
+        experiment.param["project"] = 123
         experiment.save()
 #        p.registered_parameters(experiment)
         
         print p.registered_parameters(experiment)
-#            import pdb
-#    pdb.set_trace()
-
+    
     print p.load_all(Observer(), filter={"age": range(30, 50), "name": ["Sor%"]})
 #    print p.load_all(Observer(), filter={"name": range(1,100)})
     print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})

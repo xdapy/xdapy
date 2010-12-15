@@ -46,7 +46,7 @@ class ViewHandler(object):
         """
         entity = self.convert(session, entity)
         valid, msg = self._is_valid(session, entity)   
-            
+        
         if valid:
             session.merge(entity)
             session.commit()
@@ -203,7 +203,7 @@ class ViewHandler(object):
                 entity.data.append(d)
             
             #specify the entity as root
-            entity.context.append(views.Context(","))
+            entity.context.append(views.Context())
             return entity
         elif isinstance(convertible,views.Entity):
             #create class for entity
@@ -239,8 +239,7 @@ class ViewHandler(object):
     @require('session', session.Session)
     @require('parent', ObjectDict)
     @require('child', ObjectDict)
-    @require('root', ObjectDict)
-    def append_child(self, session, parent, child, root=None):
+    def append_child(self, session, parent, child, force=False):
         """Append an object as a child of another object.
         
         @type session: sqlalchemy.orm.session.Session
@@ -249,10 +248,6 @@ class ViewHandler(object):
         @param parent: Experimental object serving as parent 
         @type child: Instance derived from datamanager.objects.ObjectDict
         @param child: Experimental object to be appended 
-        @type root: Instance derived from datamanager.objects.ObjectDict
-        @param root: Experimental object higher in the hierarchy as the 
-            parent used to depict the context into which the child should 
-            be appended
         
         @raise SelectionError: If the corresponding database entities to the 
             given objects(parent, child, root) can not be determined.
@@ -260,152 +255,15 @@ class ViewHandler(object):
             appended can not be determined. 
         @raise InsertionError: If the child can not be inserted because of circularity.
         """
-        
-        
-        #-------Retrieve saved entities from the database-------
-        parent_entities = self._select_entity_by_object(session,parent)
-        self._check_length_of_result(parent_entities, 
-                              missing="Objects must be saved before they can be used in a context",
-                              multiple="Multiple parents found! Please specify the parent object more clearly")
-        parent_entity = parent_entities[0]
-        
-        child_entities = self._select_entity_by_object(session, child)
-        self._check_length_of_result(child_entities,
-                              missing="Objects must be saved before they can be used in a context",
-                              multiple="Multiple children found! Please specify the child object more clearly")
-        child_entity = child_entities[0]
-
-
-        if root:
-            ancestor_entities = self._select_entity_by_object(session, root)
-            self._check_length_of_result(ancestor_entities,
-                                  missing = "Ancestor object must be saved before it can be used in a context",
-                                  multiple = "Multiple ancestors found! Please specify the ancestor object clearly")
-            ancestor_entity = ancestor_entities[0]
+        if child in parent.all_parents() + [parent]:
+            raise InsertError('Can not insert child because of circularity.')
             
-        #---------retrieve contexts from database------------------------
-            path_fragment_of_ancestor = ','+str(ancestor_entity.id)+','
-            contexts_to_parent = session.query(Context).filter(
-                    Context.entity_id == parent_entity.id).filter(
-                    Context.path.like('%'+path_fragment_of_ancestor+'%')).all()
-            self._check_length_of_result(contexts_to_parent,
-                                  error=ContextError,
-                                  multiple="There are several contexts with the given ancestor!",
-                                  missing="There is no context with the given ancestor!")
-        else:
-            contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
-            self._check_length_of_result(contexts_to_parent,
-                                  error=ContextError,
-                                  multiple="Please specify an ancestor node to determine the context.",
-                                  missing="This is not a user problem, please report this bug!")
-        path_to_parent = contexts_to_parent[0].path
-        
-        #---------handle circularity-----------------------
-        path_fragment_of_child = ","+str(child_entity.id)+","
-        if path_to_parent.find(path_fragment_of_child) is not -1:
-            raise InsertError('Can not insert child in this context, because of circularity.')
-        
-        #---------if child was root and already has descendents, update their paths------------            
-        path_to_child = path_to_parent+str(parent_entity.id)+','
-        contexts_from_child =  session.query(Context).filter(Context.path.like(path_fragment_of_child+'%'))
-        for context_from_child in contexts_from_child:
-            #if path_from_child.path.find(path_fragment,0,len(path_fragment)) is 0:
-                context_from_child.path = str(path_to_child+context_from_child.path[1:])
- 
-            #---------update the childs path--------------------------------
-        if child_entity.context[0].path==",":
-            child_entity.context[0].path = str(path_to_child)
-        else:
-            child_entity.context.append(Context(str(path_to_child)))
-        
-        #---------save changes---------
+        if child.parent and not force:
+            raise InsertError('Child already has parent. Please set force=True.')
+            
+        child.parent = parent
         session.commit()
                
-    
-    @require('session', session.Session)
-    @require('parent', ObjectDict, Entity)
-    def retrieve_children(self, session, parent, ancestor=None, uniqueContext=True):
-        level = 1
-        if isinstance(parent,ObjectDict):
-            parent_entities = self._select_entity_by_object(session,parent)
-            if not parent_entities:
-                raise SelectionError("Parent not found! Objects must be saved before its children can be loaded")
-            elif len(parent_entities) >1:
-                raise SelectionError("Multiple parents found! Please specify the parent node clearly")
-            else:
-                parent_entity = parent_entities[0]
-        else:
-            parent_entity = parent
-        
-        if isinstance(ancestor,ObjectDict):
-            ancestor_entities = self._select_entity_by_object(session,ancestor)
-            if not ancestor_entities:
-                raise SelectionError("Ancestor not found! Objects must be saved before its children can be loaded")
-            elif len(ancestor_entities) >1:
-                raise SelectionError("Multiple parents found! Please specify the ancestor node clearly")
-            else:
-                path = ','+str(ancestor_entities[0].id)+','
-        elif isinstance(ancestor,Entity):
-            path = ','+str(ancestor.id)+','
-        elif isinstance(ancestor,str):
-            path = ancestor
-            if path.count(',')<2:
-                raise TypeError('Argument is not a valid path')
-        elif isinstance(ancestor,int):
-            path = ','+str(ancestor)+','
-        elif ancestor is None:
-            path = None
-        else:
-            raise TypeError("Function not defined for variables of ", type(ancestor))
-            
-        if path:
-            contexts_to_parent_with_ancestor = session.query(Context).filter(Context.entity_id == parent_entity.id).filter(Context.path.like('%'+path+'%')).all()
-            if len(contexts_to_parent_with_ancestor)>1:
-                if uniqueContext:
-                    raise ContextError("There are several contexts with the given ancestor!")
-                else:
-                    raise ContextWarning("There are several contexts with this parent and ancestor")
-            elif not contexts_to_parent_with_ancestor:
-                raise ContextError("There is no context with the given ancestor!")
-#                else:
-#                    path_to_parent = paths_to_parent_with_ancestor[0].path
-            paths_to_parent = [context.path for context in contexts_to_parent_with_ancestor]
-        else:
-            contexts_to_parent = session.query(Context).filter(Context.entity_id == parent_entity.id).all()
-            if len(contexts_to_parent)>1:
-                if uniqueContext:
-                    raise ContextError("Please specify an ancestor node to determine the context.")
-                else:
-                    print ContextWarning("ContextWarning: There are several contexts with this parent and ancestor")
-                    #print "Warning: There are several contexts with this parent and ancestor" 
-            elif not contexts_to_parent:
-                raise ContextError("This is not a user problem, please report this bug!")
-           # else:
-            #    path_to_parent = contexts_to_parent[0].path
-            paths_to_parent = [context.path for context in contexts_to_parent]
-           
-        pars = []
-        for path_to_parent in paths_to_parent:
-            pars.append(Context.path == path_to_parent+str(parent_entity.id)+',')
-        #print pars
-        
-        if pars:
-            #children_id = session.query(Context.entity_id).filter(or_(*pars)).all()
-            #print children_id
-            children_id_subquery = session.query(Context.entity_id).filter(or_(*pars)).subquery() 
-         #session.query(Entity).filter_by(name=object_.__class__.__name__).filter(and_(*pars)).all()#one()            
-        
-        
-        #children_id_subquery = session.query(Context.entity_id).filter(Context.path== path_to_parent+str(parent_entity.id)+',').subquery()
-        
-        children_entities = session.query(Entity).filter(Entity.id.in_(children_id_subquery)).all()
-        
-        if isinstance(parent,ObjectDict):
-            return [self.convert(session, decendent) for decendent in children_entities]
-        else:
-            return children_entities
-           
-            
     def get_data_matrix(self, session, conditions, items):
         
         matrix = []
@@ -473,9 +331,7 @@ class ViewHandler(object):
         return
 
     def _get_roots(self,session):
-        #subquery = session.query(Relation.child_id).subquery()
-        #roots = session.query(Entity).filter(not_(Entity.id.in_(subquery))).all()
-        roots = session.query(Entity).filter(Entity.context.any(Context.path == ",")).all()
+        roots = session.query(Entity).filter(Entity.parent == null).all()
         return  roots
     
     def _is_valid(self,session, entity):

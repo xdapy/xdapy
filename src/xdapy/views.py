@@ -16,7 +16,8 @@ from datetime import date, time, datetime
 from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
     Binary, String, Integer, Float, Date, Time, DateTime, Boolean
 from sqlalchemy.schema import UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import relation, backref, validates
+from sqlalchemy.orm import relation, relationship, backref, validates
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.sql import and_
         
 from xdapy import Base
@@ -74,71 +75,6 @@ parameterlist = Table('parameterlist', Base.metadata,
    #   ForeignKeyConstraint(['parameter_id'],['parameters.id'])
      mysql_engine='InnoDB'
      )
-
-
-'''
-relations is an association table. It relates an Entity and another Entity 
-using their ids as foreign keys.
-'''
-#relations = Table('relations', Base.metadata,     
-#     Column('id', Integer, ForeignKey('entities.id'), primary_key=True),
-#     Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True),
-#     Column('type',String(40)))
-def _create_relation(child, label):
-    """A creator function, constructs Holdings from Stock and share quantity."""
-    return Relation(child=child, label=label)
-
-class Relation(Base):
-    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    child_id = Column('child_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    label = Column('label', String(500), primary_key=True)
-    
-    __tablename__ = 'relations'
-    __table_args__ = {'mysql_engine':'InnoDB'}
-    
-    parent = relation('Entity',
-                       primaryjoin='Relation.parent_id==Entity.id')
-    child = relation('Entity',
-                      primaryjoin='Relation.child_id==Entity.id')
-    
-    def __init__(self, parent=None, child=None, label=0):
-        self.parent = parent
-        self.child = child
-        self.label = label
-
-
-class Context(Base):
-    '''
-    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
-    must be a string. Each Data is connected to at most one entity through the 
-    adjacency list 'datalist'. The corresponding entities can be accessed via
-    the entities attribute of the Data class.
-    '''
-    id = Column('id', Integer, primary_key=True)
-    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'))
-    path = Column('path', String(500))
-    
-    __tablename__ = 'contexts'
-    __table_args__ = {'mysql_engine':'InnoDB'}
-    
-    @validates('path')
-    def validate_path(self, key, parameter):
-        if not isinstance(parameter, str):
-            raise TypeError("Argument must be a string")
-        return parameter 
-    
-    def __init__(self, path):
-        '''Initialize a parameter with the given name.
-        
-        Argument:
-        name -- A one-word-description of data
-        data -- The data to be saved
-        
-        Raises:
-        TypeError -- Occurs if name is not a string
-        '''
-        self.path = path
-
     
 class Entity(Base):
     '''
@@ -151,19 +87,27 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    name = Column('name', String(40)) 
-   
+    name = Column('name', String(40))
+    
+    #has one parent
+    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
+    children = relation("Entity", backref=backref("parent", remote_side=[id]))
+    
+    def all_parents(self):
+        """Returns a list of all parent entities
+        """
+        node = self
+        parents = []
+        while node.parent:
+            node = node.parent
+            if node in parents:
+                raise "Circular reference"
+            parents.append(node)
+        return parents
+    
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
     
-    #relations = association_proxy('children', 'label', creator=_create_relation)
-    
-#    children = relation('Relation',
-#        collection_class=attribute_mapped_collection('child'),
-#        primaryjoin='Relation.parent_id==Entity.id')
-#   
-    # one to many Entity->Context
-    context = relation('Context', backref=backref('entities', order_by=id))
     # many to many Entity<->Parameter,deletion cascade is handled in session.flush()
     parameters = relation('Parameter', secondary=parameterlist,
                         #primaryjoin = id == parameterlist.c.entity_id,
@@ -193,6 +137,27 @@ class Entity(Base):
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id, self.name)
+
+
+class Context(Base):
+    # Context Association
+    '''
+    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
+    must be a string. Each Data is connected to at most one entity through the 
+    adjacency list 'datalist'. The corresponding entities can be accessed via
+    the entities attribute of the Data class.
+    '''
+    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    related_entity_id = Column('related_id', Integer, ForeignKey('entities.id'), primary_key=True)
+
+    # Each entity can have a context of related entities
+    entity = relationship("Entity", backref='related_entities', primaryjoin=entity_id==Entity.id)
+    related_entities = relationship("Entity", backref='context', primaryjoin=related_entity_id==Entity.id)
+
+    note = Column('note', String(500))
+
+    __tablename__ = 'contexts'
+    __table_args__ = {'mysql_engine':'InnoDB'}
 
 
 class ParameterOption(Base):
