@@ -13,7 +13,7 @@ from xdapy.errors import SelectionError
 from xdapy.objects import ObjectDict, Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.viewhandler import ViewHandler
-from xdapy.views import parameterlist, ParameterOption
+from xdapy.views import ParameterOption
 from xdapy.parameterstore import Parameter
 """
 TODO: Load: what happens if more attributes given as saved in database
@@ -60,12 +60,12 @@ class Proxy(object):
                 #entity = self.viewhandler.insert_object(session, arg)
                 #entity = self.viewhandler.insert_object(session,convert(arg))
                 #arg.set_concurrent(True)
-                session.merge(arg)
+                session.add(arg)
             session.commit()
         except Exception:
             session.close()
             raise 
-        session.close()
+#        session.close()
         
     @require('argument', (int, long, ObjectDict))
     def load(self, argument):
@@ -109,7 +109,13 @@ class Proxy(object):
             return objects
         else:
             return self.filter(objects, filter)
-        
+    
+    def load_all_entity(self, entity):
+        session = self.session
+        objects = session.query(entity).all()
+#        session.close()
+        return objects
+    
     def filter(self, objects, filter):
         def smart_matches(needle, hay):
             if needle == hay:
@@ -198,20 +204,18 @@ class Proxy(object):
         """
         session = self.session
         try:
-            self.viewhandler.insert_parameter_option(session,
-                                                 entity_name,
-                                                 parameter_name,
-                                                 parameter_type)
+            parameter_option = ParameterOption(entity_name,parameter_name,parameter_type)
+            session.merge(parameter_option)
+            session.commit()
         except Exception:
             session.close()
             raise
         session.close()
         
-        
     def register(self, klass):
         """Registers the class and the class’s parameters."""
-        for name, param in klass.parameters().iteritems():
-            self.register_parameter(klass.__name__, name, param.parameter_type)
+        for name, paramtype in klass.parameterDefaults.iteritems():
+            self.register_parameter(klass.__name__, name, paramtype)
         
     @require("entity", ObjectDict)
     def registered_parameters(self, entity):
@@ -235,7 +239,7 @@ if __name__ == "__main__":
     p.save(e1)
     p.save(e1)
     p.save(e1)
-    print e1.project
+    
     e2 = Experiment(project='YourProject', experimenter="John Doe")
     o1 = Observer(name="Max Mustermann", handedness="right", age=26)#
     o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
@@ -245,8 +249,11 @@ if __name__ == "__main__":
     p.save(e1)
     p.save(e2, o1, o2, o3)
     
-    p.connect_objects(e1, o1)
-    p.connect_objects(o1, o2)
+#    p.connect_objects(e1, o1)
+#    p.connect_objects(o1, o2)
+    
+    o1.parent = e1
+
 #    print p.get_children(e1)
 #    print p.get_children(o1, 1)   
     
@@ -254,27 +261,31 @@ if __name__ == "__main__":
     
     #only e1 and e2 are root
 #    p.connect_objects(e1, o1)
-    p.connect_objects(e1, o2, True)
-    p.connect_objects(e2, o3)
-    p.connect_objects(e1, o3)
-
-    experiments = p.load_all(Experiment())
-    
-    from xdapy.objects import Parameter
-    Experiment.countme = Parameter('integer')
-    Experiment.project = Parameter('integer')
-    p.register(Experiment)
+#    p.connect_objects(e1, o2, True)
+#    p.connect_objects(e2, o3)
+#    p.connect_objects(e1, o3)
+    print "---"
+    experiments = p.load_all_entity(Experiment)
     
     for num, experiment in enumerate(experiments):
+        print experiment._parameterdict
         experiment.param["countme"] = num
-        experiment.param["project"] = 123
-        experiment.save()
-#        p.registered_parameters(experiment)
+        experiment.param["project"] = "PPP" + str(num)
+
+    experiments = p.load_all_entity(Experiment)
+    for num, experiment in enumerate(experiments):
+        print experiment._parameterdict
         
-        print p.registered_parameters(experiment)
+    e1.data = {"hlkk": "lkjlkjkljkljysdsa"}
+
+    p.save(e1)    
+    p.session.delete(e1)
     
-    print p.load_all(Observer(), filter={"age": range(30, 50), "name": ["Sor%"]})
-#    print p.load_all(Observer(), filter={"name": range(1,100)})
+
+        
+    p.session.commit()
+    
+    print p.load_all(Observer, filter={"age": range(30, 50), "name": ["Sor%"]})
     print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================

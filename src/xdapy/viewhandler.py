@@ -228,13 +228,6 @@ class ViewHandler(object):
             exp_obj.set_concurrent(True)
             exp_obj.data._dataDict__concurrent[0]=True
             return exp_obj
-        
-    def insert_parameter_option(self, session, e_name, p_name, p_type):
-        parameter_option = ParameterOption(e_name,p_name,p_type)
-#        if session.query(ParameterOption).filter(ParameterOption==parameter_option).one():
-#            print "FOOOOOUNDDD"
-        session.merge(parameter_option)
-        session.commit()
     
     @require('session', session.Session)
     @require('parent', ObjectDict)

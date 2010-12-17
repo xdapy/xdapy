@@ -4,11 +4,12 @@
 from datetime import date, time, datetime
 from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
     Binary, String, Integer, Float, Date, Time, DateTime, Boolean
-from sqlalchemy.orm import relation, backref, validates
-    
+from sqlalchemy.orm import relation, backref, validates, relationship
+
 from xdapy import Base
 #from sqlalchemy.ext.declarative import declarative_base
 #Base = declarative_base()
+
 
 class Parameter(Base):
     '''
@@ -20,6 +21,8 @@ class Parameter(Base):
     the entities attribute of the Parameter class.
     '''
     id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, unique=True, primary_key=True)
+    entity_id = Column(Integer, ForeignKey("entities.id"))
+    
     name = Column('name', String(40), index=True)
     type = Column('type', String(20), nullable=False)
     
@@ -124,7 +127,7 @@ class IntegerParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not (isinstance(parameter, int) or isinstance(parameter, long)):
+        if not self.accepts(parameter):
             raise TypeError("Argument must be an integer")
         return parameter 
     
@@ -165,7 +168,7 @@ class FloatParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, float):
+        if not self.accepts(parameter):
             raise TypeError("Argument must be a float")
         return parameter 
             
@@ -210,9 +213,7 @@ class DateParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, date) or parameter is None:
-            raise TypeError("Argument must be a datetime.date")
-        elif isinstance(parameter, date) and parameter.timetuple()[3:6] != (0, 0, 0):
+        if not self.accepts(parameter):
             raise TypeError("Argument must be a datetime.date")
         return parameter
             
@@ -255,7 +256,7 @@ class TimeParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, time) or parameter is None:
+        if not self.accepts(parameter):
             raise TypeError("Argument must be a datetime.time")
         return parameter
             
@@ -298,7 +299,7 @@ class DateTimeParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, datetime):
+        if not self.accepts(parameter):
             raise TypeError("Argument must be a datetime.datetime")
         return parameter 
             
@@ -339,7 +340,7 @@ class BooleanParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        if not isinstance(parameter, Boolean):
+        if not self.accepts(parameter):
             raise TypeError("Argument must be a boolean")
         return parameter 
             

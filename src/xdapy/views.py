@@ -18,10 +18,12 @@ from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.schema import UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relation, relationship, backref, validates
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.sql import and_
         
 from xdapy import Base
 from xdapy import parameterstore
+from parameterstore import Parameter
         
         
 class Data(Base):
@@ -31,10 +33,9 @@ class Data(Base):
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
-  #  id = Column('id',Integer, Sequence('data_id_seq',1,1), nullable=False,primary_key=True)
     name = Column('name', String(40), primary_key=True)
     data = Column('data', Binary, nullable=False)
-    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    entity_id = Column(Integer, ForeignKey('entities.id'))
     
     __tablename__ = 'data'
     __table_args__ = {'mysql_engine':'InnoDB'}
@@ -61,20 +62,8 @@ class Data(Base):
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.data, self.entity_id)
 
-
-
-'''
-The parameterlist is an association table. It relates an Entity and a Parameter 
-using their ids as foreign keys.
-'''
-parameterlist = Table('parameterlist', Base.metadata,
-     Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True), #
-   #  Column('name',String(40), primary_key=True),
-     Column('parameter_id', Integer, ForeignKey('parameters.id'), primary_key=True), # ForeignKey('parameters.id'), 
-  #   ForeignKeyConstraint(['parameter_id', 'name'],['parameters.id','parameters.name'])
-   #   ForeignKeyConstraint(['parameter_id'],['parameters.id'])
-     mysql_engine='InnoDB'
-     )
+def saveParam(k, v):
+    return parameterstore.acceptingClass(v)(name=k, value=v)
     
 class Entity(Base):
     '''
@@ -107,15 +96,20 @@ class Entity(Base):
     
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
+    __mapper_args__ = {'polymorphic_on':name}
     
-    # many to many Entity<->Parameter,deletion cascade is handled in session.flush()
-    parameters = relation('Parameter', secondary=parameterlist,
-                        #primaryjoin = id == parameterlist.c.entity_id,
-                        #secondaryjoin = parameterlist.c.parameter_id == Parameter.id,
-                        backref=backref('entities', order_by=id))
+#    parameters = relationship('Parameter', backref='entity')
+ 
+    _parameterdict = relationship(Parameter,
+        collection_class=column_mapped_collection(parameterstore.StringParameter.name),
+        cascade="save-update, merge, delete")
+    param = association_proxy('_parameterdict', 'value', creator=saveParam)
+    
     # one to many Entity->Data
-    data = relation('Data', backref=backref('entities', order_by=id),
-                    cascade='all,delete-orphan', single_parent=True)
+    _datadict = relationship(Data,
+        collection_class=column_mapped_collection(Data.name),
+        cascade="save-update, merge, delete")
+    data = association_proxy('_datadict', 'value', creator=Data)
     
     
     @validates('name')

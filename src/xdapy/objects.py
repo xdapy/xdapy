@@ -120,69 +120,73 @@ class ObjectDict(dict):
     def parameters(cls):
         return cls._collect_all_instances(Parameter)
 
-class Parameter(object):
-    def __init__(self, parameter_type, default=None):
-        self.parameter_type = parameter_type
-        self.default_value = default
 
 from xdapy.views import Entity
+from sqlalchemy.ext.declarative import DeclarativeMeta
+
+class Meta(DeclarativeMeta):
+    def __init__(cls, *args, **kw):
+        if getattr(cls, '_decl_class_registry', None) is None:
+            return
+        cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
+        return super(Meta, cls).__init__(*args, **kw)
+
+class CombinedMeta(Meta, DeclarativeMeta):
+    pass
+
+
+
 
 class EntityObject(Entity):
+#    __mapper_args__ = {'polymorphic_identity':'parameter'}
+    __metaclass__ = Meta
+    
     def __init__(self, **kwargs):
-        self.entity_id = None
-    @classmethod
-    def parameters(cls):
-        return {}
-    def _set_items_from_arguments(self, rest):
-        pass
+        self._set_items_from_arguments(kwargs)
+
+    def _set_items_from_arguments(self, d):
+        """Insert function arguments as items""" 
+        for n, v in d.iteritems():
+            if v:
+                self.param[n] = v
+
+    def __repr__(self):
+        return "<{cls}('{id}','{name}')>".format(cls=cls.__name__, id=self.id, name=self.name)
 
 class Experiment(EntityObject):
     """Concrete class for experiments"""
     
-    experimenter = Parameter('string', None)
-    project = Parameter('string', None)
-    
-    def __init__(self, **kwargs):
-        """Constructor"""
-        EntityObject.__init__(self)
-        self._set_items_from_arguments(kwargs)
-        self.param = {}
+    parameterDefaults = {
+        'experimenter': 'string',
+        'project': 'string'
+    }
 
 class Observer(EntityObject):
     """Concrete class for observers"""
     
-    name = Parameter('string', None)
-    age = Parameter('integer', None)
-    handedness = Parameter('string', None)
-
-    def __init__(self, **kwargs):
-        """Constructor"""
-        EntityObject.__init__(self)
-        self._set_items_from_arguments(kwargs)
+    parameterDefaults = {
+        'name': 'string',
+        'age': 'integer',
+        'handedness': 'string'
+    }
      
 class Session(EntityObject):
     """Concrete class for sessions"""
     
-    date = Parameter('date', None)
-    
-    def __init__(self, **kwargs):
-        """Constructor"""
-        EntityObject.__init__(self)
-        self._set_items_from_arguments(kwargs)
+    parameterDefaults = {
+        'date': 'date'
+    }
 
 class Trial(EntityObject):
     """Concrete class for trials"""
     
-    rt = Parameter('string', None)
-    valid = Parameter('boolean', None)
-    response = Parameter('string', None)
+    parameterDefaults = {
+        'rt': 'string',
+        'valid': 'boolean',
+        'response': 'string'
+    }
     
-    def __init__(self, **kwargs):
-        """Constructor"""
-        EntityObject.__init__(self)
-        self._set_items_from_arguments(kwargs)
-        
-  
+
 if __name__ == "__main__":
     pass
 

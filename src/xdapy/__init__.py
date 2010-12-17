@@ -21,20 +21,6 @@ import views
 from parameterstore import Parameter
 from utils.decorators import lazyprop
 
-
-##http://www.mail-archive.com/sqlalchemy@googlegroups.com/msg07513.html
-class OrphanDeletion(SessionExtension):
-    def after_flush(self, session, flush_context):
-        sess = create_session(bind=session.connection())
-        parameters = sess.query(Parameter).filter(~exists([1],
-            views.parameterlist.c.parameter_id == Parameter.id)).all()
-        for k in parameters:
-            sess.delete(k)
-        sess.flush()
-        for k in parameters:
-            if k in session:
-                session.expunge(k)
-
 class _Settings(object):
     default_path = '~/.xdapy/engine.ini'
     def __init__(self, filename=None):
@@ -71,7 +57,7 @@ class _Settings(object):
 
         self.config = ConfigObj(self.filename)
     
-        self.Session = scoped_session(sessionmaker(extension=OrphanDeletion()))
+        self.Session = scoped_session(sessionmaker())
         self._engine = None
     
     @lazyprop
