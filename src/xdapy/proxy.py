@@ -13,8 +13,10 @@ from xdapy.errors import SelectionError
 from xdapy.objects import ObjectDict, Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.viewhandler import ViewHandler
-from xdapy.views import ParameterOption
-from xdapy.parameterstore import Parameter
+from xdapy.views import ParameterOption, Entity
+from xdapy.parameterstore import Parameter, acceptingClass, StringParameter, polymorphic_ids
+from sqlalchemy.sql import or_, and_
+
 """
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same 
@@ -110,11 +112,37 @@ class Proxy(object):
         else:
             return self.filter(objects, filter)
     
-    def load_all_entity(self, entity):
+    def mkfilter(self, entity, filter):
+        pars = []
+        for key,value in filter.iteritems():
+            def makeParam(key, value):
+                if not (isinstance(value, list) or isinstance(value, tuple)):
+                    return makeParam(key, [value])
+                or_clause = []
+                ParameterType = polymorphic_ids[entity.parameterDefaults[key]]
+                for v in value:
+#                   ParameterType = acceptingClass(v)
+                    try:
+                        or_clause.append(v(ParameterType.value))
+                    except:
+                        if ParameterType == StringParameter:
+                            or_clause.append(ParameterType.value.like(v))
+                        else:
+                            or_clause.append(ParameterType.value == v)
+                return entity._parameterdict.of_type(ParameterType).any(or_(*or_clause))
+            pars.append(makeParam(key, value))
+        return and_(*pars)
+        
+    
+    def load_all_entity(self, entity, filter=None):
         session = self.session
-        objects = session.query(entity).all()
+        if filter:
+            f = self.mkfilter(entity, filter)
+            objects = session.query(entity).filter(f)
+        else:
+            objects = session.query(entity)
 #        session.close()
-        return objects
+        return objects.all()
     
     def filter(self, objects, filter):
         def smart_matches(needle, hay):
@@ -244,10 +272,16 @@ if __name__ == "__main__":
     o1 = Observer(name="Max Mustermann", handedness="right", age=26)#
     o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
     o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
+    print o3.param["name"]
+    
+    import datetime
+    s1 = Session(date=datetime.date.today())
+    
     
     #all objects are root
     p.save(e1)
     p.save(e2, o1, o2, o3)
+    p.save(s1)
     
 #    p.connect_objects(e1, o1)
 #    p.connect_objects(o1, o2)
@@ -269,7 +303,7 @@ if __name__ == "__main__":
     
     for num, experiment in enumerate(experiments):
         print experiment._parameterdict
-        experiment.param["countme"] = num
+#        experiment.param["countme"] = num
         experiment.param["project"] = "PPP" + str(num)
 
     experiments = p.load_all_entity(Experiment)
@@ -280,13 +314,33 @@ if __name__ == "__main__":
 
     p.save(e1)    
     p.session.delete(e1)
-    
-
         
     p.session.commit()
     
-    print p.load_all(Observer, filter={"age": range(30, 50), "name": ["Sor%"]})
-    print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
+    def gte(v):
+        return lambda type: type >= v
+    
+    def gt(v):
+        return lambda type: type > v
+    
+    def lte(v):
+        return lambda type: type <= v
+    
+    def lt(v):
+        return lambda type: type < v
+
+    def between(v1, v2):
+        return lambda type: and_(gte(v1)(type), lte(v2)(type))
+    
+    print p.load_all_entity(Observer, filter={"name": "%Sor%"})
+    print p.load_all_entity(Observer, filter={"name": ["%Sor%"]})
+    print p.load_all_entity(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
+    print p.load_all_entity(Observer, filter={"age": between(30, 50)})
+    print p.load_all_entity(Observer, filter={"age": 40})
+    print p.load_all_entity(Observer, filter={"age": gt(10)})
+    print p.load_all_entity(Session, filter={"date": gte(datetime.date.today())})
+    
+#    print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
 #===============================================================================
 # 

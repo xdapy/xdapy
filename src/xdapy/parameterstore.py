@@ -213,6 +213,7 @@ class DateParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
+        print self.accepts(parameter)
         if not self.accepts(parameter):
             raise TypeError("Argument must be a datetime.date")
         return parameter

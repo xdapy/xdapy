@@ -123,22 +123,23 @@ class ObjectDict(dict):
 
 from xdapy.views import Entity
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.ext.associationproxy import association_proxy
+from xdapy import parameterstore
 
 class Meta(DeclarativeMeta):
     def __init__(cls, *args, **kw):
         if getattr(cls, '_decl_class_registry', None) is None:
             return
+        
+        def _saveParam(k, v):
+            ParameterType = parameterstore.polymorphic_ids[cls.parameterDefaults[k]]
+            return ParameterType(name=k, value=v)
+
+        cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
         return super(Meta, cls).__init__(*args, **kw)
 
-class CombinedMeta(Meta, DeclarativeMeta):
-    pass
-
-
-
-
 class EntityObject(Entity):
-#    __mapper_args__ = {'polymorphic_identity':'parameter'}
     __metaclass__ = Meta
     
     def __init__(self, **kwargs):
@@ -151,7 +152,7 @@ class EntityObject(Entity):
                 self.param[n] = v
 
     def __repr__(self):
-        return "<{cls}('{id}','{name}')>".format(cls=cls.__name__, id=self.id, name=self.name)
+        return "<{cls}('{id}','{name}')>".format(cls=self.__class__.__name__, id=self.id, name=self.name)
 
 class Experiment(EntityObject):
     """Concrete class for experiments"""

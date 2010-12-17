@@ -62,8 +62,6 @@ class Data(Base):
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.data, self.entity_id)
 
-def saveParam(k, v):
-    return parameterstore.acceptingClass(v)(name=k, value=v)
     
 class Entity(Base):
     '''
@@ -99,11 +97,15 @@ class Entity(Base):
     __mapper_args__ = {'polymorphic_on':name}
     
 #    parameters = relationship('Parameter', backref='entity')
+
+    def _saveParam(k, v):
+        ParameterType = parameterstore.polymorphic_ids[cls.parameterDefaults[k]]
+        return ParameterType(v)(name=k, value=v)
  
     _parameterdict = relationship(Parameter,
         collection_class=column_mapped_collection(parameterstore.StringParameter.name),
         cascade="save-update, merge, delete")
-    param = association_proxy('_parameterdict', 'value', creator=saveParam)
+    param = association_proxy('_parameterdict', 'value', creator=_saveParam)
     
     # one to many Entity->Data
     _datadict = relationship(Data,
@@ -116,7 +118,7 @@ class Entity(Base):
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
             raise TypeError("Argument must be a string")
-        return e_name 
+        return e_name
     
     def __init__(self, name):
         '''Initialize an entity corresponding to an experimental object.
@@ -127,7 +129,7 @@ class Entity(Base):
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
         '''
-        self.name = name
+        raise "Entitiy.__init__ should not be called directly. There is nothing to do here"
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id, self.name)
