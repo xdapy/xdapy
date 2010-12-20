@@ -124,6 +124,8 @@ class ObjectDict(dict):
 from xdapy.views import Entity
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm.collections import column_mapped_collection
 from xdapy import parameterstore
 
 class Meta(DeclarativeMeta):

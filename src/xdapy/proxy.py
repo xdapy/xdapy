@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """This module provides the code to access a database on an abstract level. 
 
 Created on Jun 17, 2009
@@ -14,7 +15,7 @@ from xdapy.objects import ObjectDict, Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.viewhandler import ViewHandler
 from xdapy.views import ParameterOption, Entity
-from xdapy.parameterstore import Parameter, acceptingClass, StringParameter, polymorphic_ids
+from xdapy.parameterstore import Parameter, acceptingClass, StringParameter, polymorphic_ids, strToType
 from sqlalchemy.sql import or_, and_
 
 """
@@ -250,6 +251,97 @@ class Proxy(object):
         session = self.session
         entity = self.viewhandler.convert(session, entity)
         return dict((p.name, p.value) for p in entity.parameters)
+    
+    def fromXML(self, xml):
+        session = self.session
+        from xml.dom import minidom
+        import base64
+        
+        dom = minidom.parseString(xml)
+        
+        def handle_document(doc):
+            entities = doc.getElementsByTagName("entity")
+            entity_refs = dict((int(entity.getAttribute("id")), entity) for entity in entities)
+            return entity_refs
+        
+        def handle_entities(entity_refs):
+            entity_dict = {}
+            for eid, entity in entity_refs.iteritems():
+                
+                from xdapy.objects import EntityObject
+                klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
+
+                new_entity = klasses[entity.getAttribute("name")]()
+                
+                for child in entity.childNodes:
+                    if child.nodeName == "parameter":
+                        name = child.getAttribute("name")
+                        value = child.getAttribute("value")
+                        type = child.getAttribute("type")
+                        new_entity.param[name] = strToType(value, type)
+                    if child.nodeName == "data":
+                        data = child.childNodes[0].data
+                        name = child.getAttribute("name")
+                        new_entity.data[str(name)] = base64.b64decode(data)
+                entity_dict[eid] = new_entity
+            return entity_dict
+        
+        def handle_context(entity_refs, entity_dict):
+            for eid, entity in entity_refs.iteritems():
+                for child in entity.childNodes:
+                    if child.nodeName == "context":
+                        relates = int(child.getAttribute("relates"))
+                        related_entity = entity_dict[relates]
+                        note = child.getAttribute("note")
+                        entity_dict[eid].context.append(Context(context=related_entity, note=note))
+        
+        entity_refs = handle_document(dom)
+        entity_dict = handle_entities(entity_refs)
+        handle_context(entity_refs, entity_dict)
+        return entity_dict.values()
+        
+    
+    def toXMl(self):
+        session = self.session
+        from xml.dom import minidom
+        import base64
+        
+        doc = minidom.Document()
+        main = doc.createElement("xdapy")
+        doc.appendChild(main)
+
+        def traverse(entities, append_to):
+            for e in entities:
+                entityElem = doc.createElement("entity")
+                entityElem.setAttribute('id', str(e.id))
+                entityElem.setAttribute('name', str(e.name))
+                entityElem.setAttribute('parent', str(e.parent_id))
+                for c in e.context:
+                    ctxt = doc.createElement("context")
+                    ctxt.setAttribute("relates", str(c.context_id))
+                    ctxt.setAttribute("note", c.note)
+                    entityElem.appendChild(ctxt)
+                for d in e._datadict.values():
+                    data = doc.createElement("data")
+                    data.setAttribute("name", d.name)
+                    data.setAttribute("encoding", "base64")
+                    rawdata = doc.createTextNode(base64.b64encode(d.data))
+                    data.appendChild(rawdata)
+                    entityElem.appendChild(data)
+                for p in e._parameterdict.values():
+                    param = doc.createElement("parameter")
+                    param.setAttribute("name", p.name)
+                    param.setAttribute("type", p.type)
+                    param.setAttribute("value", str(p.value))
+                    entityElem.appendChild(param)
+                append_to.appendChild(entityElem)
+                traverse(e.children, entityElem)
+        
+        entities = session.query(Entity).filter(Entity.parent_id==None).all()
+        
+        traverse(entities, main)
+        
+        return doc.toprettyxml()
         
 if __name__ == "__main__":
     engine = Settings.engine
@@ -277,11 +369,20 @@ if __name__ == "__main__":
     import datetime
     s1 = Session(date=datetime.date.today())
     
+    from xdapy.views import Context
+    
+    s2 = Session(date=datetime.date.today())
+#    e1.context.append(Context(context=s2))
+    s2.context.append(Context(context=e1, note="Some Context"))
     
     #all objects are root
-    p.save(e1)
-    p.save(e2, o1, o2, o3)
-    p.save(s1)
+    #p.save(e1)
+    #p.save(e2, o1, o2, o3)
+    #p.save(s1, s2)
+    
+    p.session.add_all([e1, e2, o1, o2, o3, s1, s2])
+    
+    p.session.commit()
     
 #    p.connect_objects(e1, o1)
 #    p.connect_objects(o1, o2)
@@ -310,11 +411,13 @@ if __name__ == "__main__":
     for num, experiment in enumerate(experiments):
         print experiment._parameterdict
         
-    e1.data = {"hlkk": "lkjlkjkljkljysdsa"}
+    e1.data = {"hlkk": "lkjlkjkl#äjkljysdsa"}
 
-    p.save(e1)    
-    p.session.delete(e1)
+    p.save(e1)
         
+    p.session.commit()
+    
+#    p.session.delete(e1)
     p.session.commit()
     
     def gte(v):
@@ -331,6 +434,12 @@ if __name__ == "__main__":
 
     def between(v1, v2):
         return lambda type: and_(gte(v1)(type), lte(v2)(type))
+    
+    xml = p.toXMl()
+    print xml
+    p.session.add_all(p.fromXML(xml))
+    p.session.commit()
+    exit()
     
     print p.load_all_entity(Observer, filter={"name": "%Sor%"})
     print p.load_all_entity(Observer, filter={"name": ["%Sor%"]})

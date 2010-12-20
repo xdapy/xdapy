@@ -16,7 +16,7 @@ from datetime import date, time, datetime
 from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
     Binary, String, Integer, Float, Date, Time, DateTime, Boolean
 from sqlalchemy.schema import UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import relation, relationship, backref, validates
+from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.sql import and_
@@ -33,12 +33,14 @@ class Data(Base):
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
-    name = Column('name', String(40), primary_key=True)
-    data = Column('data', Binary, nullable=False)
+    id = Column('id', Integer, autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey('entities.id'))
+    name = Column('name', String(40))
+    data = Column('data', Binary, nullable=False)
     
     __tablename__ = 'data'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = (UniqueConstraint(entity_id, name),
+                    {'mysql_engine':'InnoDB'})
     
     @validates('name')
     def validate_name(self, key, parameter):
@@ -78,7 +80,7 @@ class Entity(Base):
     
     #has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
-    children = relation("Entity", backref=backref("parent", remote_side=[id]))
+    children = relationship("Entity", backref=backref("parent", remote_side=[id]))
     
     def all_parents(self):
         """Returns a list of all parent entities
@@ -96,23 +98,15 @@ class Entity(Base):
     __table_args__ = {'mysql_engine':'InnoDB'}
     __mapper_args__ = {'polymorphic_on':name}
     
-#    parameters = relationship('Parameter', backref='entity')
-
-    def _saveParam(k, v):
-        ParameterType = parameterstore.polymorphic_ids[cls.parameterDefaults[k]]
-        return ParameterType(v)(name=k, value=v)
- 
-    _parameterdict = relationship(Parameter,
+    _parameterdict = relationship(parameterstore.Parameter,
         collection_class=column_mapped_collection(parameterstore.StringParameter.name),
         cascade="save-update, merge, delete")
-    param = association_proxy('_parameterdict', 'value', creator=_saveParam)
     
     # one to many Entity->Data
     _datadict = relationship(Data,
         collection_class=column_mapped_collection(Data.name),
         cascade="save-update, merge, delete")
     data = association_proxy('_datadict', 'value', creator=Data)
-    
     
     @validates('name')
     def validate_name(self, key, e_name):
@@ -138,22 +132,33 @@ class Entity(Base):
 class Context(Base):
     # Context Association
     '''
-    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
+    The class 'Context' is mapped on the table 'data'. The name assigned to Data 
     must be a string. Each Data is connected to at most one entity through the 
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
     entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    related_entity_id = Column('related_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    context_id = Column('context_id', Integer, ForeignKey('entities.id'), primary_key=True)
 
     # Each entity can have a context of related entities
-    entity = relationship("Entity", backref='related_entities', primaryjoin=entity_id==Entity.id)
-    related_entities = relationship("Entity", backref='context', primaryjoin=related_entity_id==Entity.id)
+    entity = relationship(Entity,
+        backref=backref('context', cascade="all"), # need the cascade to delete context, if entity is deleted
+        primaryjoin=entity_id==Entity.id,
+        cascade="all")
+    context = relationship(Entity,
+        backref=backref('entity', cascade="all"),
+        primaryjoin=context_id==Entity.id,
+        cascade="all")
 
     note = Column('note', String(500))
 
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
+    
+#    def __init__(self, entity1, entity2, note=None):
+#        self.entity = entity1
+#        self.related_entity = entity2
+#        self.note = note
 
 
 class ParameterOption(Base):

@@ -5,6 +5,7 @@ from datetime import date, time, datetime
 from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
     Binary, String, Integer, Float, Date, Time, DateTime, Boolean
 from sqlalchemy.orm import relation, backref, validates, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from xdapy import Base
 #from sqlalchemy.ext.declarative import declarative_base
@@ -20,7 +21,7 @@ class Parameter(Base):
     adjacency list 'parameterlist'. The corresponding entities can be accessed via
     the entities attribute of the Parameter class.
     '''
-    id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, unique=True, primary_key=True)
+    id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey("entities.id"))
     
     name = Column('name', String(40), index=True)
@@ -33,7 +34,8 @@ class Parameter(Base):
             return Parameter
     
     __tablename__ = 'parameters'
-    __table_args__ = {'mysql_engine':'InnoDB'}
+    __table_args__ = (UniqueConstraint(entity_id, name),
+                        {'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
     
     @validates('name')
@@ -75,6 +77,10 @@ class StringParameter(Parameter):
     __tablename__ = 'stringparameters'
     __table_args__ = ({'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_identity':'string'}
+    
+    @classmethod
+    def from_string(cls, value):
+        return unicode(value)
     
     @classmethod
     def accepts(cls, value):
@@ -119,7 +125,11 @@ class IntegerParameter(Parameter):
     __tablename__ = 'integerparameters'
     __table_args__ = ({'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_identity':'integer'}
-    
+
+    @classmethod
+    def from_string(cls, value):
+        return int(value)
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -160,7 +170,11 @@ class FloatParameter(Parameter):
     __tablename__ = 'floatparameters'
     __table_args__ = ({'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_identity':'float'}
-    
+
+    @classmethod
+    def from_string(cls, value):
+        return float(value)
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -201,6 +215,10 @@ class DateParameter(Parameter):
     __tablename__ = 'dateparameters'
     __table_args__ = ({'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_identity':'date'}
+    
+    @classmethod
+    def from_string(cls, value):
+        return datetime.strptime(value, "%Y-%m-%d").date()
     
     @classmethod
     def accepts(cls, value):
@@ -249,6 +267,10 @@ class TimeParameter(Parameter):
     __mapper_args__ = {'polymorphic_identity':'time'}
     
     @classmethod
+    def from_string(cls, value):
+        return time(value)
+    
+    @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
         if not isinstance(value, time) or value is None:
@@ -290,6 +312,10 @@ class DateTimeParameter(Parameter):
     __tablename__ = 'datetimeparameters'
     __table_args__ = ({'mysql_engine':'InnoDB'})
     __mapper_args__ = {'polymorphic_identity':'datetime'}
+    
+    @classmethod
+    def from_string(cls, value):
+        return datetime(value)
     
     @classmethod
     def accepts(cls, value):
@@ -335,6 +361,10 @@ class BooleanParameter(Parameter):
     __mapper_args__ = {'polymorphic_identity':'boolean'}
 
     @classmethod
+    def from_string(cls, value):
+        return bool(value)
+
+    @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
         return isinstance(value, Boolean)
@@ -374,6 +404,9 @@ parameter_classes = [
 parameter_types = list(pc.__mapper_args__['polymorphic_identity'] for pc in parameter_classes)
 
 polymorphic_ids = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in parameter_classes)
+
+def strToType(s, typename):
+    return polymorphic_ids[typename].from_string(s)
     
 def acceptingClass(value):
     for pc in parameter_classes:
