@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.sql import and_, exists
 from xdapy import Settings
-from xdapy.views import Data, Parameter, Entity, ParameterOption, \
+from xdapy.structures import Data, Parameter, Entity, ParameterOption, \
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, \
     parameterlist, base
 import datetime

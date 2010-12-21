@@ -17,8 +17,8 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 import objects
-import views
-from parameterstore import Parameter
+import structures
+from parameters import Parameter
 from utils.decorators import lazyprop
 
 class _Settings(object):

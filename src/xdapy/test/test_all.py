@@ -17,7 +17,7 @@ from random import randint
 from xdapy import Settings
 from xdapy.objects import Observer, Experiment, Session, Trial
 from xdapy.proxy import Proxy
-from xdapy.views import Entity, StringParameter, Data, Context
+from xdapy.structures import Entity, StringParameter, Data, Context
 import unittest
 
 class Test(unittest.TestCase):

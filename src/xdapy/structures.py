@@ -9,22 +9,20 @@ TODO: Figure out what to do with global variable base
 TODO: Make Data truncation an error
 """
 
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
 
-from datetime import date, time, datetime
-from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
-    Binary, String, Integer, Float, Date, Time, DateTime, Boolean
-from sqlalchemy.schema import UniqueConstraint, CheckConstraint
+from sqlalchemy import Column, ForeignKey, Binary, String, Integer
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
-from sqlalchemy.sql import and_
+from sqlalchemy.ext.declarative import DeclarativeMeta
         
-from xdapy import Base
-from xdapy import parameterstore
-from parameterstore import Parameter
-        
+from xdapy import Base, parameters
+from xdapy.errors import Error
+
         
 class Data(Base):
     '''
@@ -78,7 +76,7 @@ class Entity(Base):
     id = Column('id', Integer, primary_key=True)
     name = Column('name', String(40))
     
-    #has one parent
+    # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
     children = relationship("Entity", backref=backref("parent", remote_side=[id]))
     
@@ -98,8 +96,8 @@ class Entity(Base):
     __table_args__ = {'mysql_engine':'InnoDB'}
     __mapper_args__ = {'polymorphic_on':name}
     
-    _parameterdict = relationship(parameterstore.Parameter,
-        collection_class=column_mapped_collection(parameterstore.StringParameter.name),
+    _parameterdict = relationship(parameters.Parameter,
+        collection_class=column_mapped_collection(parameters.StringParameter.name),
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
@@ -123,10 +121,41 @@ class Entity(Base):
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
         '''
-        raise "Entitiy.__init__ should not be called directly. There is nothing to do here"
+        raise Error("Entity.__init__ should not be called directly.")
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id, self.name)
+
+
+class Meta(DeclarativeMeta):
+    def __init__(cls, *args, **kw):
+        if getattr(cls, '_decl_class_registry', None) is None:
+            return
+        
+        def _saveParam(k, v):
+            ParameterType = parameters.polymorphic_ids[cls.parameterDefaults[k]]
+            return ParameterType(name=k, value=v)
+
+        cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
+        cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
+        return super(Meta, cls).__init__(*args, **kw)
+
+
+class EntityObject(Entity):
+    __metaclass__ = Meta
+    
+    def __init__(self, **kwargs):
+        self._set_items_from_arguments(kwargs)
+
+    def _set_items_from_arguments(self, d):
+        """Insert function arguments as items""" 
+        for n, v in d.iteritems():
+            if v:
+                self.param[n] = v
+
+    def __repr__(self):
+        return "<{cls}('{id}','{name}')>".format(cls=self.__class__.__name__, id=self.id, name=self.name)
+
 
 
 class Context(Base):
@@ -154,11 +183,6 @@ class Context(Base):
 
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
-    
-#    def __init__(self, entity1, entity2, note=None):
-#        self.entity = entity1
-#        self.related_entity = entity2
-#        self.note = note
 
 
 class ParameterOption(Base):
@@ -191,10 +215,10 @@ class ParameterOption(Base):
     
     @validates('parameter_type')
     def validate_parameter_type(self, key, p_type):
-        if not isinstance(p_type, str) or p_type not in parameterstore.parameter_types:
+        if not isinstance(p_type, str) or p_type not in parameters.parameter_types:
             raise TypeError(("Argument 'parameter_type' must one of the " + 
                              "following strings: " + 
-                             ", ".join(parameterstore.parameter_types)))
+                             ", ".join(parameters.parameter_types)))
         return p_type 
     
     def __init__(self, entity_name, parameter_name, parameter_type):
@@ -203,7 +227,7 @@ class ParameterOption(Base):
         Argument:
         entity_name -- A one-word-description of the experimental object
         parameter_name -- A one-word-description of the parameter 
-        parameter_value -- The polimorphic type of the parameter 
+        parameter_value -- The polymorphic type of the parameter 
             (e.g. 'integer', 'string')
         
         Raises:

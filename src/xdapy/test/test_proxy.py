@@ -8,7 +8,7 @@ from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy.objects import Observer, Experiment, Trial
 from xdapy.proxy import Proxy
 from xdapy.utils.algorithms import listequal
-from xdapy.views import ParameterOption
+from xdapy.structures import ParameterOption
 import unittest
 """
 TODO: Real test for create_tables

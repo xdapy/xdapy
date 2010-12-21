@@ -6,13 +6,12 @@ from pickle import dumps, loads
 from sqlalchemy.orm import session
 from sqlalchemy.sql import or_, and_
 from sqlalchemy.sql.expression import select
-from xdapy import objects, views
+from xdapy import objects, structures
 from xdapy.errors import SelectionError, ContextError, InsertionError, \
     ContextWarning
-from xdapy.objects import ObjectDict
 from xdapy.utils.decorators import require
-from xdapy.views import Entity, ParameterOption, Context
-from xdapy.parameterstore import StringParameter, IntegerParameter
+from xdapy.structures import Entity, ParameterOption, Context
+from xdapy.parameters import StringParameter, IntegerParameter
 """
 TODO: insert check if same object exists, if yes, use this object
         print "WARNING: The object %s is already contained in the database!"% object 
@@ -37,7 +36,7 @@ class ViewHandler(object):
         
         @type session: sqlalchemy.orm.session.Session 
         @param session:  Concrete session
-        @type entity: datamanager.views.Entity
+        @type entity: datamanager.structures.Entity
         @param entity: Entity to be inserted into the database 
         
         @raise InsertionError: If the type of an object's parameter does not 
@@ -157,14 +156,14 @@ class ViewHandler(object):
     
         
     def convert(self,session, convertible):
-        """Converts datamanager.objects to datamanager.views.Entities and vice versa
+        """Converts datamanager.objects to datamanager.structures.Entities and vice versa
             
         @param convertible: object of entity to be converted
-        @type convertible: datamanager.object or datamanager.views.Entity
+        @type convertible: datamanager.object or datamanager.structures.Entity
         """
         if isinstance(convertible, objects.ObjectDict):
             #create entity of class
-            entity = views.Entity(convertible.__class__.__name__)
+            entity = structures.Entity(convertible.__class__.__name__)
             
             #add parameters of different types to the entity
             for key,value in  convertible.items():
@@ -199,13 +198,13 @@ class ViewHandler(object):
                                      (key, value))
             #add data to the entity
             for key,value in  convertible.data.items():
-                d = views.Data(key,dumps(value))
+                d = structures.Data(key,dumps(value))
                 entity.data.append(d)
             
             #specify the entity as root
-            entity.context.append(views.Context())
+            entity.context.append(structures.Context())
             return entity
-        elif isinstance(convertible,views.Entity):
+        elif isinstance(convertible,structures.Entity):
             #create class for entity
             try:
                 exp_obj_class = getattr(objects, convertible.name)
@@ -332,7 +331,7 @@ class ViewHandler(object):
         
         @type session: sqlalchemy.orm.session.Session 
         @param session:  Concrete session
-        @type entity: datamanager.views.Entity
+        @type entity: datamanager.structures.Entity
         @param entity: Entity to be validated against database 
         
         @returns: A tuple (b,msg). The first entry specifies if given entity was valid. 

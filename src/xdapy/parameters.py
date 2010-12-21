@@ -8,8 +8,9 @@ from sqlalchemy.orm import relation, backref, validates, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from xdapy import Base
-#from sqlalchemy.ext.declarative import declarative_base
-#Base = declarative_base()
+
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
 
 class Parameter(Base):
