@@ -14,7 +14,7 @@ from xdapy.errors import SelectionError
 from xdapy.objects import ObjectDict, Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.viewhandler import ViewHandler
-from xdapy.views import ParameterOption, Entity
+from xdapy.views import ParameterOption, Entity, Context
 from xdapy.parameterstore import Parameter, acceptingClass, StringParameter, polymorphic_ids, strToType
 from sqlalchemy.sql import or_, and_
 
@@ -368,8 +368,6 @@ if __name__ == "__main__":
     
     import datetime
     s1 = Session(date=datetime.date.today())
-    
-    from xdapy.views import Context
     
     s2 = Session(date=datetime.date.today())
 #    e1.context.append(Context(context=s2))
