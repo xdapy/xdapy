@@ -1,9 +1,18 @@
-*.swp
-
+# python ignores
 *.pyc
+*.pyo
+ 
+# eclipse
+.project
+.classpath
+.settings
+.metadata
+.pydevproject
 
-*.project
-*.pydevproject
-
-.DS_Store
+# other generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
 
