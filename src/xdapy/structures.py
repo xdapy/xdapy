@@ -74,7 +74,7 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    name = Column('name', String(40))
+    type = Column('type', String(40))
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
@@ -94,10 +94,10 @@ class Entity(Base):
     
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
-    __mapper_args__ = {'polymorphic_on':name}
+    __mapper_args__ = {'polymorphic_on':type}
     
     _parameterdict = relationship(parameters.Parameter,
-        collection_class=column_mapped_collection(parameters.StringParameter.name),
+        collection_class=column_mapped_collection(parameters.StringParameter.name), # FIXME ???
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
@@ -106,13 +106,13 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     data = association_proxy('_datadict', 'value', creator=Data)
     
-    @validates('name')
+    @validates('type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
             raise TypeError("Argument must be a string")
         return e_name
     
-    def __init__(self, name):
+    def __init__(self, type):
         '''Initialize an entity corresponding to an experimental object.
         
         Argument:
@@ -154,7 +154,7 @@ class EntityObject(Entity):
                 self.param[n] = v
 
     def __repr__(self):
-        return "<{cls}('{id}','{name}')>".format(cls=self.__class__.__name__, id=self.id, name=self.name)
+        return "<{cls}('{id}','{type}')>".format(cls=self.__class__.__name__, id=self.id, type=self.type)
 
 
 

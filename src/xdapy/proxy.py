@@ -175,7 +175,7 @@ class Proxy(object):
         session.close()
         
     def register(self, klass):
-        """Registers the class and the class‚Äôs parameters."""
+        """Registers the class and the class’s parameters."""
         for name, paramtype in klass.parameterDefaults.iteritems():
             self.register_parameter(klass.__name__, name, paramtype)
     
@@ -197,7 +197,7 @@ class Proxy(object):
                 from xdapy.objects import EntityObject
                 klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
 
-                new_entity = klasses[entity.getAttribute("name")]()
+                new_entity = klasses[entity.getAttribute("type")]()
                 
                 for child in entity.childNodes:
                     if child.nodeName == "parameter":
@@ -240,7 +240,7 @@ class Proxy(object):
             for e in entities:
                 entityElem = doc.createElement("entity")
                 entityElem.setAttribute('id', str(e.id))
-                entityElem.setAttribute('name', str(e.name))
+                entityElem.setAttribute('type', str(e.type))
                 entityElem.setAttribute('parent', str(e.parent_id))
                 for c in e.context:
                     ctxt = doc.createElement("context")
