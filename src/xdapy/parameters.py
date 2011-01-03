@@ -75,8 +75,7 @@ class StringParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', String(40))
     
-    __tablename__ = 'stringparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_string'
     __mapper_args__ = {'polymorphic_identity':'string'}
     
     @classmethod
@@ -123,8 +122,7 @@ class IntegerParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Integer)
     
-    __tablename__ = 'integerparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_integer'
     __mapper_args__ = {'polymorphic_identity':'integer'}
 
     @classmethod
@@ -168,8 +166,7 @@ class FloatParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Float)
 
-    __tablename__ = 'floatparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_float'
     __mapper_args__ = {'polymorphic_identity':'float'}
 
     @classmethod
@@ -213,8 +210,7 @@ class DateParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Date)
 
-    __tablename__ = 'dateparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_date'
     __mapper_args__ = {'polymorphic_identity':'date'}
     
     @classmethod
@@ -263,8 +259,7 @@ class TimeParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Time)
 
-    __tablename__ = 'timeparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_time'
     __mapper_args__ = {'polymorphic_identity':'time'}
     
     @classmethod
@@ -310,8 +305,7 @@ class DateTimeParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', DateTime)
 
-    __tablename__ = 'datetimeparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_datetime'
     __mapper_args__ = {'polymorphic_identity':'datetime'}
     
     @classmethod
@@ -357,8 +351,7 @@ class BooleanParameter(Parameter):
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Boolean)
 
-    __tablename__ = 'booleanparameters'
-    __table_args__ = ({'mysql_engine':'InnoDB'})
+    __tablename__ = 'parameters_boolean'
     __mapper_args__ = {'polymorphic_identity':'boolean'}
 
     @classmethod
