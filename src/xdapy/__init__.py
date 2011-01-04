@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 __version__ = '0.0'
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 __copyright__ = '(c) 2009 Hannah Dold'

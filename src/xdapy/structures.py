@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Contains all classes that possess equivalents as tables in the database. 
 
 Created on Jun 17, 2009
