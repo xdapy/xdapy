@@ -195,8 +195,8 @@ class ParameterOption(Base):
     creation. And only if at a later moment the need for a new parameter emerges, 
     then this parameter can be added to the list of allowed parameters.
     '''
-    parameter_name = Column('parameter_name', String(40), primary_key=True)
     entity_name = Column('entity_name', String(40), primary_key=True)
+    parameter_name = Column('parameter_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40))
     
     __tablename__ = 'parameteroptions'
