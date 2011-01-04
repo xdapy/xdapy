@@ -258,7 +258,7 @@ class Proxy(object):
                     param = doc.createElement("parameter")
                     param.setAttribute("name", p.name)
                     param.setAttribute("type", p.type)
-                    param.setAttribute("value", str(p.value))
+                    param.setAttribute("value", p.value_string)
                     entityElem.appendChild(param)
                 append_to.appendChild(entityElem)
                 traverse(e.children, entityElem)

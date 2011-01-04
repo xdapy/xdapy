@@ -64,6 +64,13 @@ class Parameter(Base):
     def __repr__(self):
         return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
 
+    @property
+    def value_string(self):
+        '''Return the value as a string.
+        This function is preferred over str(self.value) for exporting values.
+        '''
+        return unicode(self.value)
+
 
 class StringParameter(Parameter):
     '''
@@ -81,7 +88,7 @@ class StringParameter(Parameter):
     @classmethod
     def from_string(cls, value):
         return unicode(value)
-    
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -110,7 +117,7 @@ class StringParameter(Parameter):
         self.value = value
 
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
         
 
 class IntegerParameter(Parameter):
@@ -154,7 +161,7 @@ class IntegerParameter(Parameter):
         self.value = value
     
     def __repr__(self):
-        return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class FloatParameter(Parameter):
@@ -198,7 +205,7 @@ class FloatParameter(Parameter):
         self.value = value
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class DateParameter(Parameter):
@@ -216,6 +223,10 @@ class DateParameter(Parameter):
     @classmethod
     def from_string(cls, value):
         return datetime.strptime(value, "%Y-%m-%d").date()
+
+    @property
+    def value_string(self):
+        return datetime.strftime(self.value, "%Y-%m-%d")
     
     @classmethod
     def accepts(cls, value):
@@ -247,7 +258,7 @@ class DateParameter(Parameter):
         self.value = value
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class TimeParameter(Parameter):
@@ -264,8 +275,12 @@ class TimeParameter(Parameter):
     
     @classmethod
     def from_string(cls, value):
-        return time(value)
-    
+        return datetime.strptime(value, "%H:%M:%S").time()
+
+    @property
+    def value_string(self):
+        return datetime.strftime(self.value, "%H:%M:%S")
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -293,7 +308,7 @@ class TimeParameter(Parameter):
         self.value = value
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class DateTimeParameter(Parameter):
@@ -310,8 +325,12 @@ class DateTimeParameter(Parameter):
     
     @classmethod
     def from_string(cls, value):
-        return datetime(value)
-    
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+
+    @property
+    def value_string(self):
+        return datetime.strftime(self.value, "%Y-%m-%dT%H:%M:%S")
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -339,7 +358,7 @@ class DateTimeParameter(Parameter):
         self.value = value
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class BooleanParameter(Parameter):
@@ -383,7 +402,7 @@ class BooleanParameter(Parameter):
         self.value = value
         
     def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value)
+        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 parameter_classes = [
             StringParameter,
