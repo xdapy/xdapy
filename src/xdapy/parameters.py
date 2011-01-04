@@ -279,7 +279,7 @@ class TimeParameter(Parameter):
 
     @property
     def value_string(self):
-        return datetime.strftime(self.value, "%H:%M:%S")
+        return time.strftime(self.value, "%H:%M:%S")
 
     @classmethod
     def accepts(cls, value):
@@ -377,16 +377,20 @@ class BooleanParameter(Parameter):
     def from_string(cls, value):
         return bool(value)
 
+    @property
+    def value_string(self):
+        return 1 if self.value is True else 0
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
-        return isinstance(value, Boolean)
+        return isinstance(value, bool)
     
     @validates('value')
     def validate_value(self, key, parameter):
         if not self.accepts(parameter):
             raise TypeError("Argument must be a boolean")
-        return parameter 
+        return parameter
             
     def __init__(self, name, value):
         '''Initialize a parameter with the given name and boolean value.
@@ -405,13 +409,13 @@ class BooleanParameter(Parameter):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 parameter_classes = [
-            StringParameter,
-            IntegerParameter,
-            FloatParameter,
+            DateTimeParameter,
             DateParameter,
             TimeParameter,
-            DateTimeParameter,
-            BooleanParameter
+            IntegerParameter,
+            FloatParameter,
+            BooleanParameter,
+            StringParameter
     ]
 
 parameter_types = list(pc.__mapper_args__['polymorphic_identity'] for pc in parameter_classes)
@@ -432,3 +436,4 @@ def classFromType():
 
 if __name__ == '__main__':
     pass
+
