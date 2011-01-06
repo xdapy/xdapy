@@ -40,7 +40,6 @@ class Trial(EntityObject):
         'valid': 'boolean',
         'response': 'string'
     }
-    
 
 if __name__ == "__main__":
     pass

@@ -13,7 +13,7 @@ from xdapy.parameters import Parameter, StringParameter, polymorphic_ids, strToT
 from sqlalchemy.sql import or_, and_
 
 """
-TODO: Load: what happens if more attributes given as saved in database
+TODO: Load: what happens if more attributes given as saved in database 
 TODO: Save: what happens if similar object with more or less but otherwise the same 
         attributes exists in the database
 TODO: Error if the commiting fails
@@ -115,15 +115,54 @@ class Proxy(object):
             
         return [o for o in objects for (key, val) in filter.iteritems() if smart_matches(o[key], val)]
              
-    def get_data_matrix(self, conditions, items):
-        raise Error("Need to change this")
+    def get_data_matrix(self, conditions, items, include=None):
+        """Finds related items for the entity which satisfies condition
+        
+        include -- list of entities relations which should be included
+            "PARENT":           parent entities
+            "CHILDREN":         child entities
+            "CONTEXT":          context entities
+            "CONTEXT_REVERSED": reversed context entities
+            "ALL":              all related entities
+        """
+        if include is None:
+            include = ["ALL"]
+        if "ALL" in include:
+            include = ["PARENT", "CHILDREN", "CONTEXT", "CONTEXT_REVERSED"]
+
         session = self.session
-        try:
-            matrix = self.viewhandler.get_data_matrix(session, conditions, items)
-        except Exception:
-            session.close()
-            raise
-        session.close()
+
+        # first get all entities which match the conditions
+        entities = []
+        for condition in conditions:
+            entities += self.find_all(condition)
+        
+        matrix = []
+
+        for entity in entities:
+            # get the related entities for each match
+            related = set(entities)
+            for entity in entities:
+                if "PARENT" in include:
+                    related.update(entity.all_parents())
+                if "CHILDREN" in include:
+                    related.update(entity.all_children())
+                if "CONTEXT" in include:
+                    related.update(entity.context)
+                if "CONTEXT_REVERSED" in include:
+                    related.update(entity.entity)
+            
+            row = {}
+            for rel in related:
+                if not rel.__class__ in items:
+                    next
+                for param in items[rel.__class__]:
+                    if not rel.__class__.__name__ in row:
+                        row[rel.__class__.__name__] = {}
+                    row[rel.__class__.__name__][param] = rel.param[param]
+            if row and row not in matrix:
+                matrix.append(row)
+
         return matrix
     
     def connect_objects(self, parent, child, force=False):
@@ -396,5 +435,5 @@ if __name__ == "__main__":
     print p.find_all(Observer, filter={"age": gt(10)})
     print p.find_all(Session, filter={"date": gte(datetime.date.today())})
     
-#    print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
+    print p.get_data_matrix([Observer(name="Max Mustermann")], {Experiment:['project'], Observer:['age','name']})
 

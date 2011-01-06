@@ -76,7 +76,7 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    type = Column('type', String(40))
+    type = Column('type', String(40)) # TODO: type is never set on fresh entities
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
@@ -93,6 +93,14 @@ class Entity(Base):
                 raise "Circular reference"
             parents.append(node)
         return parents
+
+    def all_children(self):
+        children = set()
+        children.update(self.children)
+        for child in self.children:
+            children.update(child.all_children())
+        return children
+
     
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
