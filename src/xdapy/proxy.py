@@ -100,20 +100,7 @@ class Proxy(object):
             objects = session.query(entity)
 #        session.close()
         return objects.all()
-    
-    def filter(self, objects, filter):
-        def smart_matches(needle, hay):
-            if needle == hay:
-                return True
-            try:
-                # TODO refine
-                # assume we have been given a range or list
-                if needle in hay:
-                    return True
-            except Exception:
-                return False
-            
-        return [o for o in objects for (key, val) in filter.iteritems() if smart_matches(o[key], val)]
+   
              
     def get_data_matrix(self, conditions, items, include=None):
         """Finds related items for the entity which satisfies condition
