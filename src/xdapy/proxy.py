@@ -8,8 +8,8 @@ from xdapy import Settings, Base
 from xdapy.errors import Error, InsertionError
 from xdapy.objects import Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, Entity, Context
-from xdapy.parameters import StringParameter, polymorphic_ids, strToType
+from xdapy.structures import ParameterOption, Entity, Context, EntityObject
+from xdapy.parameters import Parameter, StringParameter, polymorphic_ids, strToType
 from sqlalchemy.sql import or_, and_
 
 """
@@ -82,8 +82,17 @@ class Proxy(object):
         return and_(*pars)
         
     
-    def load_all_entity(self, entity, filter=None):
+    def find_all(self, entity, filter=None):
         session = self.session
+
+        if isinstance(entity, EntityObject):
+            # check for EntityObject and filter parameters
+            # FIXME: Do not delete filter items
+            if not filter:
+                filter = {}
+            filter.update(entity.param)
+            entity = entity.__class__
+
         if filter:
             f = self.mkfilter(entity, filter)
             objects = session.query(entity).filter(f)
@@ -287,7 +296,7 @@ if __name__ == "__main__":
     p.save(e1)
     
     e2 = Experiment(project='YourProject', experimenter="John Doe")
-    o1 = Observer(name="Max Mustermann", handedness="right", age=26)#
+    o1 = Observer(name="Max Mustermann", handedness="right", age=26)
     o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)   
     o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
     print o3.param["name"]
@@ -324,20 +333,35 @@ if __name__ == "__main__":
 #    p.connect_objects(e2, o3)
 #    p.connect_objects(e1, o3)
     print "---"
-    experiments = p.load_all_entity(Experiment)
+    experiments = p.find_all(Experiment)
     
     for num, experiment in enumerate(experiments):
         print experiment._parameterdict
 #        experiment.param["countme"] = num
         experiment.param["project"] = "PPP" + str(num)
 
-    experiments = p.load_all_entity(Experiment)
+    experiments = p.find_all(Experiment(project="PPP1"))
     for num, experiment in enumerate(experiments):
         print experiment._parameterdict
         
     e1.data = {"hlkk": "lkjlkjkl#√§jkljysdsa"}
 
     p.save(e1)
+
+
+    o = {}
+
+    from xdapy.objects import EntityObject
+    print EntityObject.__subclasses__()
+
+    o["otherObj"] = type("otherObj", (EntityObject,), {'parameterDefaults': {'myParam': 'string'}})
+
+    print [s.__name__ for s in EntityObject.__subclasses__()]
+    oo = o["otherObj"](myParam="Hey")
+    p.save(oo)
+
+
+
         
     p.session.commit()
     
@@ -363,15 +387,14 @@ if __name__ == "__main__":
     print xml
     p.session.add_all(p.fromXML(xml))
     p.session.commit()
-    exit()
     
-    print p.load_all_entity(Observer, filter={"name": "%Sor%"})
-    print p.load_all_entity(Observer, filter={"name": ["%Sor%"]})
-    print p.load_all_entity(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
-    print p.load_all_entity(Observer, filter={"age": between(30, 50)})
-    print p.load_all_entity(Observer, filter={"age": 40})
-    print p.load_all_entity(Observer, filter={"age": gt(10)})
-    print p.load_all_entity(Session, filter={"date": gte(datetime.date.today())})
+    print p.find_all(Observer, filter={"name": "%Sor%"})
+    print p.find_all(Observer, filter={"name": ["%Sor%"]})
+    print p.find_all(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
+    print p.find_all(Observer, filter={"age": between(30, 50)})
+    print p.find_all(Observer, filter={"age": 40})
+    print p.find_all(Observer, filter={"age": gt(10)})
+    print p.find_all(Session, filter={"date": gte(datetime.date.today())})
     
 #    print p.get_data_matrix([Observer(name="Max Mustermann")], {'Experiment':['project'],'Observer':['age','name']})
 
