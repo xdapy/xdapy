@@ -6,10 +6,12 @@ Created on Jun 17, 2009
 """
 from xdapy import Settings, Base
 from xdapy.errors import Error, InsertionError
-from xdapy.objects import Experiment, Observer, Trial, Session
+#from xdapy.objects import Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, Context, EntityObject
 from xdapy.parameters import Parameter, StringParameter, polymorphic_ids, strToType
+from xdapy.errors import StringConversionError
+
 from sqlalchemy.sql import or_, and_
 
 """
@@ -214,15 +216,43 @@ class Proxy(object):
         for name, paramtype in klass.parameterDefaults.iteritems():
             self.register_parameter(klass.__name__, name, paramtype)
     
+    def mkObject(self, name, parameters):
+        return type(name, (EntityObject,), {'parameterDefaults': parameters})
+    
+    def typesFromXML(self, xml):
+        from xml.dom import minidom
+
+        dom = minidom.parseString(xml)
+
+        types = dom.getElementsByTagName("types")[0]
+        entities = []
+        for entity in [e for e in types.childNodes if e.nodeName == u"entity"]:
+            e_type = entity.getAttribute("name")
+            params = {}
+            for param in [p for p in entity.childNodes if p.nodeName == u"parameter"]:
+                p_name = param.getAttribute("name")
+                p_type = param.getAttribute("type") or "string"
+                params[str(p_name)] = str(p_type)
+
+            o = self.mkObject(str(e_type), params)
+            self.register(o)
+
     def fromXML(self, xml):
+
         from xml.dom import minidom
         import base64
         
-        dom = minidom.parseString(xml)
+        dom = minidom.parseString(xml).getElementsByTagName("values")[0]
+
+        self.default_id = 0
+
+        def gen_id():
+            self.default_id += 1
+            return self.default_id
         
         def handle_document(doc):
             entities = doc.getElementsByTagName("entity")
-            entity_refs = dict((int(entity.getAttribute("id")), entity) for entity in entities)
+            entity_refs = dict((entity.getAttribute("name"), entity) for entity in entities)
             return entity_refs
         
         def handle_entities(entity_refs):
@@ -237,8 +267,13 @@ class Proxy(object):
                 for child in entity.childNodes:
                     if child.nodeName == "parameter":
                         name = child.getAttribute("name")
-                        value = child.getAttribute("value")
-                        type = child.getAttribute("type")
+                        
+                        try:
+                            value = child.childNodes[0].data.strip()
+                        except IndexError:
+                            value = ""
+                        
+                        type = new_entity.parameterDefaults[str(name)]
                         new_entity.param[name] = strToType(value, type)
                     if child.nodeName == "data":
                         data = child.childNodes[0].data
@@ -251,15 +286,50 @@ class Proxy(object):
             for eid, entity in entity_refs.iteritems():
                 for child in entity.childNodes:
                     if child.nodeName == "context":
-                        relates = int(child.getAttribute("relates"))
+                        relates = child.getAttribute("relates")
                         related_entity = entity_dict[relates]
                         note = child.getAttribute("note")
                         entity_dict[eid].context.append(Context(context=related_entity, note=note))
         
+        def traverse_entity(entity):
+            from xdapy.objects import EntityObject
+            klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
+            new_entity = klasses[entity.getAttribute("type")]()
+
+            for child in entity.childNodes:
+                if child.nodeName == "parameter":
+                    name = child.getAttribute("name")
+                    
+                    try:
+                        value = child.childNodes[0].data.strip()
+                    except IndexError:
+                        value = ""
+                    
+                    type = new_entity.parameterDefaults[str(name)]
+                    try:
+                        new_entity.param[name] = strToType(value, type)
+                    except StringConversionError as err:
+                        print new_entity, name, value, type
+                        raise
+                        
+                if child.nodeName == "data":
+                    data = child.childNodes[0].data
+                    name = child.getAttribute("name")
+                    new_entity.data[str(name)] = base64.b64decode(data)
+                if child.nodeName == u"entity":
+                    child_entity = traverse_entity(child)
+                    child_entity.parent = new_entity
+            return new_entity
+
         entity_refs = handle_document(dom)
+    
+        entity_tree = []
+        for entity in [e for e in dom.childNodes if e.nodeName == u"entity"]:
+            entity_tree.append(traverse_entity(entity))
+
         entity_dict = handle_entities(entity_refs)
         handle_context(entity_refs, entity_dict)
-        return entity_dict.values()
+        return entity_tree
         
     
     def toXMl(self):
@@ -271,36 +341,72 @@ class Proxy(object):
         main = doc.createElement("xdapy")
         doc.appendChild(main)
 
-        def traverse(entities, append_to):
-            for e in entities:
+        def save_types(doc):
+            types = {}
+            for param in session.query(ParameterOption):
+                if not param.entity_name in types:
+                    types[param.entity_name] = {}
+                types[param.entity_name][param.parameter_name] = param.parameter_type
+
+            t = doc.createElement("types")
+            for entity, params in types.iteritems():
                 entityElem = doc.createElement("entity")
-                entityElem.setAttribute('id', str(e.id))
-                entityElem.setAttribute('type', str(e.type))
-                entityElem.setAttribute('parent', str(e.parent_id))
-                for c in e.context:
-                    ctxt = doc.createElement("context")
-                    ctxt.setAttribute("relates", str(c.context_id))
-                    ctxt.setAttribute("note", c.note)
-                    entityElem.appendChild(ctxt)
-                for d in e._datadict.values():
-                    data = doc.createElement("data")
-                    data.setAttribute("name", d.name)
-                    data.setAttribute("encoding", "base64")
-                    rawdata = doc.createTextNode(base64.b64encode(d.data))
-                    data.appendChild(rawdata)
-                    entityElem.appendChild(data)
-                for p in e._parameterdict.values():
-                    param = doc.createElement("parameter")
-                    param.setAttribute("name", p.name)
-                    param.setAttribute("type", p.type)
-                    param.setAttribute("value", p.value_string)
-                    entityElem.appendChild(param)
-                append_to.appendChild(entityElem)
-                traverse(e.children, entityElem)
+                entityElem.setAttribute("name", entity)
+                t.appendChild(entityElem)
+                for param_name, param_type in params.iteritems():
+                    paramElem = doc.createElement("parameter")
+                    paramElem.setAttribute("name", param_name)
+                    paramElem.setAttribute("type", param_type)
+                    entityElem.appendChild(paramElem)
+            return t
+
+
+        def save_entities(doc):
+            def mkXml(entities):
+                print "CCC", [e.children for e in entities]
+                elems = []
+                for e in entities:
+                    entityElem = doc.createElement("entity")
+                    entityElem.setAttribute('id', str(e.id))
+                    entityElem.setAttribute('type', str(e.type))
+                    entityElem.setAttribute('parent', str(e.parent_id))
+                    for c in e.context:
+                        ctxt = doc.createElement("context")
+                        ctxt.setAttribute("relates", str(c.context_id))
+                        ctxt.setAttribute("note", c.note)
+                        entityElem.appendChild(ctxt)
+                    for d in e._datadict.values():
+                        data = doc.createElement("data")
+                        data.setAttribute("name", d.name)
+                        data.setAttribute("encoding", "base64")
+                        rawdata = doc.createTextNode(base64.b64encode(d.data))
+                        data.appendChild(rawdata)
+                        entityElem.appendChild(data)
+                    for p in e._parameterdict.values():
+                        param = doc.createElement("parameter")
+                        param.setAttribute("name", p.name)
+                        param.setAttribute("type", p.type)
+#                        param.setAttribute("value", p.value_string)
+                        rawdata = doc.createTextNode(p.value_string)
+                        param.appendChild(rawdata)
+
+                        entityElem.appendChild(param)
+                    
+                    for child in mkXml(e.children):
+                        entityElem.appendChild(child)
+                    elems.append(entityElem)
+                return elems
+
+            # get entities with no parent
+            entities = session.query(Entity).filter(Entity.parent_id==None).all()
+            e = doc.createElement("values")
         
-        entities = session.query(Entity).filter(Entity.parent_id==None).all()
-        
-        traverse(entities, main)
+            for child in mkXml(entities):
+                e.appendChild(child)
+            return e
+
+        main.appendChild(save_types(doc))
+        main.appendChild(save_entities(doc))
         
         return doc.toprettyxml()
         
@@ -309,6 +415,18 @@ if __name__ == "__main__":
     p = Proxy(engine)
     p.create_tables(overwrite=True)
 
+    f = open("xml.xml")
+    xml = f.read()
+    p.typesFromXML(xml)
+
+    p.session.add_all(p.fromXML(xml))
+    p.session.commit()
+    xml = p.toXMl()
+    print xml
+
+    #exit()    
+    from xdapy.objects import *
+	
     p.register(Observer)
     p.register(Experiment)
     p.register(Trial)
@@ -386,9 +504,6 @@ if __name__ == "__main__":
     oo = o["otherObj"](myParam="Hey")
     p.save(oo)
 
-
-
-        
     p.session.commit()
     
 #    p.session.delete(e1)
@@ -410,6 +525,7 @@ if __name__ == "__main__":
         return lambda type: and_(gte(v1)(type), lte(v2)(type))
     
     xml = p.toXMl()
+    print ""
     print xml
     p.session.add_all(p.fromXML(xml))
     p.session.commit()
