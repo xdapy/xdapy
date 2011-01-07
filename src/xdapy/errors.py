@@ -13,7 +13,10 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 class Error(Exception):
     """Base class for exceptions in this module."""
-    pass
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return repr(self.msg)
 
 class AmbiguousObjectError(Error):
     """Raised when an operation attempts to load a list of objects when only a 
@@ -44,4 +47,8 @@ class ContextError(Error):
 class ContextWarning(Warning):
     """Raised when the context of an object is ambiguous. 
     """
+    pass
+
+class StringConversionError(Error):
+    """Raised if a value can’t be generated from string."""
     pass

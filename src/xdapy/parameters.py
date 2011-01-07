@@ -8,6 +8,7 @@ from sqlalchemy.orm import relation, backref, validates, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from xdapy import Base
+from xdapy.errors import StringConversionError
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
@@ -89,6 +90,10 @@ class StringParameter(Parameter):
     def from_string(cls, value):
         return unicode(value)
 
+    @property
+    def value_string(self):
+        return self.value
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -134,7 +139,10 @@ class IntegerParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+            raise StringConversionError("Could not convert value '{}' to integer.".format(value))
 
     @classmethod
     def accepts(cls, value):
@@ -178,7 +186,10 @@ class FloatParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
-        return float(value)
+        try:
+            return float(value)
+        except ValueError:
+            raise StringConversionError("Could not convert value '{}' to float.".format(value))
 
     @classmethod
     def accepts(cls, value):
@@ -222,7 +233,10 @@ class DateParameter(Parameter):
     
     @classmethod
     def from_string(cls, value):
-        return datetime.strptime(value, "%Y-%m-%d").date()
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            raise StringConversionError("Could not convert value '{}' to date.".format(value))
 
     @property
     def value_string(self):
@@ -275,7 +289,10 @@ class TimeParameter(Parameter):
     
     @classmethod
     def from_string(cls, value):
-        return datetime.strptime(value, "%H:%M:%S").time()
+        try:
+            return datetime.strptime(value, "%H:%M:%S").time()
+        except ValueError:
+            raise StringConversionError("Could not convert value '{}' to time.".format(value))
 
     @property
     def value_string(self):
@@ -325,7 +342,10 @@ class DateTimeParameter(Parameter):
     
     @classmethod
     def from_string(cls, value):
-        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+        try:
+            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            raise StringConversionError("Could not convert value '{}' to datetime.".format(value))
 
     @property
     def value_string(self):
@@ -375,11 +395,23 @@ class BooleanParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
-        return bool(value)
+        try:
+            if value.upper() == "FALSE":
+                return False
+            if value.upper() == "TRUE":
+                return True
+        except AttributeError:
+            pass
+        # need to transform to int first to get "0" right
+        try:
+            return bool(int(value))
+        except ValueError:
+            pass
+        raise StringConversionError("Could not convert value '{}' to boolean.".format(value))
 
     @property
     def value_string(self):
-        return 1 if self.value is True else 0
+        return "TRUE" if self.value is True else "FALSE"
 
     @classmethod
     def accepts(cls, value):
