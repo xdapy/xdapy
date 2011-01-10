@@ -6,7 +6,6 @@ Created on Jun 17, 2009
 """
 from xdapy import Settings, Base
 from xdapy.errors import Error, InsertionError
-#from xdapy.objects import Experiment, Observer, Trial, Session
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, Context, EntityObject
 from xdapy.parameters import Parameter, StringParameter, polymorphic_ids, strToType
@@ -411,6 +410,8 @@ class Proxy(object):
         return doc.toprettyxml()
         
 if __name__ == "__main__":
+    from xdapy.objects import Experiment, Observer, Trial, Session
+
     engine = Settings.engine
     p = Proxy(engine)
     p.create_tables(overwrite=True)
