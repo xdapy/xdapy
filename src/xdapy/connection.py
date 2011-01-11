@@ -8,6 +8,7 @@ from sqlalchemy.pool import AssertionPool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from xdapy.utils.configobj import ConfigObj
+from xdapy.errors import Error
 
 from utils.decorators import lazyprop
 
@@ -15,9 +16,9 @@ from utils.decorators import lazyprop
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
-class _Settings(object):
+class Connection(object):
     default_path = '~/.xdapy/engine.ini'
-    def __init__(self, filename=None):
+    def __init__(self, profile=None, filename=None):
         """
         Reads the settings from the file ~/.xdapy/engine.ini or the path value.
 
@@ -36,6 +37,7 @@ class _Settings(object):
         self.db ~ the database URL
         self.test_db ~ the database URL used for testing
         """
+        self.profile = profile
         if not filename:
             filename = self.default_path
         self.filename = path.expanduser(filename)
@@ -49,35 +51,38 @@ class _Settings(object):
                             'host = localhost\n'\
                             'dbname = xdapy')
 
-        self.config = ConfigObj(self.filename)
+        self._config = ConfigObj(self.filename)
     
         self.Session = scoped_session(sessionmaker())
         self._engine = None
+    
+    def _configuration(self, profile=None):
+        testconfig = self._config.dict()
+        if profile:
+            testconfig.update(testconfig.get(profile))
+        config = {}
+        for key in ['dialect', 'user', 'password', 'host', 'dbname']:
+            config[key] = testconfig[key]
+        return config
+    
+    @property
+    def configuration(self):
+        """Returns the configuration of the connection object."""
+        config = self._configuration(self.profile)
+        if self.profile == "test":
+            # make sure test does not use the default db    
+            main_config = self._configuration()
+            if config['host'] == main_config['host'] and config['dbname'] == main_config['dbname']:
+                raise Error("Please use a different test db.")
+        return config
     
     @lazyprop
     def engine(self):
         return create_engine(self.db, poolclass=AssertionPool, echo=False)
     
-    @lazyprop
-    def test_engine(self):
-        return create_engine(self.test_db, poolclass=AssertionPool, echo=False)
-
     @property
     def db(self):
         try:
-            return """{dialect}://{user}:{password}@{host}/{dbname}""".format(**self.config)
+            return """{dialect}://{user}:{password}@{host}/{dbname}""".format(**self.configuration)
         except:
             raise Exception("Cannot create engine with information from engine.ini")
-
-    @property
-    def test_db(self):
-        try:
-            # update the dict with the 'test' section
-            testconfig = self.config.dict()
-            testdefaults = {'dbname': testconfig['dbname'] + "_test"}
-            testconfig.update(testconfig.get('test', testdefaults))
-
-            return """{dialect}://{user}:{password}@{host}/{dbname}""".format(**testconfig)
-        except:
-            raise Exception("Cannot create engine with information from engine.ini")
-

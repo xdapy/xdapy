@@ -10,6 +10,5 @@ __contact__ = 'hannah.dold@mailbox.tu-berlin.de'
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
-from settings import _Settings
-Settings = _Settings()
-
+from connection import Connection
+from proxy import Proxy
