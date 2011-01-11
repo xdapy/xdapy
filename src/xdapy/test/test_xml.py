@@ -1,4 +1,4 @@
-from xdapy import Connection, Base, Proxy
+from xdapy import Connection, Mapper
 import unittest
 
 class TestXml(unittest.TestCase):
@@ -43,13 +43,16 @@ class TestXml(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        Base.metadata.drop_all(self.connection.engine, checkfirst=True)
-        Base.metadata.create_all(self.connection.engine)
+        self.mapper = Mapper(self.connection)
+        self.mapper.create_tables(overwrite=True)
 
     def tearDown(self):
         pass
     
     def testXml(self):
-        proxy = Proxy(self.connection)
-        vals = proxy.fromXML(TestXml.test_xml)
+        vals = self.mapper.fromXML(TestXml.test_xml)
         assert len(vals) == 7
+
+if __name__ == '__main__':
+    unittest.main()
+

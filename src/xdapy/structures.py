@@ -22,7 +22,8 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta
         
-from xdapy import Base, parameters
+from xdapy import Base
+from xdapy.parameters import ParameterMap, Parameter, parameter_ids
 from xdapy.errors import Error
 
         
@@ -106,8 +107,8 @@ class Entity(Base):
     __table_args__ = {'mysql_engine':'InnoDB'}
     __mapper_args__ = {'polymorphic_on':type}
     
-    _parameterdict = relationship(parameters.Parameter,
-        collection_class=column_mapped_collection(parameters.StringParameter.name), # FIXME ???
+    _parameterdict = relationship(Parameter,
+        collection_class=column_mapped_collection(Parameter.name), # FIXME ???
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
@@ -143,7 +144,7 @@ class Meta(DeclarativeMeta):
             return
         
         def _saveParam(k, v):
-            ParameterType = parameters.polymorphic_ids[cls.parameterDefaults[k]]
+            ParameterType = ParameterMap[cls.parameterDefaults[k]]
             return ParameterType(name=k, value=v)
 
         cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
@@ -225,7 +226,7 @@ class ParameterOption(Base):
     
     @validates('parameter_type')
     def validate_parameter_type(self, key, p_type):
-        if not isinstance(p_type, str) or p_type not in parameters.parameter_types:
+        if not isinstance(p_type, str) or p_type not in parameter_ids:
             raise TypeError(("Argument 'parameter_type' must one of the " + 
                              "following strings: " + 
                              ", ".join(parameters.parameter_types)))

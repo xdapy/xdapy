@@ -8,7 +8,7 @@ from xdapy import Base
 from xdapy.errors import Error, InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, Context, EntityObject
-from xdapy.parameters import Parameter, StringParameter, polymorphic_ids, strToType
+from xdapy.parameters import Parameter, StringParameter, ParameterMap, strToType
 from xdapy.errors import StringConversionError
 
 from sqlalchemy.sql import or_, and_
@@ -23,7 +23,7 @@ TODO: Error if the commiting fails
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
-class Proxy(object):
+class Mapper(object):
     """Handle database access and sessions"""
               
     def __init__(self, connection):
@@ -68,7 +68,7 @@ class Proxy(object):
                 if not (isinstance(value, list) or isinstance(value, tuple)):
                     return makeParam(key, [value])
                 or_clause = []
-                ParameterType = polymorphic_ids[entity.parameterDefaults[key]]
+                ParameterType = ParameterMap[entity.parameterDefaults[key]]
                 for v in value:
 #                   ParameterType = acceptingClass(v)
                     try:

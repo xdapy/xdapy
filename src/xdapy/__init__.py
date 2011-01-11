@@ -11,4 +11,4 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 from connection import Connection
-from proxy import Proxy
+from mapper import Mapper

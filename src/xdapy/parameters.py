@@ -2,9 +2,9 @@
 # Provide a centralised typed key–value store.
 
 from datetime import date, time, datetime
-from sqlalchemy import Sequence, Table, Column, ForeignKey, ForeignKeyConstraint, \
-    Binary, String, Integer, Float, Date, Time, DateTime, Boolean
-from sqlalchemy.orm import relation, backref, validates, relationship
+from sqlalchemy import Sequence, Column, ForeignKey, \
+     String, Integer, Float, Date, Time, DateTime, Boolean
+from sqlalchemy.orm import validates
 from sqlalchemy.schema import UniqueConstraint
 
 from xdapy import Base
@@ -31,7 +31,7 @@ class Parameter(Base):
     
     def typed_class(self):
         try:
-            return polymorphic_ids[self.type]
+            return ParameterMap[self.type]
         except KeyError:
             return Parameter
     
@@ -71,7 +71,12 @@ class Parameter(Base):
         This function is preferred over str(self.value) for exporting values.
         '''
         return unicode(self.value)
-
+    
+    @classmethod
+    def create(cls, name, value):
+        """Creates a new parameter instance with the correct type."""
+        klass = acceptingClass(value)
+        return klass(name, value)
 
 class StringParameter(Parameter):
     '''
@@ -450,12 +455,12 @@ parameter_classes = [
             StringParameter
     ]
 
-parameter_types = list(pc.__mapper_args__['polymorphic_identity'] for pc in parameter_classes)
+parameter_ids = list(pc.__mapper_args__['polymorphic_identity'] for pc in parameter_classes)
 
-polymorphic_ids = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in parameter_classes)
+ParameterMap = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in parameter_classes)
 
 def strToType(s, typename):
-    return polymorphic_ids[typename].from_string(s)
+    return ParameterMap[typename].from_string(s)
     
 def acceptingClass(value):
     for pc in parameter_classes:

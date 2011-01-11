@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Connection, Base, Proxy
+from xdapy import Connection, Mapper
 
-from xdapy.parameters import *
+from xdapy.parameters import ParameterMap
 
 import unittest
 
@@ -10,8 +10,8 @@ class TestParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        Base.metadata.drop_all(self.connection.engine, checkfirst=True)
-        Base.metadata.create_all(self.connection.engine)
+        mapper = Mapper(self.connection)
+        mapper.create_tables(overwrite=True)
 
     def tearDown(self):         
         pass
@@ -29,7 +29,7 @@ class TestParameter(unittest.TestCase):
 
         for type, vals in values.iteritems():
             for val in vals:
-                param_class = polymorphic_ids[type]
+                param_class = ParameterMap[type]
                 param_val = param_class("test", val)
                 assert val == param_class.from_string(param_val.value_string)
 

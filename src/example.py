@@ -1,37 +1,36 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Connection, Proxy
+from xdapy import Connection, Mapper
 
-connection = Connection() # use standard profile
+connection = Connection(profile="test") # use standard profile
 print connection.configuration
-p = Proxy(connection)
+m = Mapper(connection)
+m.create_tables(overwrite=True)
 
 from xdapy.objects import Experiment, Observer, Trial, Session
 from xdapy.structures import Context
 
-p.create_tables(overwrite=True)
-
 f = open("xml.xml")
 xml = f.read()
-p.typesFromXML(xml)
+m.typesFromXML(xml)
 
-p.session.add_all(p.fromXML(xml))
-p.session.commit()
-xml = p.toXMl()
+m.session.add_all(m.fromXML(xml))
+m.session.commit()
+xml = m.toXMl()
 print xml
 
 
-p.register(Observer)
-p.register(Experiment)
-p.register(Trial)
-p.register(Session)
+m.register(Observer)
+m.register(Experiment)
+m.register(Trial)
+m.register(Session)
 
 e1 = Experiment(project='MyProject', experimenter="John Do")
 e1.param['project'] = "NoProject"
-p.save(e1)
-p.save(e1)
-p.save(e1)
-p.save(e1)
+m.save(e1)
+m.save(e1)
+m.save(e1)
+m.save(e1)
 
 e2 = Experiment(project='YourProject', experimenter="John Doe")
 o1 = Observer(name="Max Mustermann", handedness="right", age=26)
@@ -47,44 +46,44 @@ s2 = Session(date=datetime.date.today())
 s2.context.append(Context(context=e1, note="Some Context"))
 
 #all objects are root
-#p.save(e1)
-#p.save(e2, o1, o2, o3)
-#p.save(s1, s2)
+#m.save(e1)
+#m.save(e2, o1, o2, o3)
+#m.save(s1, s2)
 
-p.session.add_all([e1, e2, o1, o2, o3, s1, s2])
+m.session.add_all([e1, e2, o1, o2, o3, s1, s2])
 
-p.session.commit()
+m.session.commit()
 
-#    p.connect_objects(e1, o1)
-#    p.connect_objects(o1, o2)
+#    m.connect_objects(e1, o1)
+#    m.connect_objects(o1, o2)
 
 o1.parent = e1
 
-#    print p.get_children(e1)
-#    print p.get_children(o1, 1)   
+#    print m.get_children(e1)
+#    print m.get_children(o1, 1)   
 
-# print p.get_data_matrix([], {'Observer':['age','name']})
+# print m.get_data_matrix([], {'Observer':['age','name']})
 
 #only e1 and e2 are root
-#    p.connect_objects(e1, o1)
-#    p.connect_objects(e1, o2, True)
-#    p.connect_objects(e2, o3)
-#    p.connect_objects(e1, o3)
+#    m.connect_objects(e1, o1)
+#    m.connect_objects(e1, o2, True)
+#    m.connect_objects(e2, o3)
+#    m.connect_objects(e1, o3)
 print "---"
-experiments = p.find_all(Experiment)
+experiments = m.find_all(Experiment)
 
 for num, experiment in enumerate(experiments):
     print experiment._parameterdict
 #        experiment.param["countme"] = num
     experiment.param["project"] = "PPP" + str(num)
 
-experiments = p.find_all(Experiment(project="PPP1"))
+experiments = m.find_all(Experiment(project="PPP1"))
 for num, experiment in enumerate(experiments):
     print experiment._parameterdict
     
 e1.data = {"hlkk": "lkjlkjkl#√§jkljysdsa"}
 
-p.save(e1)
+m.save(e1)
 
 
 o = {}
@@ -96,12 +95,12 @@ o["otherObj"] = type("otherObj", (EntityObject,), {'parameterDefaults': {'myPara
 
 print [s.__name__ for s in EntityObject.__subclasses__()]
 oo = o["otherObj"](myParam="Hey")
-p.save(oo)
+m.save(oo)
 
-p.session.commit()
+m.session.commit()
 
-#    p.session.delete(e1)
-p.session.commit()
+#    m.session.delete(e1)
+m.session.commit()
 
 def gte(v):
     return lambda type: type >= v
@@ -118,19 +117,19 @@ def lt(v):
 def between(v1, v2):
     return lambda type: and_(gte(v1)(type), lte(v2)(type))
 
-xml = p.toXMl()
+xml = m.toXMl()
 print ""
 print xml
-p.session.add_all(p.fromXML(xml))
-p.session.commit()
+m.session.add_all(m.fromXML(xml))
+m.session.commit()
 
-print p.find_all(Observer, filter={"name": "%Sor%"})
-print p.find_all(Observer, filter={"name": ["%Sor%"]})
-print p.find_all(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
-print p.find_all(Observer, filter={"age": between(30, 50)})
-print p.find_all(Observer, filter={"age": 40})
-print p.find_all(Observer, filter={"age": gt(10)})
-print p.find_all(Session, filter={"date": gte(datetime.date.today())})
+print m.find_all(Observer, filter={"name": "%Sor%"})
+print m.find_all(Observer, filter={"name": ["%Sor%"]})
+print m.find_all(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
+print m.find_all(Observer, filter={"age": between(30, 50)})
+print m.find_all(Observer, filter={"age": 40})
+print m.find_all(Observer, filter={"age": gt(10)})
+print m.find_all(Session, filter={"date": gte(datetime.date.today())})
 
-print p.get_data_matrix([Observer(name="Max Mustermann")], {Experiment:['project'], Observer:['age','name']})
+print m.get_data_matrix([Observer(name="Max Mustermann")], {Experiment:['project'], Observer:['age','name']})
 

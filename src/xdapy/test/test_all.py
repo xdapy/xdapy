@@ -16,7 +16,7 @@ from pickle import dumps
 from random import randint
 from xdapy import Settings
 from xdapy.objects import Observer, Experiment, Session, Trial
-from xdapy.proxy import Proxy
+from xdapy.proxy import Mapper
 from xdapy.structures import Entity, StringParameter, Data, Context
 import unittest
 
@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         db = Settings().test_db
-        self.p = Proxy(db)
+        self.p = Mapper(db)
         self.p.create_tables(overwrite=True)
         
         #register params

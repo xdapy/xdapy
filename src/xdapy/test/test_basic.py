@@ -1,5 +1,5 @@
 from xdapy import Settings, Base
-from xdapy.proxy import Proxy
+from xdapy.proxy import Mapper
 
 import unittest
 

@@ -6,7 +6,7 @@ from sqlalchemy.exceptions import IntegrityError
 from xdapy import Settings
 from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy.objects import Observer, Experiment, Trial
-from xdapy.proxy import Proxy
+from xdapy.proxy import Mapper
 from xdapy.utils.algorithms import listequal
 from xdapy.structures import ParameterOption
 import unittest
@@ -26,7 +26,7 @@ class TestProxy(unittest.TestCase):
 
     def setUp(self):
         db = Settings().test_db
-        self.p = Proxy(db)
+        self.p = Mapper(db)
         self.p.create_tables(overwrite=True)
         self.session = self.p.Session()
         self.session.add(ParameterOption('Observer', 'name', 'string'))
