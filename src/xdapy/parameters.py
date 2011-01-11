@@ -80,7 +80,7 @@ class Parameter(Base):
 
 class StringParameter(Parameter):
     '''
-    The class 'StringParameter' is mapped on the table 'stringparameters' and 
+    The class 'StringParameter' is mapped on the table 'parameters_string' and 
     is derived from 'Parameter'. The value assigned to a StringParameter must be 
     a string. 
     '''
@@ -132,7 +132,7 @@ class StringParameter(Parameter):
 
 class IntegerParameter(Parameter):
     '''
-    The class 'IntegerParameter' is mapped on the table 'integerparameters' and 
+    The class 'IntegerParameter' is mapped on the table 'parameters_integer' and 
     is derived from Parameter. The value assigned to an IntegerParameter must be
     an integer. 
     '''
@@ -179,7 +179,7 @@ class IntegerParameter(Parameter):
 
 class FloatParameter(Parameter):
     '''
-    The class 'FloatParameter' is mapped on the table 'floatparameters' and 
+    The class 'FloatParameter' is mapped on the table 'parameters_float' and 
     is derived from 'Parameter'. The value assigned to a FloatParameter must be 
     a float. 
     '''
@@ -226,7 +226,7 @@ class FloatParameter(Parameter):
 
 class DateParameter(Parameter):
     '''
-    The class 'FloatParameter' is mapped on the table 'dateparameters' and 
+    The class 'FloatParameter' is mapped on the table 'parameters_date' and 
     is derived from 'Parameter'. The value assigned to a DateParameter must be 
     a datetime.date. 
     '''
@@ -282,7 +282,7 @@ class DateParameter(Parameter):
 
 class TimeParameter(Parameter):
     '''
-    The class 'TimeParameter' is mapped on the table 'timeparameters' and 
+    The class 'TimeParameter' is mapped on the table 'parameters_time' and 
     is derived from 'Parameter'. The value assigned to a TimeParameter must be 
     a datetime.time. 
     '''
@@ -335,7 +335,7 @@ class TimeParameter(Parameter):
 
 class DateTimeParameter(Parameter):
     '''
-    The class 'DateTimeParameter' is mapped on the table 'datetimeparameters' and 
+    The class 'DateTimeParameter' is mapped on the table 'parameters_datetime' and 
     is derived from 'Parameter'. The value assigned to a DateTimeParameter must be 
     a datetime.datetime. 
     '''
@@ -388,7 +388,7 @@ class DateTimeParameter(Parameter):
 
 class BooleanParameter(Parameter):
     '''
-    The class 'BooleanParameter' is mapped on the table 'booleanparameters' and 
+    The class 'BooleanParameter' is mapped on the table 'parameters_boolean' and 
     is derived from 'Parameter'. The value assigned to a BooleanParameter must be 
     a boolean. 
     '''
