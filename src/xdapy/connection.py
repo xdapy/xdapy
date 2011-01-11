@@ -55,6 +55,11 @@ class Connection(object):
     
         self.Session = scoped_session(sessionmaker())
         self._engine = None
+        
+    @classmethod
+    def test(cls):
+        """Creates a connection with the test profile."""
+        return cls(profile="test")
     
     def _configuration(self, profile=None):
         testconfig = self._config.dict()

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Settings, Base
-from xdapy.proxy import Proxy
+from xdapy import Connection, Base, Proxy
 
 from xdapy.parameters import *
 
@@ -10,9 +9,9 @@ import unittest
 class TestParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
-        self.engine = Settings.test_engine
-        Base.metadata.drop_all(self.engine, checkfirst=True)
-        Base.metadata.create_all(self.engine)
+        self.connection = Connection.test()
+        Base.metadata.drop_all(self.connection.engine, checkfirst=True)
+        Base.metadata.create_all(self.connection.engine)
 
     def tearDown(self):         
         pass
