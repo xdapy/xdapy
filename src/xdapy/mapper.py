@@ -31,14 +31,14 @@ class Mapper(object):
         
         Creates the engine for a specific database and a session factory
         '''
-        self.engine = connection.engine
-        self.session = connection.Session(bind=self.engine)
+        self.connection = connection
+        self.session = connection.session
     
     def create_tables(self, overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
         if overwrite:
-            Base.metadata.drop_all(self.engine, checkfirst=True)
-        Base.metadata.create_all(self.engine)
+            Base.metadata.drop_all(self.connection.engine, checkfirst=True)
+        Base.metadata.create_all(self.connection.engine)
     
     def save(self, *args):
         """Save instances inherited from ObjectDict into database.
@@ -50,16 +50,12 @@ class Mapper(object):
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
         """
-        session = self.session
-        try:
-            for arg in args:
-                #arg.set_concurrent(True)
-                session.add(arg)
-            session.commit()
-        except Exception:
-            session.close()
-            raise 
-#        session.close()
+        with self.session as session:
+            try:
+                for arg in args:
+                    session.add(arg)
+            except Exception:
+                raise
     
     def mkfilter(self, entity, filter):
         pars = []
@@ -68,7 +64,7 @@ class Mapper(object):
                 if not (isinstance(value, list) or isinstance(value, tuple)):
                     return makeParam(key, [value])
                 or_clause = []
-                ParameterType = ParameterMap[entity.parameterDefaults[key]]
+                ParameterType = ParameterMap[entity.parameter_types[key]]
                 for v in value:
 #                   ParameterType = acceptingClass(v)
                     try:
@@ -84,23 +80,21 @@ class Mapper(object):
         
     
     def find_all(self, entity, filter=None):
-        session = self.session
-
-        if isinstance(entity, EntityObject):
-            # check for EntityObject and filter parameters
-            # FIXME: Do not delete filter items
-            if not filter:
-                filter = {}
-            filter.update(entity.param)
-            entity = entity.__class__
-
-        if filter:
-            f = self.mkfilter(entity, filter)
-            objects = session.query(entity).filter(f)
-        else:
-            objects = session.query(entity)
-#        session.close()
-        return objects.all()
+        with self.session as session:
+            if isinstance(entity, EntityObject):
+                # check for EntityObject and filter parameters
+                # FIXME: Do not delete filter items
+                if not filter:
+                    filter = {}
+                filter.update(entity.param)
+                entity = entity.__class__
+    
+            if filter:
+                f = self.mkfilter(entity, filter)
+                objects = session.query(entity).filter(f)
+            else:
+                objects = session.query(entity)
+            return objects.all()
    
              
     def get_data_matrix(self, conditions, items, include=None):
@@ -117,8 +111,6 @@ class Mapper(object):
             include = ["ALL"]
         if "ALL" in include:
             include = ["PARENT", "CHILDREN", "CONTEXT", "CONTEXT_REVERSED"]
-
-        session = self.session
 
         # first get all entities which match the conditions
         entities = []
@@ -169,21 +161,17 @@ class Mapper(object):
         TODO: Maybe consider to save objects automatically 
         TODO: Revise session closing
         """
-        session = self.session
-        try:
-            if child in parent.all_parents() + [parent]:
-                raise InsertionError('Can not insert child because of circularity.')
-            
-            if child.parent and not force:
-                raise InsertionError('Child already has parent. Please set force=True.')
-            
-            child.parent = parent
-            
-        except Exception:
-            session.close()
-            raise
-        session.commit()
-        session.close()
+        with self.session as session:
+            try:
+                if child in parent.all_parents() + [parent]:
+                    raise InsertionError('Can not insert child because of circularity.')
+                
+                if child.parent and not force:
+                    raise InsertionError('Child already has parent. Please set force=True.')
+                child.parent = parent
+                
+            except Exception:
+                raise
 
     @require('entity_name', str)
     @require('parameter_name', str)
@@ -200,23 +188,20 @@ class Mapper(object):
         TypeError -- If the parameters are not correctly specified
         Some SQL error -- If the same entry already exists
         """
-        session = self.session
-        try:
-            parameter_option = ParameterOption(entity_name,parameter_name,parameter_type)
-            session.merge(parameter_option)
-            session.commit()
-        except Exception:
-            session.close()
-            raise
-        session.close()
+        with self.session as session:
+            try:
+                parameter_option = ParameterOption(entity_name, parameter_name, parameter_type)
+                session.merge(parameter_option)
+            except Exception:
+                raise
         
     def register(self, klass):
         """Registers the class and the class’s parameters."""
-        for name, paramtype in klass.parameterDefaults.iteritems():
+        for name, paramtype in klass.parameter_types.iteritems():
             self.register_parameter(klass.__name__, name, paramtype)
     
     def mkObject(self, name, parameters):
-        return type(name, (EntityObject,), {'parameterDefaults': parameters})
+        return type(name, (EntityObject,), {'parameter_types': parameters})
     
     def typesFromXML(self, xml):
         from xml.dom import minidom
@@ -272,7 +257,7 @@ class Mapper(object):
                         except IndexError:
                             value = ""
                         
-                        type = new_entity.parameterDefaults[str(name)]
+                        type = new_entity.parameter_types[str(name)]
                         new_entity.param[name] = strToType(value, type)
                     if child.nodeName == "data":
                         data = child.childNodes[0].data
@@ -304,7 +289,7 @@ class Mapper(object):
                     except IndexError:
                         value = ""
                     
-                    type = new_entity.parameterDefaults[str(name)]
+                    type = new_entity.parameter_types[str(name)]
                     try:
                         new_entity.param[name] = strToType(value, type)
                     except StringConversionError as err:
@@ -332,7 +317,7 @@ class Mapper(object):
         
     
     def toXMl(self):
-        session = self.session
+        session = self.session.session
         from xml.dom import minidom
         import base64
         

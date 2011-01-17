@@ -11,7 +11,7 @@ from xdapy.structures import EntityObject
 class Experiment(EntityObject):
     """Concrete class for experiments"""
     
-    parameterDefaults = {
+    parameter_types = {
         'experimenter': 'string',
         'project': 'string'
     }
@@ -19,7 +19,7 @@ class Experiment(EntityObject):
 class Observer(EntityObject):
     """Concrete class for observers"""
     
-    parameterDefaults = {
+    parameter_types = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
@@ -28,14 +28,14 @@ class Observer(EntityObject):
 class Session(EntityObject):
     """Concrete class for sessions"""
     
-    parameterDefaults = {
+    parameter_types = {
         'date': 'date'
     }
 
 class Trial(EntityObject):
     """Concrete class for trials"""
     
-    parameterDefaults = {
+    parameter_types = {
         'rt': 'string',
         'valid': 'boolean',
         'response': 'string'

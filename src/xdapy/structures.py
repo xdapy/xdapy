@@ -26,7 +26,6 @@ from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
 from xdapy.errors import Error
 
-        
 class Data(Base):
     '''
     The class 'Data' is mapped on the table 'data'. The name assigned to Data 
@@ -117,6 +116,9 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     data = association_proxy('_datadict', 'value', creator=Data)
     
+    def add_related(self, related, note=None):
+        self.context.append(Context(context=related, note=note))
+    
     @validates('type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
@@ -144,7 +146,7 @@ class Meta(DeclarativeMeta):
             return
         
         def _saveParam(k, v):
-            ParameterType = ParameterMap[cls.parameterDefaults[k]]
+            ParameterType = ParameterMap[cls.parameter_types[k]]
             return ParameterType(name=k, value=v)
 
         cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
@@ -229,7 +231,7 @@ class ParameterOption(Base):
         if not isinstance(p_type, str) or p_type not in parameter_ids:
             raise TypeError(("Argument 'parameter_type' must one of the " + 
                              "following strings: " + 
-                             ", ".join(parameters.parameter_types)))
+                             ", ".join(parameter_ids)))
         return p_type 
     
     def __init__(self, entity_name, parameter_name, parameter_type):

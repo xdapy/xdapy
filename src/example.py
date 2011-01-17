@@ -3,27 +3,28 @@
 from xdapy import Connection, Mapper
 
 connection = Connection(profile="test") # use standard profile
-print connection.configuration
 m = Mapper(connection)
 m.create_tables(overwrite=True)
 
 from xdapy.objects import Experiment, Observer, Trial, Session
-from xdapy.structures import Context
-
-f = open("xml.xml")
-xml = f.read()
-m.typesFromXML(xml)
-
-m.session.add_all(m.fromXML(xml))
-m.session.commit()
-xml = m.toXMl()
-print xml
-
 
 m.register(Observer)
 m.register(Experiment)
 m.register(Trial)
 m.register(Session)
+
+
+
+f = open("xml.xml")
+xml = f.read()
+m.typesFromXML(xml)
+
+with m.session as session:
+    session.add_all(m.fromXML(xml))
+
+xml = m.toXMl()
+print xml
+
 
 e1 = Experiment(project='MyProject', experimenter="John Do")
 e1.param['project'] = "NoProject"
@@ -43,16 +44,20 @@ s1 = Session(date=datetime.date.today())
 
 s2 = Session(date=datetime.date.today())
 #    e1.context.append(Context(context=s2))
-s2.context.append(Context(context=e1, note="Some Context"))
+import pdb
+pdb.set_trace()
+
+s2.add_related(e1, note="Some Context")
+
+pdb.set_trace()
 
 #all objects are root
 #m.save(e1)
 #m.save(e2, o1, o2, o3)
 #m.save(s1, s2)
 
-m.session.add_all([e1, e2, o1, o2, o3, s1, s2])
-
-m.session.commit()
+with m.session as session:
+    session.add_all([e1, e2, o1, o2, o3, s1, s2])
 
 #    m.connect_objects(e1, o1)
 #    m.connect_objects(o1, o2)
@@ -91,16 +96,16 @@ o = {}
 from xdapy.objects import EntityObject
 print EntityObject.__subclasses__()
 
-o["otherObj"] = type("otherObj", (EntityObject,), {'parameterDefaults': {'myParam': 'string'}})
+o["otherObj"] = type("otherObj", (EntityObject,), {'parameter_types': {'myParam': 'string'}})
 
 print [s.__name__ for s in EntityObject.__subclasses__()]
 oo = o["otherObj"](myParam="Hey")
 m.save(oo)
 
-m.session.commit()
+#m.session.session.commit()
 
 #    m.session.delete(e1)
-m.session.commit()
+#m.session.session.commit()
 
 def gte(v):
     return lambda type: type >= v
@@ -120,8 +125,8 @@ def between(v1, v2):
 xml = m.toXMl()
 print ""
 print xml
-m.session.add_all(m.fromXML(xml))
-m.session.commit()
+with m.session as session:
+    session.add_all(m.fromXML(xml))
 
 print m.find_all(Observer, filter={"name": "%Sor%"})
 print m.find_all(Observer, filter={"name": ["%Sor%"]})

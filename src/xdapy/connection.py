@@ -16,6 +16,20 @@ from utils.decorators import lazyprop
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
+class AutoSession(object):
+    def __init__(self, session):
+        self.session = session
+        
+    def __enter__(self):
+        return self.session
+    
+    def __exit__(self, e_type, e_val, e_tb):
+        if e_type:
+            self.session.close()
+            
+        if self.session.is_active:
+            self.session.commit()
+
 class Connection(object):
     default_path = '~/.xdapy/engine.ini'
     def __init__(self, profile=None, filename=None):
@@ -53,9 +67,13 @@ class Connection(object):
 
         self._config = ConfigObj(self.filename)
     
-        self.Session = scoped_session(sessionmaker())
+        self.Session = scoped_session(sessionmaker(autocommit=True))
         self._engine = None
-        
+    
+    @lazyprop
+    def session(self):
+        return AutoSession(self.Session(bind=self.engine))
+    
     @classmethod
     def test(cls):
         """Creates a connection with the test profile."""
