@@ -129,10 +129,7 @@ class Entity(Base):
         '''Initialize an entity corresponding to an experimental object.
         
         Argument:
-        name -- A one-word-description of the experimental object
-        
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no an integer.
+        type -- A one-word-description of the experimental object
         '''
         raise Error("Entity.__init__ should not be called directly.")
                 
@@ -258,3 +255,4 @@ class ParameterOption(Base):
 
 if __name__ == "__main__":
     pass
+

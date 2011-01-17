@@ -57,13 +57,20 @@ class Mapper(object):
             except Exception:
                 raise
     
-    def mkfilter(self, entity, filter):
-        pars = []
+    def _mkfilter(self, entity, filter):
+        and_clause = []
         for key,value in filter.iteritems():
+        # create sql for each key and concatenate with AND
             def makeParam(key, value):
+                """ Takes a value list as input and concatenates with OR.
+                This means that {age: [1, 12, 13]}  will yield a result if
+                age == 1 OR age == 12 OR age == 13.
+                """
                 if not (isinstance(value, list) or isinstance(value, tuple)):
-                    return makeParam(key, [value])
+                    value = [value]
+
                 or_clause = []
+                # Ask for the type of the parameter according to the entity
                 ParameterType = ParameterMap[entity.parameter_types[key]]
                 for v in value:
                     if callable(v):
@@ -75,22 +82,26 @@ class Mapper(object):
                     else:
                         or_clause.append(ParameterType.value == v)
                 return entity._parameterdict.of_type(ParameterType).any(or_(*or_clause))
-            pars.append(makeParam(key, value))
-        return and_(*pars)
+
+            and_clause.append(makeParam(key, value))
+        return and_(*and_clause)
         
     
     def find_all(self, entity, filter=None):
         with self.session as session:
             if isinstance(entity, EntityObject):
                 # check for EntityObject and filter parameters
-                # FIXME: Do not delete filter items
                 if not filter:
                     filter = {}
-                filter.update(entity.param)
+                f = {}
+                # filter comes second, so we assume it has higher priority
+                f.update(entity.param)
+                f.update(filter)
+                filter = f
                 entity = entity.__class__
     
             if filter:
-                f = self.mkfilter(entity, filter)
+                f = self._mkfilter(entity, filter)
                 objects = session.query(entity).filter(f)
             else:
                 objects = session.query(entity)
