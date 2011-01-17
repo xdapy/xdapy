@@ -66,14 +66,14 @@ class Mapper(object):
                 or_clause = []
                 ParameterType = ParameterMap[entity.parameter_types[key]]
                 for v in value:
-#                   ParameterType = acceptingClass(v)
-                    try:
+                    if callable(v):
+                        # we’ve been given a function
                         or_clause.append(v(ParameterType.value))
-                    except:
-                        if ParameterType == StringParameter:
-                            or_clause.append(ParameterType.value.like(v))
-                        else:
-                            or_clause.append(ParameterType.value == v)
+                    elif ParameterType == StringParameter:
+                        # test string using ‘like’
+                        or_clause.append(ParameterType.value.like(v))
+                    else:
+                        or_clause.append(ParameterType.value == v)
                 return entity._parameterdict.of_type(ParameterType).any(or_(*or_clause))
             pars.append(makeParam(key, value))
         return and_(*pars)

@@ -119,6 +119,8 @@ def lte(v):
 def lt(v):
     return lambda type: type < v
 
+from sqlalchemy import and_
+
 def between(v1, v2):
     return lambda type: and_(gte(v1)(type), lte(v2)(type))
 
