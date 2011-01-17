@@ -107,28 +107,13 @@ m.save(oo)
 #    m.session.delete(e1)
 #m.session.session.commit()
 
-def gte(v):
-    return lambda type: type >= v
-
-def gt(v):
-    return lambda type: type > v
-
-def lte(v):
-    return lambda type: type <= v
-
-def lt(v):
-    return lambda type: type < v
-
-from sqlalchemy import and_
-
-def between(v1, v2):
-    return lambda type: and_(gte(v1)(type), lte(v2)(type))
-
 xml = m.toXMl()
 print ""
 print xml
 with m.session as session:
     session.add_all(m.fromXML(xml))
+
+from xdapy.operators import *
 
 print m.find_all(Observer, filter={"name": "%Sor%"})
 print m.find_all(Observer, filter={"name": ["%Sor%"]})
@@ -136,7 +121,7 @@ print m.find_all(Observer, filter={"age": range(30, 50), "name": ["%Sor%"]})
 print m.find_all(Observer, filter={"age": between(30, 50)})
 print m.find_all(Observer, filter={"age": 40})
 print m.find_all(Observer, filter={"age": gt(10)})
-print m.find_all(Session, filter={"date": gte(datetime.date.today())})
+print m.find_all(Session, filter={"date": ge(datetime.date.today())})
 
 print m.get_data_matrix([Observer(name="Max Mustermann")], {Experiment:['project'], Observer:['age','name']})
 
