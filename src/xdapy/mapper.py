@@ -173,16 +173,13 @@ class Mapper(object):
         TODO: Revise session closing
         """
         with self.session as session:
-            try:
-                if child in parent.all_parents() + [parent]:
-                    raise InsertionError('Can not insert child because of circularity.')
-                
-                if child.parent and not force:
-                    raise InsertionError('Child already has parent. Please set force=True.')
-                child.parent = parent
-                
-            except Exception:
-                raise
+            if child in parent.all_parents() + [parent]:
+                raise InsertionError('Can not insert child because of circularity.')
+            
+            if child.parent and not force:
+                raise InsertionError('Child already has parent. Please set force=True.')
+            child.parent = parent
+              
 
     @require('entity_name', str)
     @require('parameter_name', str)
@@ -200,18 +197,27 @@ class Mapper(object):
         Some SQL error -- If the same entry already exists
         """
         with self.session as session:
-            try:
-                parameter_option = ParameterOption(entity_name, parameter_name, parameter_type)
-                session.merge(parameter_option)
-            except Exception:
-                raise
+            parameter_option = ParameterOption(entity_name, parameter_name, parameter_type)
+            session.merge(parameter_option)
+
+    def is_consistent(self, entity_name, parameter_defaults):
+        """Checks if an entity definition would be consistent with the current state 
+        of the database."""
+        with self.session as session:
+            db_defaults = (session.query(ParameterOption.parameter_name, ParameterOption.parameter_type)
+                                  .filter(ParameterOption.entity_name=="Observer")
+                                  .all())
+            db_defaults = dict(db_defaults)
+
+            return parameter_defaults == db_defaults
         
     def register(self, klass):
         """Registers the class and the class’s parameters."""
         for name, paramtype in klass.parameter_types.iteritems():
             self.register_parameter(klass.__name__, name, paramtype)
     
-    def mkObject(self, name, parameters):
+    def _mk_object(self, name, parameters):
+        """Creates a dynamic subclass of EntityObject."""
         return type(name, (EntityObject,), {'parameter_types': parameters})
     
     def typesFromXML(self, xml):
@@ -229,8 +235,12 @@ class Mapper(object):
                 p_type = param.getAttribute("type") or "string"
                 params[str(p_name)] = str(p_type)
 
-            o = self.mkObject(str(e_type), params)
-            self.register(o)
+            if not self.is_consistent(str(e_type), params):
+                raise Error("XML file is inconsistent with current scheme")
+            o = self._mk_object(str(e_type), params)
+            #self.register(o)
+            entities.append(o)
+        return entities
 
     def fromXML(self, xml):
 
