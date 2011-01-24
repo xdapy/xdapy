@@ -114,7 +114,7 @@ class Entity(Base):
     _datadict = relationship(Data,
         collection_class=column_mapped_collection(Data.name),
         cascade="save-update, merge, delete")
-    data = association_proxy('_datadict', 'value', creator=Data)
+    data = association_proxy('_datadict', 'data', creator=Data)
     
     def add_related(self, related, note=None):
         self.context.append(Context(context=related, note=note))
@@ -129,7 +129,10 @@ class Entity(Base):
         '''Initialize an entity corresponding to an experimental object.
         
         Argument:
-        type -- A one-word-description of the experimental object
+        name -- A one-word-description of the experimental object
+        
+        Raises:
+        TypeError -- Occurs if name is not a string or value is no an integer.
         '''
         raise Error("Entity.__init__ should not be called directly.")
                 
@@ -255,4 +258,3 @@ class ParameterOption(Base):
 
 if __name__ == "__main__":
     pass
-
