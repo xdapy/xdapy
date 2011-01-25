@@ -87,8 +87,7 @@ class Mapper(object):
             and_clause.append(makeParam(key, value))
         return and_(*and_clause)
         
-    
-    def find_all(self, entity, filter=None):
+    def find(self, entity, filter=None):
         with self.auto_session as session:
             if isinstance(entity, EntityObject):
                 # check for EntityObject and filter parameters
@@ -106,9 +105,19 @@ class Mapper(object):
                 objects = session.query(entity).filter(f)
             else:
                 objects = session.query(entity)
-            return objects.all()
+            return objects
    
-             
+    def find_all(self, entity, filter=None):
+        return self.find(entity, filter).all()
+    
+    def find_related(self, entity, related):
+        the_set = set()
+        for e in self.find(related[0], related[1]):
+            for rel in e.related():
+                if rel.__class__ == entity and rel not in the_set:
+                    the_set.add(rel)
+        return list(the_set)
+    
     def get_data_matrix(self, conditions, items, include=None):
         """Finds related items for the entity which satisfies condition
         
@@ -140,20 +149,19 @@ class Mapper(object):
                 if "CHILDREN" in include:
                     related.update(entity.all_children())
                 if "CONTEXT" in include:
-                    related.update(entity.context)
+                    related.update(entity.related())
                 if "CONTEXT_REVERSED" in include:
                     related.update(entity.entity)
             
             row = {}
             for rel in related:
-                if not rel.__class__ in items:
-                    next
-                for param in items[rel.__class__]:
-                    if not rel.__class__.__name__ in row:
-                        row[rel.__class__.__name__] = {}
-                    row[rel.__class__.__name__][param] = rel.param[param]
-            if row and row not in matrix:
-                matrix.append(row)
+                if rel.__class__ in items:
+                    for param in items[rel.__class__]:
+                        if not rel.__class__.__name__ in row:
+                            row[rel.__class__.__name__] = {}
+                        row[rel.__class__.__name__][param] = rel.param[param]
+                if row and row not in matrix:
+                    matrix.append(row)
 
         return matrix
     
@@ -338,7 +346,7 @@ class Mapper(object):
         return entity_tree
         
     
-    def toXMl(self):
+    def toXML(self):
         session = self.session
         from xml.dom import minidom
         import base64

@@ -22,7 +22,7 @@ m.typesFromXML(xml)
 with m.auto_session as session:
     session.add_all(m.fromXML(xml))
 
-xml = m.toXMl()
+xml = m.toXML()
 print xml
 
 
@@ -107,7 +107,7 @@ m.save(oo)
 #    m.session.delete(e1)
 #m.session.session.commit()
 
-xml = m.toXMl()
+xml = m.toXML()
 print ""
 print xml
 with m.auto_session as session:

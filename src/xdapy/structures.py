@@ -123,6 +123,9 @@ class Entity(Base):
     def add_related(self, related, note=None):
         self.context.append(Context(context=related, note=note))
     
+    def related(self):
+        return [c.context for c in self.context]
+    
     @validates('type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
@@ -142,7 +145,7 @@ class Entity(Base):
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id, self.name)
-
+    
 
 class Meta(DeclarativeMeta):
     def __init__(cls, *args, **kw):
@@ -171,8 +174,13 @@ class EntityObject(Entity):
                 self.param[n] = v
 
     def __repr__(self):
-        return "<{cls}('{id}','{type}')>".format(cls=self.__class__.__name__, id=self.id, type=self.type)
+        return "{cls}(id={id!s})".format(cls=self.__class__.__name__, id=self.id)
 
+    def __str__(self):
+        import itertools
+        items  = itertools.chain([('id', self.id)], self.param.iteritems())
+        params = ", ".join(["{!s}={!r}".format(key, val) for key, val in items])
+        return "{cls}({params})".format(cls=self.__class__.__name__, params=params)
 
 
 class Context(Base):
