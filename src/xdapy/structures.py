@@ -82,6 +82,10 @@ class Entity(Base):
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
     children = relationship("Entity", backref=backref("parent", remote_side=[id]))
     
+    def belongs_to(self, parent):
+        """Can be used as an alternative for self.parent = parent."""
+        self.parent = parent
+    
     def all_parents(self):
         """Returns a list of all parent entities
         """
