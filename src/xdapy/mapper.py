@@ -32,6 +32,7 @@ class Mapper(object):
         Creates the engine for a specific database and a session factory
         '''
         self.connection = connection
+        self.auto_session = connection.auto_session
         self.session = connection.session
     
     def create_tables(self, overwrite=False):
@@ -50,7 +51,7 @@ class Mapper(object):
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
         """
-        with self.session as session:
+        with self.auto_session as session:
             try:
                 for arg in args:
                     session.add(arg)
@@ -88,7 +89,7 @@ class Mapper(object):
         
     
     def find_all(self, entity, filter=None):
-        with self.session as session:
+        with self.auto_session as session:
             if isinstance(entity, EntityObject):
                 # check for EntityObject and filter parameters
                 if not filter:
@@ -172,7 +173,7 @@ class Mapper(object):
         TODO: Maybe consider to save objects automatically 
         TODO: Revise session closing
         """
-        with self.session as session:
+        with self.auto_session as session:
             if child in parent.all_parents() + [parent]:
                 raise InsertionError('Can not insert child because of circularity.')
             
@@ -196,14 +197,14 @@ class Mapper(object):
         TypeError -- If the parameters are not correctly specified
         Some SQL error -- If the same entry already exists
         """
-        with self.session as session:
+        with self.auto_session as session:
             parameter_option = ParameterOption(entity_name, parameter_name, parameter_type)
             session.merge(parameter_option)
 
     def is_consistent(self, entity_name, parameter_defaults):
         """Checks if an entity definition would be consistent with the current state 
         of the database."""
-        with self.session as session:
+        with self.auto_session as session:
             db_defaults = (session.query(ParameterOption.parameter_name, ParameterOption.parameter_type)
                                   .filter(ParameterOption.entity_name=="Observer")
                                   .all())
@@ -338,7 +339,7 @@ class Mapper(object):
         
     
     def toXMl(self):
-        session = self.session.session
+        session = self.session
         from xml.dom import minidom
         import base64
         

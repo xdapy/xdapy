@@ -71,8 +71,12 @@ class Connection(object):
         self._engine = None
     
     @lazyprop
-    def session(self):
+    def auto_session(self):
         return AutoSession(self.Session(bind=self.engine))
+    
+    @property
+    def session(self):
+        return self.auto_session.session
     
     @classmethod
     def test(cls):

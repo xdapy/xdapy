@@ -19,7 +19,7 @@ f = open("xml.xml")
 xml = f.read()
 m.typesFromXML(xml)
 
-with m.session as session:
+with m.auto_session as session:
     session.add_all(m.fromXML(xml))
 
 xml = m.toXMl()
@@ -56,7 +56,7 @@ pdb.set_trace()
 #m.save(e2, o1, o2, o3)
 #m.save(s1, s2)
 
-with m.session as session:
+with m.auto_session as session:
     session.add_all([e1, e2, o1, o2, o3, s1, s2])
 
 #    m.connect_objects(e1, o1)
@@ -110,7 +110,7 @@ m.save(oo)
 xml = m.toXMl()
 print ""
 print xml
-with m.session as session:
+with m.auto_session as session:
     session.add_all(m.fromXML(xml))
 
 from xdapy.operators import *
