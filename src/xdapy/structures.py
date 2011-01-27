@@ -36,6 +36,7 @@ class Data(Base):
     id = Column('id', Integer, autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey('entities.id'))
     name = Column('name', String(40))
+    mimetype = Column('mimetype', String(40))
     data = Column('data', Binary, nullable=False)
     
     __tablename__ = 'data'
@@ -48,7 +49,7 @@ class Data(Base):
             raise TypeError("Argument must be a string")
         return parameter 
     
-    def __init__(self, name, data):
+    def __init__(self, name, mimetype, data):
         '''Initialize a parameter with the given name.
         
         Argument:
@@ -59,10 +60,11 @@ class Data(Base):
         TypeError -- Occurs if name is not a string
         '''
         self.name = name
+        self.mimetype = mimetype
         self.data = data
         
     def __repr__(self):
-        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.data, self.entity_id)
+        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.mimetype, self.entity_id)
 
     
 class Entity(Base):
