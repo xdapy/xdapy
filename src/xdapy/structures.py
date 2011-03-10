@@ -15,12 +15,12 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
 
-from sqlalchemy import Column, ForeignKey, Binary, String, Integer
+from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.orm import relationship, backref, validates
+from sqlalchemy.orm import relationship, backref, validates, synonym
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
-from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
@@ -37,7 +37,27 @@ class Data(Base):
     entity_id = Column(Integer, ForeignKey('entities.id'))
     name = Column('name', String(40))
     mimetype = Column('mimetype', String(40))
-    data = Column('data', Binary, nullable=False)
+    
+    _data = Column('data', LargeBinary, nullable=False)
+    @property
+    def data(self):
+        return self._data
+    
+    @data.setter
+    def data(self, data):
+        self._data = data
+        self._length = len(data)
+        
+    data = synonym('_data', descriptor=data)
+    
+    
+    
+    _length = Column('length', Integer)
+    
+    @synonym_for('_length')
+    @property
+    def length(self):
+        return self._length
     
     __tablename__ = 'data'
     __table_args__ = (UniqueConstraint(entity_id, name),
@@ -49,7 +69,7 @@ class Data(Base):
             raise TypeError("Argument must be a string")
         return parameter 
     
-    def __init__(self, name, mimetype, data):
+    def __init__(self, name, data, mimetype=None):
         '''Initialize a parameter with the given name.
         
         Argument:
@@ -146,7 +166,11 @@ class Entity(Base):
         raise Error("Entity.__init__ should not be called directly.")
                 
     def __repr__(self):
-        return "<Entity('%s','%s')>" % (self.id, self.name)
+        return "<Entity('%s','%s')>" % (self.id, self.type)
+    
+    def info(self):
+        '''Prints information about the entity.'''
+        
     
 
 class Meta(DeclarativeMeta):
@@ -272,3 +296,4 @@ class ParameterOption(Base):
 
 if __name__ == "__main__":
     pass
+
