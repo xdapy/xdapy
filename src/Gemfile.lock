@@ -1,0 +1,15 @@
+GEM
+  specs:
+    compass (0.10.6)
+      haml (>= 3.0.4)
+    haml (3.0.25)
+    html5-boilerplate (0.2.6)
+      compass (>= 0.10.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  compass
+  haml
+  html5-boilerplate
