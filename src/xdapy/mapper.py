@@ -55,8 +55,23 @@ class Mapper(object):
             try:
                 for arg in args:
                     session.add(arg)
+                    session.flush()
             except Exception:
                 raise
+    
+    def delete(self, *args):
+        """Deletes the objects from the database."""
+        with self.auto_session as session:
+            try:
+                for arg in args:
+                    session.delete(arg)
+            except Exception:
+                raise
+    
+    def create(self, type, *args, **kwargs):
+        entity = self.entity_by_name(type)(*args, **kwargs)
+        self.save(entity)
+        return entity
     
     def _mkfilter(self, entity, filter):
         and_clause = []
@@ -106,7 +121,14 @@ class Mapper(object):
             else:
                 objects = session.query(entity)
             return objects
+        
+    def find_by_id(self, entity, id):
+        with self.auto_session as session:
+            return session.query(entity).filter(Entity.id==id).first()
    
+    def find_first(self, entity, filter=None):
+        return self.find(entity, filter).first()
+    
     def find_all(self, entity, filter=None):
         return self.find(entity, filter).all()
     
@@ -220,10 +242,15 @@ class Mapper(object):
 
             return parameter_defaults == db_defaults
         
-    def register(self, klass):
+    def register(self, *klasses):
         """Registers the class and the class’s parameters."""
-        for name, paramtype in klass.parameter_types.iteritems():
-            self.register_parameter(klass.__name__, name, paramtype)
+        for klass in klasses:
+            for name, paramtype in klass.parameter_types.iteritems():
+                self.register_parameter(klass.__name__, name, paramtype)
+    
+    def entity_by_name(self, name):
+        klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
+        return klasses[name]
     
     def _mk_object(self, name, parameters):
         """Creates a dynamic subclass of EntityObject."""
@@ -272,20 +299,12 @@ class Mapper(object):
         def handle_entities(entity_refs):
             entity_dict = {}
             for eid, entity in entity_refs.iteritems():
-                
-                from xdapy.objects import EntityObject
-                klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
-
-                new_entity = klasses[entity.getAttribute("type")]()
+                new_entity = self.entity_by_name(entity.getAttribute("type"))
                 
                 for child in entity.childNodes:
                     if child.nodeName == "parameter":
                         name = child.getAttribute("name")
-                        
-                        try:
-                            value = child.childNodes[0].data.strip()
-                        except IndexError:
-                            value = ""
+                        value = child.getAttribute("value")
                         
                         type = new_entity.parameter_types[str(name)]
                         new_entity.param[name] = strToType(value, type)
@@ -306,19 +325,13 @@ class Mapper(object):
                         entity_dict[eid].context.append(Context(context=related_entity, note=note))
         
         def traverse_entity(entity):
-            from xdapy.objects import EntityObject
-            klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
-            new_entity = klasses[entity.getAttribute("type")]()
+            new_entity = self.entity_by_name(entity.getAttribute("type"))
 
             for child in entity.childNodes:
                 if child.nodeName == "parameter":
                     name = child.getAttribute("name")
-                    
-                    try:
-                        value = child.childNodes[0].data.strip()
-                    except IndexError:
-                        value = ""
-                    
+                    value = child.getAttribute("value")
+
                     type = new_entity.parameter_types[str(name)]
                     try:
                         new_entity.param[name] = strToType(value, type)
