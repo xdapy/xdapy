@@ -164,6 +164,19 @@ class Entity(Base):
         TypeError -- Occurs if name is not a string or value is no an integer.
         '''
         raise Error("Entity.__init__ should not be called directly.")
+
+    def to_json(self, full=False):
+        json = {'type': self.type, 'id': self.id}
+        if full:
+            json["param"] = self.param.copy()
+            data = []
+            for d in self._datadict.values():
+                data.append({'id': d.id,
+                              'mimetype': d.mimetype,
+                              'name': d.name,
+                              'content-length': d.length})
+            json["data"] = data
+        return json
                 
     def __repr__(self):
         return "<Entity('%s','%s')>" % (self.id, self.type)
@@ -198,6 +211,9 @@ class EntityObject(Entity):
         for n, v in d.iteritems():
             if v:
                 self.param[n] = v
+
+    def to_json(self, full=False):
+        return super(EntityObject, self).to_json(full)
 
     def __repr__(self):
         return "{cls}(id={id!s})".format(cls=self.__class__.__name__, id=self.id)
