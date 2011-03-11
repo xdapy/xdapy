@@ -258,8 +258,11 @@ class DateParameter(Parameter):
     
     @validates('value')
     def validate_value(self, key, parameter):
-        print self.accepts(parameter)
         if not self.accepts(parameter):
+            try:
+                return self.from_string(parameter)
+            except StringConversionError:
+                pass
             raise TypeError("Argument must be a datetime.date")
         return parameter
             

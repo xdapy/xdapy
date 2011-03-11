@@ -1,0 +1,34 @@
+$def with (form, text)
+<!doctype html>
+<html>
+  <head>
+    <title>Hello</title>
+    <link rel="stylesheet" type="text/css" href="/static/style/style.css" />
+
+    <script type="text/javascript" src="/static/script/jquery.js"></script>
+    <script type="text/javascript" src="/static/script/script.js"></script>
+
+    <link rel="icon" href="static/favicon.ico" />
+  </head>
+  <body>
+    <div id="wrapper">
+    <div id="main">
+      <section id="query">
+        <input type="search" results="5" autosave="some_unique_value" name="search" id="search" placeholder="Search" />
+        <button type="button" value="send">Search</button>
+      </section>
+
+      <section id="result">
+        <i>No results.</i>
+      </section>
+
+      </div>
+      <div id="main-footer-helper"></div>
+    </div>
+    <footer><div class="inner">
+      <span class="information">$information()</span>
+      <small>xdapy web, 2011</small>
+      </div>
+    </footer>
+  </body>
+</html>

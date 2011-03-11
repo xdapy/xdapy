@@ -323,3 +323,68 @@ input:invalid, textarea:invalid {
 .no-boxshadow textarea:invalid {
   background-color: #f0dddd;
 }
+
+#main {
+  padding-top: 1em;
+}
+
+/*input {
+  width: 260px;
+  height: 25px;
+  padding: 5px 20px 0px 20px;
+  margin: 0 0 20px 0;
+
+  @include linear-gradient(color-stops(#546A7F, #5E768D), left top, left bottom);
+
+  @include border-radius(10px);
+  @include box-shadow(#f2f2f2, 0px, 1px, 0px);
+}*/
+input::-webkit-input-placeholder {
+  color: #a1b2c3;
+}
+
+input:-moz-placeholder {
+  color: #a1b2c3;
+}
+
+section#result, section#query {
+  margin: 0em 1em 1em 1em;
+  padding: 1em;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  -o-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -khtml-border-radius: 5px;
+  border-radius: 5px;
+  border: 1px solid #444;
+}
+
+html, body {
+  height: 100%;
+}
+
+#wrapper {
+  clear: both;
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin-bottom: -30px;
+}
+#wrapper #main-footer-helper {
+  height: 30px;
+}
+
+footer {
+  clear: both;
+  position: relative;
+  height: 30px;
+}
+
+footer .inner {
+  text-align: right;
+  border-top: 3px dashed orangered;
+  padding: 5px 20px;
+}
+footer .inner small {
+  font-style: italic;
+}

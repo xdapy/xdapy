@@ -42,7 +42,49 @@ body {}
 
 header {}
 
-#main {}
+#main {
+  padding-top: 1em;
+}
 
 footer {}
+
+/*input {
+  width: 260px;
+  height: 25px;
+  padding: 5px 20px 0px 20px;
+  margin: 0 0 20px 0;
+
+  @include linear-gradient(color-stops(#546A7F, #5E768D), left top, left bottom);
+
+  @include border-radius(10px);
+  @include box-shadow(#f2f2f2, 0px, 1px, 0px);
+}*/
+
+input::-webkit-input-placeholder  {
+  color: #a1b2c3;
+}
+input:-moz-placeholder {
+  color: #a1b2c3;
+}
+
+section#result, section#query {
+  margin: 0em 1em 1em 1em;
+  padding: 1em;
+  @include border-radius(5px);
+  border: 1px solid #444;
+}
+
+@import "compass/layout/sticky-footer";
+@include sticky-footer(30px, "#wrapper", "#main-footer-helper", "footer");
+
+footer .inner {
+  text-align: right;
+  border-top: 3px dashed orangered;
+  padding: 5px 20px;
+  .information {
+  }
+  small {
+    font-style: italic;
+  }
+}
 
