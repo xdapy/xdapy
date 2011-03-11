@@ -255,7 +255,7 @@ class Mapper(object):
     def _mk_object(self, name, parameters):
         """Creates a dynamic subclass of EntityObject."""
         return type(name, (EntityObject,), {'parameter_types': parameters})
-    
+
     def typesFromXML(self, xml):
         from xml.dom import minidom
 

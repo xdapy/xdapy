@@ -18,6 +18,13 @@ class Experiment(EntityObject):
         'project': 'string'
     }
 
+class Experiment(EntityObject):
+    """Concrete class for experiments"""    
+    parameter_types = {
+#        'experimenter': 'string',
+        'project': 'string'
+    }
+
 class Trial(EntityObject):
     parameter_types = {
         'date': 'datetime',

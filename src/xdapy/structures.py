@@ -187,7 +187,18 @@ class Entity(Base):
     
 
 class Meta(DeclarativeMeta):
+    def __new__(cls, name, bases, attrs):
+        if not name == 'EntityObject':
+            
+            name += "yyy" + str(len(attrs["parameter_types"]))
+        print "NEW:  ", cls, name, bases, attrs
+        return DeclarativeMeta.__new__(cls, name, bases, attrs)
+
+
     def __init__(cls, *args, **kw):
+        print
+        print "INIT: ", cls, args
+
         if getattr(cls, '_decl_class_registry', None) is None:
             return
         
@@ -197,7 +208,11 @@ class Meta(DeclarativeMeta):
 
         cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
-        return super(Meta, cls).__init__(*args, **kw)
+        name = args[0]
+        if not args[0] == "EntityObject":
+            name = args[0] + "yyy" + str(len(args[2]["parameter_types"]))
+        
+        return super(Meta, cls).__init__(name, args[1], args[2], **kw)
 
 
 class EntityObject(Entity):

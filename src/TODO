@@ -2,3 +2,20 @@
 - Make XML better
 - Testing
 
+UUID
+Datenbank lokal -> global (HASH)
+Merge-Skript (was passiert mit den Relations?, ID checken, Gleichheit checken)
+Mehrere Datenbanken
+
+Web: * Typen
+     * Parameter
+     * Vorvalidierung
+     * Element migrieren
+
+
+Komplexere Suche:
+Alle Trials vom Exp E1 mit Observer O1 und Trial.z<50
+Alle Trials.reaktionszeit mit Trial.correct=True vom Exp E1 mit Observer O1 und Trial.z<50
+
+Kommentarfeld auf Entity-Ebene
+
