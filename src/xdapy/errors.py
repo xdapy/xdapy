@@ -51,5 +51,9 @@ class ContextWarning(Warning):
     pass
 
 class StringConversionError(Error):
-    """Raised if a value can’t be generated from string."""
+    """Raised when a value can’t be generated from string."""
+    pass
+
+class EntityDefinitionError(Error):
+    """Raised when an Entity class has a non-conforming definition."""
     pass

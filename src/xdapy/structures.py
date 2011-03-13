@@ -98,7 +98,7 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    type = Column('type', String(40)) # TODO: type is never set on fresh entities
+    type = Column('type', String(60)) # TODO: type is never set on fresh entities
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
@@ -183,21 +183,44 @@ class Entity(Base):
     
     def info(self):
         '''Prints information about the entity.'''
-        
-    
+
 
 class Meta(DeclarativeMeta):
+    @staticmethod
+    def _calculate_polymorphic_name(name, bases, attrs):
+        if not "EntityObject" in [cls.__name__ for cls in bases]:
+            return name
+
+        if "_" in cls.__name__:
+            raise EntityDefinitionError("Entity class must not contain an underscore")
+
+        # create hash from sorted parameter_types
+        parameter_types = attrs["parameter_types"]
+        string = "{"
+        ordered = ['"' + k.lower() + '":"' + parameter_types[k].lower() + '"'
+                         for k in sorted(parameter_types.keys())]
+        string = "{" + ",".join(ordered) + "}"
+
+        import hashlib
+        md5 = hashlib.md5()
+        md5.update(string)
+        the_hash = md5.hexdigest()
+
+        return name + "_" + the_hash
+
     def __new__(cls, name, bases, attrs):
-        if not name == 'EntityObject':
-            
-            name += "yyy" + str(len(attrs["parameter_types"]))
+        name = cls._calculate_polymorphic_name(name, bases, attrs)
+
+        print
+        print
         print "NEW:  ", cls, name, bases, attrs
         return DeclarativeMeta.__new__(cls, name, bases, attrs)
 
 
-    def __init__(cls, *args, **kw):
+    def __init__(cls, name, bases, attrs):
+        name = cls._calculate_polymorphic_name(name, bases, attrs)
         print
-        print "INIT: ", cls, args
+        print "INIT: ", cls, name, bases, attrs
 
         if getattr(cls, '_decl_class_registry', None) is None:
             return
@@ -208,11 +231,8 @@ class Meta(DeclarativeMeta):
 
         cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
-        name = args[0]
-        if not args[0] == "EntityObject":
-            name = args[0] + "yyy" + str(len(args[2]["parameter_types"]))
         
-        return super(Meta, cls).__init__(name, args[1], args[2], **kw)
+        return super(Meta, cls).__init__(name, bases, attrs)
 
 
 class EntityObject(Entity):
@@ -231,7 +251,7 @@ class EntityObject(Entity):
         return super(EntityObject, self).to_json(full)
 
     def __repr__(self):
-        return "{cls}(id={id!s})".format(cls=self.__class__.__name__, id=self.id)
+        return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.__class__.__name__, id=self.id, uuid=self.uuid)
 
     def __str__(self):
         import itertools
@@ -275,7 +295,7 @@ class ParameterOption(Base):
     creation. And only if at a later moment the need for a new parameter emerges, 
     then this parameter can be added to the list of allowed parameters.
     '''
-    entity_name = Column('entity_name', String(40), primary_key=True)
+    entity_name = Column('entity_name', String(60), primary_key=True)
     parameter_name = Column('parameter_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40))
     

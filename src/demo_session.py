@@ -18,12 +18,12 @@ class Experiment(EntityObject):
         'project': 'string'
     }
 
-class Experiment(EntityObject):
-    """Concrete class for experiments"""    
-    parameter_types = {
+#class Experiment(EntityObject):
+#    """Concrete class for experiments"""    
+#    parameter_types = {
 #        'experimenter': 'string',
-        'project': 'string'
-    }
+#        'project': 'string'
+#    }
 
 class Trial(EntityObject):
     parameter_types = {
@@ -57,7 +57,6 @@ m.register(Observer)
 
 
 e1 = Experiment(project="My Project", experimenter="John Do")
-print e1, repr(e1)
 m.save(e1)
 
 e2 = Experiment()
