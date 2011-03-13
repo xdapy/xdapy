@@ -5,8 +5,9 @@ Created on Jul 30, 2009
    
 """
 # alphabetical order by last name, please
-import copy
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
+import copy, uuid
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
 def levenshtein(s1, s2):
     """Find the Levenshtein distance between two strings.
@@ -32,6 +33,7 @@ def levenshtein(s1, s2):
         previous_row = current_row
  
     return previous_row[-1]
+
 def lev(a, b):
     if not a: return len(b)
     if not b: return len(a)
@@ -51,4 +53,7 @@ def listequal(a, b):
     if b_c:
         return False
     return True
-        
+
+def gen_uuid():
+    return str(uuid.uuid4())
+

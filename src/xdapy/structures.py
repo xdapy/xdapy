@@ -21,10 +21,14 @@ from sqlalchemy.orm import relationship, backref, validates, synonym
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
+
+# So we really want to support only Postgresql?
+from sqlalchemy.dialects.postgresql import UUID
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
-from xdapy.errors import Error
+from xdapy.errors import Error, EntityDefinitionError
+from xdapy.utils.algorithms import gen_uuid
 
 class Data(Base):
     '''
@@ -99,6 +103,11 @@ class Entity(Base):
     '''
     id = Column('id', Integer, primary_key=True)
     type = Column('type', String(60)) # TODO: type is never set on fresh entities
+    _uuid = Column('uuid', UUID(), default=gen_uuid)
+     
+    @property
+    def uuid(self):
+        return self._uuid
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
@@ -166,7 +175,7 @@ class Entity(Base):
         raise Error("Entity.__init__ should not be called directly.")
 
     def to_json(self, full=False):
-        json = {'type': self.type, 'id': self.id}
+        json = {'type': self.type, 'id': self.id, 'uuid': self.uuid}
         if full:
             json["param"] = self.param.copy()
             data = []
@@ -179,7 +188,7 @@ class Entity(Base):
         return json
                 
     def __repr__(self):
-        return "<Entity('%s','%s')>" % (self.id, self.type)
+        return "<Entity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
     
     def info(self):
         '''Prints information about the entity.'''
