@@ -57,3 +57,8 @@ class StringConversionError(Error):
 class EntityDefinitionError(Error):
     """Raised when an Entity class has a non-conforming definition."""
     pass
+
+class DataInconsistencyError(Error):
+    """Raised whenever something is fatal with the data."""
+    pass
+

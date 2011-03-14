@@ -124,7 +124,7 @@ class Mapper(object):
         
     def find_by_id(self, entity, id):
         with self.auto_session as session:
-            return session.query(entity).filter(Entity.id==id).first()
+            return session.query(entity).filter(Entity.id==id).one()
    
     def find_first(self, entity, filter=None):
         return self.find(entity, filter).first()
@@ -132,6 +132,11 @@ class Mapper(object):
     def find_all(self, entity, filter=None):
         return self.find(entity, filter).all()
     
+    def find_roots(self, entity=None):
+        if not entity:
+            entity = Entity
+        return self.find(entity).filter(Entity.parent==None).all()
+
     def find_related(self, entity, related):
         the_set = set()
         for e in self.find(related[0], related[1]):
@@ -139,6 +144,9 @@ class Mapper(object):
                 if rel.__class__ == entity and rel not in the_set:
                     the_set.add(rel)
         return list(the_set)
+
+    def find_by_uuid(self, uuid):
+        return self.find(Entity).filter(Entity._uuid==uuid).one()
     
     def get_data_matrix(self, conditions, items, include=None):
         """Finds related items for the entity which satisfies condition
