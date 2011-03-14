@@ -103,7 +103,7 @@ class Entity(Base):
     '''
     id = Column('id', Integer, primary_key=True)
     type = Column('type', String(60)) # TODO: type is never set on fresh entities
-    _uuid = Column('uuid', UUID(), default=gen_uuid)
+    _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
      
     @property
     def uuid(self):
@@ -219,17 +219,11 @@ class Meta(DeclarativeMeta):
 
     def __new__(cls, name, bases, attrs):
         name = cls._calculate_polymorphic_name(name, bases, attrs)
-
-        print
-        print
-        print "NEW:  ", cls, name, bases, attrs
         return DeclarativeMeta.__new__(cls, name, bases, attrs)
 
 
     def __init__(cls, name, bases, attrs):
         name = cls._calculate_polymorphic_name(name, bases, attrs)
-        print
-        print "INIT: ", cls, name, bases, attrs
 
         if getattr(cls, '_decl_class_registry', None) is None:
             return
@@ -247,7 +241,8 @@ class Meta(DeclarativeMeta):
 class EntityObject(Entity):
     __metaclass__ = Meta
     
-    def __init__(self, **kwargs):
+    def __init__(self, _uuid=None, **kwargs):
+        self._uuid = _uuid
         self._set_items_from_arguments(kwargs)
 
     def _set_items_from_arguments(self, d):
