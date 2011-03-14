@@ -102,7 +102,7 @@ class StringParameter(Parameter):
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
-        return isinstance(value, str) or isinstance(value, unicode)
+        return isinstance(value, basestring)
     
     @validates('value')
     def validate_value(self, key, parameter):

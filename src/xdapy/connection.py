@@ -4,7 +4,6 @@
 """
 
 from os import path
-from sqlalchemy.pool import AssertionPool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from xdapy.utils.configobj import ConfigObj
@@ -105,7 +104,7 @@ class Connection(object):
     
     @lazyprop
     def engine(self):
-        return create_engine(self.db, poolclass=AssertionPool, echo=False)
+        return create_engine(self.db, echo=False)
     
     @property
     def db(self):

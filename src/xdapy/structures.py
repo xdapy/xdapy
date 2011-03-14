@@ -69,7 +69,7 @@ class Data(Base):
     
     @validates('name')
     def validate_name(self, key, parameter):
-        if not isinstance(parameter, str):
+        if not isinstance(parameter, basestring):
             raise TypeError("Argument must be a string")
         return parameter 
     

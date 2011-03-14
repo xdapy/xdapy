@@ -63,7 +63,12 @@ m.register(Observer)
 
 e1 = Experiment(project="My Project", experimenter=u"Dareios Marika Nainsí")
 e2 = Experiment(project="My Project", experimenter=u"Malin Calliope Lilly")
+e2.parent = e1
 e3 = Experiment(project="My Project", experimenter=u"Ilinka Iodocus")
+e3.data = {
+        'a': "Some Data",
+        'b': "Even more data"
+        }
 m.save(e1, e2, e3)
 
 e4 = Experiment(project="My other Project", experimenter="Nichol Pauline")
@@ -93,7 +98,7 @@ def migrate(old_mapper, new_mapper, mapping):
         for k,v in obj.param.iteritems():
             new_obj.param[k] = v
 
-        # copy data # FIXME fails
+        # copy data
         new_obj.data = obj.data
 
         new_mapper.save(new_obj)
@@ -103,9 +108,6 @@ migrate(m_2, m, mapping)
 
 print m.find_roots()
 print m_2.find_roots()
-
-import pdb
-pdb.set_trace()
 
 assert len(m.find_roots()) == len(m_2.find_roots())
 
