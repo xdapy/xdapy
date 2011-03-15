@@ -270,6 +270,11 @@ class EntityObject(Entity):
         return "{cls}({params})".format(cls=self.__class__.__name__, params=params)
 
 
+def create_entity(name, parameters):
+    """Creates a dynamic subclass of EntityObject."""
+    return type(name, (EntityObject,), {'parameter_types': parameters})
+
+
 class Context(Base):
     # Context Association
     '''

@@ -7,7 +7,7 @@ Created on Jun 17, 2009
 from xdapy import Base
 from xdapy.errors import Error, InsertionError
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, Entity, Context, EntityObject
+from xdapy.structures import ParameterOption, Entity, Context, EntityObject, create_entity
 from xdapy.parameters import Parameter, StringParameter, ParameterMap, strToType
 from xdapy.errors import StringConversionError
 
@@ -259,10 +259,6 @@ class Mapper(object):
     def entity_by_name(self, name):
         klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
         return klasses[name]
-    
-    def _mk_object(self, name, parameters):
-        """Creates a dynamic subclass of EntityObject."""
-        return type(name, (EntityObject,), {'parameter_types': parameters})
 
     def typesFromXML(self, xml):
         from xml.dom import minidom
@@ -281,7 +277,7 @@ class Mapper(object):
 
             if not self.is_consistent(str(e_type), params):
                 raise Error("XML file is inconsistent with current scheme")
-            o = self._mk_object(str(e_type), params)
+            o = create_entity(str(e_type), params)
             #self.register(o)
             entities.append(o)
         return entities

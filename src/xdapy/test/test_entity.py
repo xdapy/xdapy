@@ -3,7 +3,7 @@
 # alphabetical order by last name, please
 __authors__ = ['"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
-from xdapy.structures import EntityObject, Entity, Data, Context
+from xdapy.structures import EntityObject, create_entity
 from xdapy.errors import EntityDefinitionError
 import unittest
 
@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
 
     def test_entities_must_not_contain_underscore(self):
         def mkEntity():
-            return type("Some_Entity", (EntityObject, ), { "parameter_types": {} })
+            return create_entity("Some_Entity", {})
         self.assertRaises(EntityDefinitionError, mkEntity)
         
 
