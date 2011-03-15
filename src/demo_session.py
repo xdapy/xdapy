@@ -60,7 +60,6 @@ e1 = Experiment(project="My Project", experimenter="John Do")
 m.save(e1)
 
 e2 = Experiment()
-print e2.data
 e2.param["project"] = "My other project"
 
 t1 = Trial()

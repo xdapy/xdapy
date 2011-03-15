@@ -3,6 +3,7 @@
 Created on Jun 17, 2009
 """
 from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
@@ -88,7 +89,12 @@ class TestProxy(unittest.TestCase):
         self.assertRaises(KeyError, assignment)
     
         exp = Experiment(project='MyProject', experimenter="John Doe")
-        exp.data['somedata'] = [0, 1, 2, 3]
+        exp.data['somedata'] = """[0, 1, 2, 3]"""
+        
+        def assign_list():
+            exp.data['somedata'] = [0, 1, 2, 3]
+
+        self.assertRaises(ValueError, assign_list)
         self.m.save(exp)
         
         e = Experiment(project='YourProject', experimenter="Johny Dony")
@@ -102,7 +108,6 @@ class TestProxy(unittest.TestCase):
         obs.data['otherredata'] = """(0, 3, 6, 8)"""
         self.m.save(obs)
        
-        #Test the settings of _cuncurrent
         obs = Observer(name="Max Mustermann")
         obs_by_object = self.m.find_first(obs)
         
@@ -110,158 +115,80 @@ class TestProxy(unittest.TestCase):
          
         #Error if object does not exist
         self.assertIsNone(self.m.find_first(Observer(name='John Doe')))
-        self.assertIsNone(self.m.find_by_id(Observer, 5))
+        self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 5)
         
         #Error if object exists multiple times # TODO
         self.m.save(Observer(name="Max Mustermann", handedness="left", age=29))
         self.assertTrue(len(self.m.find_all(Observer(name="Max Mustermann"))) > 1)                  
-        self.assertIsNone(self.m.find_by_id(Observer, 3))
+        self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 3)
  
                     
     def testConnectObjects(self):
         #Test add_child and get_children
         e = Experiment(project='MyProject', experimenter="John Doe")
         o = Observer(name="Max Mustermann", handedness="right", age=26)
-        t = Trial(rt=125, valid=1, response='left')
+        t = Trial(rt=125, valid=True, response='left')
         self.m.save(e)
-        self.assertRaises(SelectionError, self.m.connect_objects, e, o)
         
         self.m.save(o, t)
-        self.m.connect_objects(o, t)
-        self.assertEqual(self.m.get_children(e), [])
-        self.assertEqual(self.m.get_children(o), [t])
-        self.assertEqual(self.m.get_children(t), [])
+        o.children.append(t)
+        self.assertEqual(e.children, [])
+        self.assertEqual(o.children, [t])
+        self.assertEqual(t.children, [])
         
-        self.m.connect_objects(e, o)
-        self.assertEqual(self.m.get_children(e), [o])
-        self.assertEqual(self.m.get_children(o), [t])
-        self.assertEqual(self.m.get_children(t), [])
+        e.children.append(o)
+        self.assertEqual(e.children, [o])
+        self.assertEqual(o.children, [t])
+        self.assertEqual(t.children, [])
           
         e2 = Experiment(project='yourProject', experimenter="John Doe")
-        t2 = Trial(rt=189, valid=0, response='right')
+        t2 = Trial(rt=189, valid=False, response='right')
         self.m.save(e2, t2)
-        self.m.connect_objects(e2, o)
-        self.assertRaises(ContextError, self.m.connect_objects, o, t2)
-        self.m.connect_objects(o, t2, e2)
+        e2.children.append(o) # o gets new parent e2
+        o.children.extend([t2, e2])
         
-        self.assertEqual(self.m.get_children(e), [o])
-        self.assertEqual(self.m.get_children(o, e), [t])
-        self.assertEqual(self.m.get_children(o, e2), [t2])
-        self.assertEqual(self.m.get_children(t), [])
-        self.assertEqual(self.m.get_children(e2), [o])
-       
-        self.assertEqual(self.m.get_children(t2), [])
+        self.assertEqual(e.children, [])
+        self.assertItemsEqual(o.children, [t, t2, e2])
         
-        o2 = Observer(name="Susanne Sorgenfrei", handedness="right", age=30)
-        self.m.save(o2)
-        self.m.connect_objects(e, o2)
-        self.m.connect_objects(o2, t)
-        
-        self.assertTrue(listequal(self.m.get_children(e), [o, o2])) 
-        self.assertTrue(listequal(self.m.get_children(o, e), [t]))
-        self.assertTrue(listequal(self.m.get_children(o, e2), [t2]))
-        self.assertTrue(listequal(self.m.get_children(t, o), []))
-        self.assertTrue(listequal(self.m.get_children(t, o2), []))
-        self.assertTrue(listequal(self.m.get_children(e2), [o]))
-        self.assertTrue(listequal(self.m.get_children(o2), [t]))
-        self.assertTrue(listequal(self.m.get_children(t2), []))
-        #next statement raises ContextWarning: There are several contexts with this parent and ancestor
-        self.assertTrue(listequal(self.m.get_children(o), [t, t2]))
-        self.assertRaises(ContextError, self.m.get_children, o, uniqueContext=True)
-        self.assertRaises(ContextError, self.m.get_children, t, uniqueContext=True)
-        
-        
-    def testGetChildren(self):
-        e = Experiment(project='MyProject', experimenter="John Doe")
-        o = Observer(name="Max Mustermann", handedness="right", age=26)
-        t = Trial(rt=189, valid=0, response='right')
-        self.m.save(e, o, t)
-        self.m.connect_objects(o, t)
-        
-        self.assertEqual(self.m.get_children(e), [])
-        self.assertRaises(ContextError, self.m.get_children, e, e)
-        self.assertRaises(ContextError, self.m.get_children, e, o)
-        self.assertRaises(ContextError, self.m.get_children, e, 1)
-        self.assertRaises(ContextError, self.m.get_children, e, ',1,')
-        self.assertRaises(TypeError, self.m.get_children, e, '1')
-        self.assertRaises(TypeError, self.m.get_children, e, ',')
-        
-        self.assertEqual(self.m.get_children(o), [t])
-        self.assertRaises(ContextError, self.m.get_children, o, o)
-        self.assertRaises(ContextError, self.m.get_children, o, 2)
-        self.assertRaises(TypeError, self.m.get_children, o, '2')
-        self.assertRaises(ContextError, self.m.get_children, o, ',2,')
-        self.assertRaises(ContextError, self.m.get_children, o, e)
-        
-        self.assertEqual(self.m.get_children(t, o), [])
-        self.assertEqual(self.m.get_children(t, 2), [])
-        self.assertEqual(self.m.get_children(t, ',2,'), [])
-        
-     
-        self.m.connect_objects(e, o)
-                
-        self.assertEqual(self.m.get_children(e), [o])
-        self.assertRaises(ContextError, self.m.get_children, e, e)
-        self.assertRaises(ContextError, self.m.get_children, e, o)
-        self.assertRaises(ContextError, self.m.get_children, e, 1)
-        self.assertRaises(ContextError, self.m.get_children, e, ',1,')
-        self.assertRaises(TypeError, self.m.get_children, e, '1')
-        
-        self.assertEqual(self.m.get_children(o), [t])
-        self.assertEqual(self.m.get_children(o, e), [t])
-        self.assertEqual(self.m.get_children(o, 1), [t])
-        self.assertEqual(self.m.get_children(o, ',1,'), [t])
-        self.assertRaises(ContextError, self.m.get_children, o, o)
-        self.assertRaises(TypeError, self.m.get_children, o, '1')
-        
-        self.assertEqual(self.m.get_children(t, o), [])
-        self.assertEqual(self.m.get_children(t, e), [])
-        self.assertEqual(self.m.get_children(t, 2), [])
-        self.assertEqual(self.m.get_children(t, ',2,'), [])
-        
-        self.m.get_children(o, e)
-        # [t]
-      
-            
-    def testGetDataMatrix(self):
-        e1 = Experiment(project='MyProject', experimenter="John Doe")
-        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-        o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
-       
-        e2 = Experiment(project='YourProject', experimenter="John Doe")
-        o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
-        
-        self.m.save(e1, e2, o1, o2, o3)
-        
-        #all objects are root
-        self.assertEqual(self.m.get_data_matrix([], {'Observer':['age']}), [[26], [38], [40]])
-        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
-        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
-        
-        #only e1 and e2 are root
-        self.m.connect_objects(e1, o1)
-        self.m.connect_objects(e1, o2)
-        self.m.connect_objects(e2, o3)
-        self.m.connect_objects(e2, o2)
-        
-        #make sure the correct data is retrieved
-        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
-                                                [[26L], [38L]]))
-        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
-                                                [[38L], [40]]))
-        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age', 'name']}),
-                                                [[38, "Susanne Sorgenfrei"], [40, 'Susi Sorgen']]))
-        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age', 'name']}),
-                                                [[26, "Max Mustermann"], [38, "Susanne Sorgenfrei"]]))
-        
-        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
-                                                 {'Experiment':['project'], 'Observer':['name']}),
-                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-                                                  ['YourProject', "Susi Sorgen"]]))
-        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
-                                                 {'Observer':['name'], 'Experiment':['project']}),
-                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-                                                  ['YourProject', "Susi Sorgen"]]))
+#    def testGetDataMatrix(self):
+#        e1 = Experiment(project='MyProject', experimenter="John Doe")
+#        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+#        o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
+#       
+#        e2 = Experiment(project='YourProject', experimenter="John Doe")
+#        o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
+#        
+#        self.m.save(e1, e2, o1, o2, o3)
+#        
+#        #all objects are root
+#        self.assertEqual(self.m.get_data_matrix([], {'Observer':['age']}), [[26], [38], [40]])
+#        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
+#        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
+#        
+#        #only e1 and e2 are root
+#        self.m.connect_objects(e1, o1)
+#        self.m.connect_objects(e1, o2)
+#        self.m.connect_objects(e2, o3)
+#        self.m.connect_objects(e2, o2)
+#        
+#        #make sure the correct data is retrieved
+#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
+#                                                [[26L], [38L]]))
+#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
+#                                                [[38L], [40]]))
+#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age', 'name']}),
+#                                                [[38, "Susanne Sorgenfrei"], [40, 'Susi Sorgen']]))
+#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age', 'name']}),
+#                                                [[26, "Max Mustermann"], [38, "Susanne Sorgenfrei"]]))
+#        
+#        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
+#                                                 {'Experiment':['project'], 'Observer':['name']}),
+#                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
+#                                                  ['YourProject', "Susi Sorgen"]]))
+#        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
+#                                                 {'Observer':['name'], 'Experiment':['project']}),
+#                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
+#                                                  ['YourProject', "Susi Sorgen"]]))
         
 #
 #    def testRegisterParameter(self):

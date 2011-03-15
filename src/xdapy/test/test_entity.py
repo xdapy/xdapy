@@ -34,14 +34,14 @@ class Test(unittest.TestCase):
     def test_same_entity_has_same_hash(self):
         class Experiment(EntityObject):
             parameter_types = parameter_types
-        assert self.Experiment.__name__ == Experiment.__name__
+        self.assertEqual(self.Experiment.__name__, Experiment.__name__)
 
     def test_different_entity_has_different_hash(self):
         class Experiment(EntityObject):
             parameter_types = parameter_types_w_date
-        assert self.Experiment.__name__ != Experiment.__name__
+        self.assertNotEqual(self.Experiment.__name__, Experiment.__name__)
 
-        assert self.Experiment.__name__ != self.ExperimentalProject.__name__
+        self.assertNotEqual(self.Experiment.__name__, self.ExperimentalProject.__name__)
 
     def test_entities_must_not_contain_underscore(self):
         def mkEntity():

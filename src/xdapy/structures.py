@@ -49,6 +49,8 @@ class Data(Base):
     
     @data.setter
     def data(self, data):
+        if not isinstance(data, basestring): # TODO what about real binary?
+            raise ValueError("Data must be a string")
         self._data = data
         self._length = len(data)
         
