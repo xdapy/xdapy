@@ -196,24 +196,30 @@ class Entity(Base):
 
 class Meta(DeclarativeMeta):
     @staticmethod
-    def _calculate_polymorphic_name(name, bases, attrs):
-        if not "EntityObject" in [cls.__name__ for cls in bases]:
-            return name
-
-        if "_" in cls.__name__:
-            raise EntityDefinitionError("Entity class must not contain an underscore")
-
-        # create hash from sorted parameter_types
-        parameter_types = attrs["parameter_types"]
+    def _hash_dict(attrs):
+        """Generates a hash from a simple dict containing string keys and values."""
         string = "{"
-        ordered = ['"' + k.lower() + '":"' + parameter_types[k].lower() + '"'
-                         for k in sorted(parameter_types.keys())]
+        ordered = ['"' + k.lower() + '":"' + attrs[k].lower() + '"'
+                         for k in sorted(attrs.keys())]
         string = "{" + ",".join(ordered) + "}"
 
         import hashlib
         md5 = hashlib.md5()
         md5.update(string)
         the_hash = md5.hexdigest()
+        return the_hash
+
+    @staticmethod
+    def _calculate_polymorphic_name(name, bases, attrs):
+        if not "EntityObject" in [bscls.__name__ for bscls in bases]:
+            return name
+
+        if "_" in name:
+            raise EntityDefinitionError("Entity class must not contain an underscore")
+
+        # create hash from sorted parameter_types
+        parameter_types = attrs["parameter_types"]
+        the_hash = Meta._hash_dict(parameter_types)
 
         return name + "_" + the_hash
 
