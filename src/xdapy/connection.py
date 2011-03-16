@@ -31,7 +31,7 @@ class AutoSession(object):
 
 class Connection(object):
     default_path = '~/.xdapy/engine.ini'
-    def __init__(self, profile=None, filename=None):
+    def __init__(self, profile=None, filename=None, echo=False):
         """
         Reads the settings from the file ~/.xdapy/engine.ini or the path value.
 
@@ -50,6 +50,7 @@ class Connection(object):
         self.db ~ the database URL
         self.test_db ~ the database URL used for testing
         """
+        self.echo = echo
         self.profile = profile
         if not filename:
             filename = self.default_path
@@ -78,9 +79,9 @@ class Connection(object):
         return self.auto_session.session
     
     @classmethod
-    def test(cls):
+    def test(cls, **kwargs):
         """Creates a connection with the test profile."""
-        return cls(profile="test")
+        return cls(profile="test", **kwargs)
     
     def _configuration(self, profile=None):
         testconfig = self._config.dict()
@@ -104,7 +105,7 @@ class Connection(object):
     
     @lazyprop
     def engine(self):
-        return create_engine(self.db, echo=False)
+        return create_engine(self.db, echo=self.echo)
     
     @property
     def db(self):
