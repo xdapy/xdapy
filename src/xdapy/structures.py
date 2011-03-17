@@ -27,7 +27,7 @@ from sqlalchemy.dialects.postgresql import UUID
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
-from xdapy.errors import Error, EntityDefinitionError
+from xdapy.errors import Error, EntityDefinitionError, InsertionError
 from xdapy.utils.algorithms import gen_uuid
 
 class Data(Base):
@@ -127,7 +127,7 @@ class Entity(Base):
         while node.parent:
             node = node.parent
             if node in parents:
-                raise "Circular reference"
+                raise DataInconsistencyError("Circular reference")
             parents.append(node)
         return parents
 

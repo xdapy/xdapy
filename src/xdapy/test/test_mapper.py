@@ -2,7 +2,7 @@
 
 Created on Jun 17, 2009
 """
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exceptions import IntegrityError, CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy import Connection, Mapper
@@ -147,9 +147,32 @@ class TestMapper(Setup):
         self.m.save(e2, t2)
         e2.children.append(o) # o gets new parent e2
         o.children.extend([t2, e2])
-        
+ 
         self.assertEqual(e.children, [])
         self.assertItemsEqual(o.children, [t, t2, e2])
+
+        def add_circular_1():
+            e1 = Experiment()
+            e2 = Experiment()
+            e3 = Experiment()
+            e3.parent = e2
+            e2.parent = e1
+            e1.parent = e3
+            self.m.save(e1, e2, e3)
+
+        self.assertRaises(CircularDependencyError, add_circular_1)
+
+        def add_circular_2():
+            e1 = Experiment()
+            e2 = Experiment()
+            e3 = Experiment()
+            e3.parent = e2
+            e2.parent = e1
+            e1.parent = e3
+            self.m.save(e1)
+
+        self.assertRaises(CircularDependencyError, add_circular_2)
+
 
 class TestConnections(Setup):
     def setUp(self):
