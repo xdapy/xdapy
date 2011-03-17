@@ -215,6 +215,18 @@ class TestConnections(Setup):
         self.assertEqual(self.m.find(Observer).count(), 2)
         self.assertEqual(self.m.find(Experiment).count(), 2)
 
+    def test_that_connection_returns_correctly(self):
+        eee1 = Experiment()
+        eee2 = Experiment()
+        ooo1 = Observer()
+        ooo2 = Observer()
+        self.m.save(eee1, eee2, ooo1, ooo2)
+
+        eee1.connect("C", ooo1)
+        eee1.connect("C", ooo2)
+        eee2.connect("C", ooo1)
+
+        self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
         
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")

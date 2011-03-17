@@ -17,7 +17,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.orm import relationship, backref, validates, synonym
+from sqlalchemy.orm import relationship, backref, validates, synonym, Session
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
@@ -155,8 +155,26 @@ class Entity(Base):
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""
-        self.connected.append(Context(back_referenced=self, connected=connection_object, connection_type=connection_type))
+        self_session = Session.object_session(self)
+        if self_session:
+            # check, if we are already connected with connection_object
+            if self_session.query(Context).filter(Context.back_referenced==self).filter(Context.connected==connection_object).count() > 0:
+                raise InsertionError("{} already has a connection to {}".format(self, connection_object))
 
+        context = Context(back_referenced=self, connected=connection_object, connection_type=connection_type)
+        self.connections.append(context)
+        # TODO Remove this workaround
+        if self_session:
+            self_session.flush() # need to flush the session, else we don’t see changes
+        return context
+
+    @property
+    def connected(self):
+        return [c.connected for c in self.connections]
+
+    @property
+    def back_referenced(self):
+        return [c.back_referenced for c in self.back_references]
     
     @validates('type')
     def validate_name(self, key, e_name):
@@ -277,15 +295,21 @@ class Context(Base):
 
     # Each entity can have a context of related entities
     back_referenced = relationship(Entity,
-        backref=backref('connected', cascade="all"), # need the cascade to delete context, if entity is deleted
+        backref=backref('connections', cascade="all"), # need the cascade to delete context, if entity is deleted
         primaryjoin=entity_id==Entity.id)
 
     connected = relationship(Entity,
-        backref=backref('back_referenced', cascade="all"),
+        backref=backref('back_references', cascade="all"),
         primaryjoin=connected_id==Entity.id)
 
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
+
+    def __repr__(self):
+        return "Context(entity_id={id!s}, connected_id={cid!s}, connection_type={type})".format(id=self.entity_id, cid=self.connected_id, type=self.connection_type)
+
+    def __str__(self):
+        return "Context({e} has {t} {c})".format(e=self.back_referenced, t=self.connection_type, c=self.connected)
 
 
 class ParameterOption(Base):
