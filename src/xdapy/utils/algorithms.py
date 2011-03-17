@@ -5,7 +5,8 @@ Created on Jul 30, 2009
    
 """
 # alphabetical order by last name, please
-import copy, uuid
+import copy, uuid, hashlib
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
@@ -56,4 +57,17 @@ def listequal(a, b):
 
 def gen_uuid():
     return str(uuid.uuid4())
+
+def hash_dict(attrs):
+      """Generates a hash from a simple dict containing string keys and values."""
+      string = "{"
+      ordered = ['"' + k.lower() + '":"' + attrs[k].lower() + '"'
+                       for k in sorted(attrs.keys())]
+      string = "{" + ",".join(ordered) + "}"
+
+      md5 = hashlib.md5()
+      md5.update(string)
+      the_hash = md5.hexdigest()
+      return the_hash
+
 
