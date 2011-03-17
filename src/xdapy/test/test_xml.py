@@ -1,5 +1,25 @@
 from xdapy import Connection, Mapper
+from xdapy.structures import EntityObject
 import unittest
+
+class Experiment(EntityObject):
+    parameter_types = {
+            'project': 'string',
+            'experimenter': 'string'
+            }
+
+class Observer(EntityObject):
+    parameter_types = {
+        'name': 'string',
+        'age': 'integer',
+        'handedness': 'string'
+    }
+     
+class Session(EntityObject):
+    parameter_types = {
+        'date': 'date'
+    }
+
 
 class TestXml(unittest.TestCase):
 

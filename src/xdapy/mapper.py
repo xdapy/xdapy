@@ -258,9 +258,13 @@ class Mapper(object):
     
     def entity_by_name(self, name):
         klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
-        return klasses[name]
+        if name in klasses:
+            return klasses[name]()
+        klasses_guessed = [cls for cls in klasses.keys() if cls.startswith(name)]
+        if len(klasses_guessed) == 1:
+            return klasses[klasses_guessed[0]]()
 
-    def typesFromXML(self, xml):
+    def typesFromXML(self, xml, known_entities=None):
         from xml.dom import minidom
 
         dom = minidom.parseString(xml)
@@ -282,7 +286,7 @@ class Mapper(object):
             entities.append(o)
         return entities
 
-    def fromXML(self, xml):
+    def fromXML(self, xml, known_entities=None):
 
         from xml.dom import minidom
         import base64
@@ -363,7 +367,7 @@ class Mapper(object):
         return entity_tree
         
     
-    def toXML(self):
+    def toXML(self, known_entities=None):
         session = self.session
         from xml.dom import minidom
         import base64
@@ -394,7 +398,6 @@ class Mapper(object):
 
         def save_entities(doc):
             def mkXml(entities):
-                print "CCC", [e.children for e in entities]
                 elems = []
                 for e in entities:
                     entityElem = doc.createElement("entity")
