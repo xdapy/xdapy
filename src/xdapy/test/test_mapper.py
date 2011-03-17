@@ -6,7 +6,7 @@ from sqlalchemy.exceptions import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject
+from xdapy.structures import EntityObject, Context
 from xdapy.utils.algorithms import listequal
 from xdapy.structures import ParameterOption
 import unittest
@@ -41,8 +41,8 @@ class Trial(EntityObject):
         'response': 'string'
     }
 
-class TestProxy(unittest.TestCase):
 
+class Setup(unittest.TestCase):
     def setUp(self):
         db = Connection.test()
         self.m = Mapper(db)
@@ -50,9 +50,10 @@ class TestProxy(unittest.TestCase):
         
         self.m.register(Observer, Experiment, Trial)
         
-        
     def tearDown(self):
         pass
+
+class TestMapper(Setup):
         
     def testCreateTables(self):
         self.m.create_tables(overwrite=True)
@@ -149,6 +150,48 @@ class TestProxy(unittest.TestCase):
         
         self.assertEqual(e.children, [])
         self.assertItemsEqual(o.children, [t, t2, e2])
+
+class TestConnections(Setup):
+    def setUp(self):
+        super(TestConnections, self).setUp()
+
+        self.e1 = Experiment(project="e1")
+        self.e2 = Experiment(project="e2")
+
+        self.o1 = Observer(name="o1")
+        self.o2 = Observer(name="o2")
+        self.o3 = Observer(name="o3")
+
+        self.e1.connect("Observer", self.o1)
+        self.e1.connect("Observer", self.o2)
+        self.e2.connect("Observer", self.o2)
+        self.e2.connect("Observer", self.o3)
+
+        self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
+
+    def test_number_of_connections(self):
+        self.assertEqual(self.m.find(Context).count(), 4)
+
+    def test_that_context_delete_does_not_delete_entity_1(self):
+        for i in range(1, 4):
+            ctx = self.m.find_first(Context)
+            self.m.delete(ctx)
+            self.assertEqual(self.m.find(Experiment).count(), 2)
+            self.assertEqual(self.m.find(Observer).count(), 3)
+            self.assertEqual(self.m.find(Context).count(), 4 - i)
+
+    def test_that_entity_delete_deletes_context_1(self):
+        self.m.delete(self.e1)
+        self.assertEqual(self.m.find(Context).count(), 2)
+        self.assertEqual(self.m.find(Observer).count(), 3)
+        self.assertEqual(self.m.find(Experiment).count(), 1)
+
+    def test_that_entity_delete_deletes_context_2(self):
+        self.m.delete(self.o2)
+        self.assertEqual(self.m.find(Context).count(), 2)
+        self.assertEqual(self.m.find(Observer).count(), 2)
+        self.assertEqual(self.m.find(Experiment).count(), 2)
+
         
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")

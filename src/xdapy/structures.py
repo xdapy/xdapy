@@ -153,11 +153,10 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     data = association_proxy('_datadict', 'data', creator=Data)
     
-    def add_related(self, related, note=None):
-        self.context.append(Context(context=related, note=note))
-    
-    def related(self):
-        return [c.context for c in self.context]
+    def connect(self, connection_type, connection_object):
+        """Connect this entity with connection_object via the connection_type."""
+        self.connected.append(Context(back_referenced=self, connected=connection_object, connection_type=connection_type))
+
     
     @validates('type')
     def validate_name(self, key, e_name):
@@ -286,19 +285,18 @@ class Context(Base):
     the entities attribute of the Data class.
     '''
     entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    context_id = Column('context_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    connected_id = Column('connected_id', Integer, ForeignKey('entities.id'), primary_key=True)
+
+    connection_type = Column('connection_type', String(500))
 
     # Each entity can have a context of related entities
-    entity = relationship(Entity,
-        backref=backref('context', cascade="all"), # need the cascade to delete context, if entity is deleted
-        primaryjoin=entity_id==Entity.id,
-        cascade="all")
-    context = relationship(Entity,
-        backref=backref('entity', cascade="all"),
-        primaryjoin=context_id==Entity.id,
-        cascade="all")
+    back_referenced = relationship(Entity,
+        backref=backref('connected', cascade="all"), # need the cascade to delete context, if entity is deleted
+        primaryjoin=entity_id==Entity.id)
 
-    note = Column('note', String(500))
+    connected = relationship(Entity,
+        backref=backref('back_referenced', cascade="all"),
+        primaryjoin=connected_id==Entity.id)
 
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
