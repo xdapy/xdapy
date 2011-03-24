@@ -161,11 +161,9 @@ class Entity(Base):
             if self_session.query(Context).filter(Context.back_referenced==self).filter(Context.connected==connection_object).count() > 0:
                 raise InsertionError("{} already has a connection to {}".format(self, connection_object))
 
+        # Create a new context object.
+        # The back reference is automatically appended through setting the back reference
         context = Context(back_referenced=self, connected=connection_object, connection_type=connection_type)
-        self.connections.append(context)
-        # TODO Remove this workaround
-        if self_session:
-            self_session.flush() # need to flush the session, else we don’t see changes
         return context
 
     @property

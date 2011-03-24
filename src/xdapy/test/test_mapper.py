@@ -222,11 +222,13 @@ class TestConnections(Setup):
         ooo2 = Observer()
         self.m.save(eee1, eee2, ooo1, ooo2)
 
-        eee1.connect("C", ooo1)
-        eee1.connect("C", ooo2)
-        eee2.connect("C", ooo1)
+        eee1.connect("CCC", ooo1)
+        eee1.connect("CCC", ooo2)
+        eee2.connect("CCC", ooo1)
 
         self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
+        # check that connections have been added to session
+        self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
         
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")
