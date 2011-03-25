@@ -68,7 +68,7 @@ t1.belongs_to(e1) # t1.parent = e1
 t1.data["data set 1"] = "Some data"
 
 o1 = Observer(name="John H. Observer", age=31)
-o1.add_related(t1)
+t1.connect("Observer", o1)
 
 m.save(e1, e2, t1, o1)
 
@@ -83,7 +83,7 @@ observer4 = Observer(name="Isabel Blomqvist", age=47)
 
 m.save(experiment1, experiment2, observer1, observer2, observer3, observer4)
 
-print m.toXML()
+#print m.toXML()
 
 # find an object…
 from xdapy.operators import *
@@ -131,13 +131,10 @@ trial2_4.belongs_to(experiment2)
 trial2_5 = Trial(number_of_runs=1)
 trial2_5.belongs_to(experiment2)
 
-trial1_1.add_related(observer1)
-trial1_2.add_related(observer1)
-trial2_1.add_related(observer1)
-
-
-observer2.add_related(trial2_2)
-
+trial1_1.connect("Observer", observer1)
+trial1_2.connect("Observer", observer1)
+trial2_1.connect("Observer", observer1)
+trial2_2.connect("Observer", observer2)
 
 m.save(trial1_1, trial1_2, trial1_3, trial1_4, trial1_5, trial2_1, trial2_2, trial2_3, trial2_4, trial2_5)
 
