@@ -147,7 +147,7 @@ class IntegerParameter(Parameter):
         try:
             return int(value)
         except ValueError:
-            raise StringConversionError("Could not convert value '{}' to integer.".format(value))
+            raise StringConversionError("Could not convert value '{0}' to integer.".format(value))
 
     @classmethod
     def accepts(cls, value):
@@ -194,7 +194,7 @@ class FloatParameter(Parameter):
         try:
             return float(value)
         except ValueError:
-            raise StringConversionError("Could not convert value '{}' to float.".format(value))
+            raise StringConversionError("Could not convert value '}' to float.".format(value))
 
     @classmethod
     def accepts(cls, value):
@@ -241,7 +241,7 @@ class DateParameter(Parameter):
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
-            raise StringConversionError("Could not convert value '{}' to date.".format(value))
+            raise StringConversionError("Could not convert value '{0}' to date.".format(value))
 
     @property
     def value_string(self):
@@ -300,7 +300,7 @@ class TimeParameter(Parameter):
         try:
             return datetime.strptime(value, "%H:%M:%S").time()
         except ValueError:
-            raise StringConversionError("Could not convert value '{}' to time.".format(value))
+            raise StringConversionError("Could not convert value '{0}' to time.".format(value))
 
     @property
     def value_string(self):
@@ -353,7 +353,7 @@ class DateTimeParameter(Parameter):
         try:
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
-            raise StringConversionError("Could not convert value '{}' to datetime.".format(value))
+            raise StringConversionError("Could not convert value '{0}' to datetime.".format(value))
 
     @property
     def value_string(self):
@@ -415,7 +415,7 @@ class BooleanParameter(Parameter):
             return bool(int(value))
         except ValueError:
             pass
-        raise StringConversionError("Could not convert value '{}' to boolean.".format(value))
+        raise StringConversionError("Could not convert value '{0}' to boolean.".format(value))
 
     @property
     def value_string(self):

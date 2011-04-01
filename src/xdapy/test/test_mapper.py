@@ -115,7 +115,7 @@ class TestMapper(Setup):
         obs_by_object = self.m.find_by_id(Observer, id=1)
          
         #Error if object does not exist
-        self.assertIsNone(self.m.find_first(Observer(name='John Doe')))
+        self.assertTrue(self.m.find_first(Observer(name='John Doe')) is None) # assertIsNone
         self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 5)
         
         #Error if object exists multiple times # TODO
@@ -149,7 +149,7 @@ class TestMapper(Setup):
         o.children.extend([t2, e2])
  
         self.assertEqual(e.children, [])
-        self.assertItemsEqual(o.children, [t, t2, e2])
+        self.assertEqual(sorted(o.children), sorted([t, t2, e2])) # assertItemsEqual
 
         def add_circular_1():
             e1 = Experiment()

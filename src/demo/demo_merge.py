@@ -92,7 +92,7 @@ def migrate(old_mapper, new_mapper, mapping):
         except exc.NoResultFound:
             new_obj = mapto(_uuid = obj.uuid)
         except exc.MultipleResultsFound:
-            raise DataInconsistencyError("UUID in mapper {} is not unique".format(new_mapper))
+            raise DataInconsistencyError("UUID in mapper {0} is not unique".format(new_mapper))
 
         # copy params
         for k,v in obj.param.iteritems():

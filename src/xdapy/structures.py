@@ -165,7 +165,7 @@ class Entity(Base):
         if self_session:
             # check, if we are already connected with connection_object
             if self_session.query(Context).filter(Context.back_referenced==self).filter(Context.connected==connection_object).count() > 0:
-                raise InsertionError("{} already has a connection to {}".format(self, connection_object))
+                raise InsertionError("{0} already has a connection to {1}".format(self, connection_object))
 
         # Create a new context object.
         # The back reference is automatically appended through setting the back reference
@@ -310,7 +310,7 @@ class EntityObject(Entity):
     def __str__(self):
         import itertools
         items  = itertools.chain([('id', self.id)], self.param.iteritems())
-        params = ", ".join(["{!s}={!r}".format(key, val) for key, val in items])
+        params = ", ".join(["{0!s}={1!r}".format(key, val) for key, val in items])
         return "{cls}({params})".format(cls=self.__class__.__name__, params=params)
 
 
