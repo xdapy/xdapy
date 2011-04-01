@@ -463,6 +463,9 @@ parameter_ids = list(pc.__mapper_args__['polymorphic_identity'] for pc in parame
 ParameterMap = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in parameter_classes)
 
 def strToType(s, typename):
+    # TODO: Maybe put the None check inside the from_string methods
+    if s is None:
+        raise ValueError("Attempted to set None on a parameter.")
     return ParameterMap[typename].from_string(s)
     
 def acceptingClass(value):

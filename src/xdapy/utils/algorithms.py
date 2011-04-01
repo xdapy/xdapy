@@ -70,4 +70,9 @@ def hash_dict(attrs):
       the_hash = md5.hexdigest()
       return the_hash
 
+def filter_none(a_dict):
+    """Filters all elements from the dict with value is None."""
+    return dict((k, v) for k, v in a_dict if v)
+
+
 

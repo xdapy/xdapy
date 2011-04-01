@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xdapy>
+  <types>
+    <entity name="Trial">
+      <parameter name="count" type="string"/>
+      <parameter name="note" type="string"/>
+      <parameter name="reaction_time" type="string"/>
+      <parameter name="noise_seed" type="string"/>
+      <parameter name="phase_of_signal_in_second_interval" type="string"/>
+      <parameter name="signal_interval" type="string"/>
+      <parameter name="phase_of_signal_in_first_interval" type="string"/>
+      <parameter name="start" type="string"/>
+      <parameter name="valid" type="boolean"/>
+      <parameter name="subject_response" type="string"/>
+    </entity>
+    <entity name="Setup">
+      <parameter name="serial_number_monitor" type="string"/>
+      <parameter name="calibration_file" type="string"/>
+      <parameter name="hardware" type="string"/>
+      <parameter name="frame_rate" type="string"/>
+      <parameter name="serial_number_visage" type="string"/>
+      <parameter name="software" type="string"/>
+    </entity>
+    <entity name="Experiment">
+      <parameter name="note" type="string"/>
+      <parameter name="stimulus_file" type="string"/>
+      <parameter name="reference" type="string"/>
+      <parameter name="source_directory" type="string"/>
+      <parameter name="project" type="string"/>
+      <parameter name="source_file" type="string"/>
+      <parameter name="experimenter" type="string"/>
+      <parameter name="data_directory" type="string"/>
+      <parameter name="keywords" type="string"/>
+    </entity>
+    <entity name="Observer">
+      <parameter name="handedness" type="string"/>
+      <parameter name="glasses" type="boolean"/>
+      <parameter name="age" type="integer"/>
+      <parameter name="name" type="string"/>
+      <parameter name="birthday" type="date"/>
+      <parameter name="initials" type="string"/>
+    </entity>
+    <entity name="Session">
+      <parameter name="count" type="string"/>
+      <parameter name="Number_of_Trials" type="string"/>
+      <parameter name="feedback" type="string"/>
+      <parameter name="data_file" type="string"/>
+      <parameter name="signalContrast" type="string"/>
+      <parameter name="noiseContrast" type="string"/>
+      <parameter name="note" type="string"/>
+      <parameter name="percentCorrect" type="string"/>
+      <parameter name="frequency" type="string"/>
+      <parameter name="presentationTime" type="string"/>
+      <parameter name="date" type="string"/>
+      <parameter name="pedestalContrast" type="string"/>
+      <parameter name="stimulusSizeDegrees" type="string"/>
+      <parameter name="noiseType" type="string"/>
+    </entity>
+  </types>
+
+  <values>
+    <entity type="Observer" name="observer 1" id="1">
+      <parameter name="birthday">2011-01-01</parameter>
+      <parameter name="glasses">True</parameter>
+      <parameter name="handedness">LEFT</parameter>
+      <parameter name="initials" />
+      <data name="data 1" mimetype="none">
+        123abc
+      </data>
+    </entity>
+    <entity type="Setup" name="setup 1" id="5">
+      <parameter name="calibration_file" />
+      <parameter name="frame_rate"/>
+      <parameter name="hardware"/>
+      <parameter name="serial_number_monitor"/>
+      <parameter name="serial_number_visage"/>
+      <parameter name="software"/>
+    </entity>
+    <entity type="Experiment" name="experiment 1" id="2">
+      <context note="Some Observer" relates="observer 1"/>
+      <parameter name="data_directory" />
+      <parameter name="experimenter" />
+      <parameter name="keywords" />
+      <parameter name="note" />
+      <parameter name="project" />
+      <parameter name="reference" />
+      <parameter name="source_directory" />
+      <parameter name="source_file" />
+      <parameter name="stimulus_file" />
+      <entity type="Session" uuid="dd77d125-2eb8-4d65-a506-173d79edfed5">
+        <parameter name="Number_of_Trials">50</parameter>
+        <parameter name="count" />
+        <parameter name="data_file" />
+        <parameter name="date">06-Apr-2006 08:54:06</parameter>
+        <parameter name="feedback">TRUE</parameter>
+        <parameter name="frequency">8</parameter>
+        <parameter name="noiseContrast">0.10207</parameter>
+        <parameter name="noiseType">flat-low-pass-1D-0</parameter>
+        <parameter name="note" />
+        <parameter name="pedestalContrast">0</parameter>
+        <parameter name="percentCorrect">1</parameter>
+        <parameter name="presentationTime">80</parameter>
+        <parameter name="signalContrast">0.075</parameter>
+        <parameter name="stimulusSizeDegrees">3</parameter>
+        <entity type="Trial" id="3">
+          <parameter name="count" />
+          <parameter name="noise_seed">0</parameter>
+          <parameter name="note" />
+          <parameter name="phase_of_signal_in_first_interval">92</parameter>
+          <parameter name="phase_of_signal_in_second_interval">47</parameter>
+          <parameter name="signal_interval">1</parameter>
+          <parameter name="start" />
+          <parameter name="valid">FALSE</parameter>
+          <parameter name="reaction_time">199</parameter>
+          <parameter name="subject_response">1</parameter>
+        </entity>
+        <entity type="Trial" id="4">
+          <parameter name="count" />
+          <parameter name="noise_seed">10</parameter>
+          <parameter name="note" />
+          <parameter name="phase_of_signal_in_first_interval">102</parameter>
+          <parameter name="phase_of_signal_in_second_interval">48</parameter>
+          <parameter name="signal_interval">1</parameter>
+          <parameter name="start" />
+          <parameter name="valid">TRUE</parameter>
+          <parameter name="reaction_time">199</parameter>
+          <parameter name="subject_response">1</parameter>
+        </entity>
+      </entity>
+    </entity>
+  </values>
+  <relations>
+    <context name="Observer" from="id:1" to="id:2" />
+    <context name="Setup" from="id:3" to="id:5" />
+    <context name="Setup" from="id:4" to="id:5" />
+  </relations>
+</xdapy>

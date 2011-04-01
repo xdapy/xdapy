@@ -5,9 +5,9 @@
 Created on Jun 17, 2009
 """
 from xdapy import Base
-from xdapy.errors import Error, InsertionError
+from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, Entity, Context, EntityObject, create_entity
+from xdapy.structures import ParameterOption, Entity, EntityObject
 from xdapy.parameters import Parameter, StringParameter, ParameterMap, strToType
 from xdapy.errors import StringConversionError
 
@@ -34,6 +34,7 @@ class Mapper(object):
         self.connection = connection
         self.auto_session = connection.auto_session
         self.session = connection.session
+        self.registered_objects = []
     
     def create_tables(self, overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
@@ -58,6 +59,11 @@ class Mapper(object):
                     session.flush()
             except Exception:
                 raise
+
+    def save_all(self, *args):
+        for arg in args:
+            self.save(arg)
+            self.save_all(arg.children)
     
     def delete(self, *args):
         """Deletes the objects from the database."""
@@ -211,7 +217,7 @@ class Mapper(object):
         TODO: Maybe consider to save objects automatically 
         TODO: Revise session closing
         """
-        with self.auto_session as session:
+        with self.auto_session:
             if child in parent.all_parents() + [parent]:
                 raise InsertionError('Can not insert child because of circularity.')
             
@@ -253,196 +259,18 @@ class Mapper(object):
     def register(self, *klasses):
         """Registers the class and the class’s parameters."""
         for klass in klasses:
+            self.registered_objects.append(klass)
+
             for name, paramtype in klass.parameter_types.iteritems():
                 self.register_parameter(klass.__name__, name, paramtype)
     
-    def entity_by_name(self, name):
-        klasses = dict((sub.__name__, sub) for sub in EntityObject.__subclasses__())
+    def entity_by_name(self, name, **kwargs):
+        klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
         if name in klasses:
-            return klasses[name]()
+            return klasses[name](**kwargs)
         klasses_guessed = [cls for cls in klasses.keys() if cls.startswith(name)]
         if len(klasses_guessed) == 1:
-            return klasses[klasses_guessed[0]]()
-
-    def typesFromXML(self, xml, known_entities=None):
-        from xml.dom import minidom
-
-        dom = minidom.parseString(xml)
-
-        types = dom.getElementsByTagName("types")[0]
-        entities = []
-        for entity in [e for e in types.childNodes if e.nodeName == u"entity"]:
-            e_type = entity.getAttribute("name")
-            params = {}
-            for param in [p for p in entity.childNodes if p.nodeName == u"parameter"]:
-                p_name = param.getAttribute("name")
-                p_type = param.getAttribute("type") or "string"
-                params[str(p_name)] = str(p_type)
-
-            if not self.is_consistent(str(e_type), params):
-                raise Error("XML file is inconsistent with current scheme")
-            o = create_entity(str(e_type), params)
-            #self.register(o)
-            entities.append(o)
-        return entities
-
-    def fromXML(self, xml, known_entities=None):
-
-        from xml.dom import minidom
-        import base64
-        
-        dom = minidom.parseString(xml).getElementsByTagName("values")[0]
-
-        self.default_id = 0
-
-        def gen_id():
-            self.default_id += 1
-            return self.default_id
-        
-        def handle_document(doc):
-            entities = doc.getElementsByTagName("entity")
-            entity_refs = dict((entity.getAttribute("name"), entity) for entity in entities)
-            return entity_refs
-        
-        def handle_entities(entity_refs):
-            entity_dict = {}
-            for eid, entity in entity_refs.iteritems():
-                new_entity = self.entity_by_name(entity.getAttribute("type"))
-                
-                for child in entity.childNodes:
-                    if child.nodeName == "parameter":
-                        name = child.getAttribute("name")
-                        value = child.getAttribute("value")
-                        
-                        type = new_entity.parameter_types[str(name)]
-                        new_entity.param[name] = strToType(value, type)
-                    if child.nodeName == "data":
-                        data = child.childNodes[0].data
-                        name = child.getAttribute("name")
-                        new_entity.data[str(name)] = base64.b64decode(data)
-                entity_dict[eid] = new_entity
-            return entity_dict
-        
-        def handle_context(entity_refs, entity_dict):
-            for eid, entity in entity_refs.iteritems():
-                for child in entity.childNodes:
-                    if child.nodeName == "context":
-                        relates = child.getAttribute("relates")
-                        related_entity = entity_dict[relates]
-                        note = child.getAttribute("note")
-                        entity_dict[eid].context.append(Context(context=related_entity, note=note))
-        
-        def traverse_entity(entity):
-            new_entity = self.entity_by_name(entity.getAttribute("type"))
-
-            for child in entity.childNodes:
-                if child.nodeName == "parameter":
-                    name = child.getAttribute("name")
-                    value = child.getAttribute("value")
-
-                    type = new_entity.parameter_types[str(name)]
-                    try:
-                        new_entity.param[name] = strToType(value, type)
-                    except StringConversionError as err:
-                        print new_entity, name, value, type
-                        raise
-                        
-                if child.nodeName == "data":
-                    data = child.childNodes[0].data
-                    name = child.getAttribute("name")
-                    new_entity.data[str(name)] = base64.b64decode(data)
-                if child.nodeName == u"entity":
-                    child_entity = traverse_entity(child)
-                    child_entity.parent = new_entity
-            return new_entity
-
-        entity_refs = handle_document(dom)
-    
-        entity_tree = []
-        for entity in [e for e in dom.childNodes if e.nodeName == u"entity"]:
-            entity_tree.append(traverse_entity(entity))
-
-        entity_dict = handle_entities(entity_refs)
-        handle_context(entity_refs, entity_dict)
-        return entity_tree
-        
-    
-    def toXML(self, known_entities=None):
-        session = self.session
-        from xml.dom import minidom
-        import base64
-        
-        doc = minidom.Document()
-        main = doc.createElement("xdapy")
-        doc.appendChild(main)
-
-        def save_types(doc):
-            types = {}
-            for param in session.query(ParameterOption):
-                if not param.entity_name in types:
-                    types[param.entity_name] = {}
-                types[param.entity_name][param.parameter_name] = param.parameter_type
-
-            t = doc.createElement("types")
-            for entity, params in types.iteritems():
-                entityElem = doc.createElement("entity")
-                entityElem.setAttribute("name", entity)
-                t.appendChild(entityElem)
-                for param_name, param_type in params.iteritems():
-                    paramElem = doc.createElement("parameter")
-                    paramElem.setAttribute("name", param_name)
-                    paramElem.setAttribute("type", param_type)
-                    entityElem.appendChild(paramElem)
-            return t
-
-
-        def save_entities(doc):
-            def mkXml(entities):
-                elems = []
-                for e in entities:
-                    entityElem = doc.createElement("entity")
-                    entityElem.setAttribute('id', str(e.id))
-                    entityElem.setAttribute('type', str(e.type))
-                    entityElem.setAttribute('parent', str(e.parent_id))
-                    for c in e.context:
-                        ctxt = doc.createElement("context")
-                        ctxt.setAttribute("relates", str(c.context_id))
-                        ctxt.setAttribute("note", c.note)
-                        entityElem.appendChild(ctxt)
-                    for d in e._datadict.values():
-                        data = doc.createElement("data")
-                        data.setAttribute("name", d.name)
-                        data.setAttribute("encoding", "base64")
-                        rawdata = doc.createTextNode(base64.b64encode(d.data))
-                        data.appendChild(rawdata)
-                        entityElem.appendChild(data)
-                    for p in e._parameterdict.values():
-                        param = doc.createElement("parameter")
-                        param.setAttribute("name", p.name)
-                        param.setAttribute("type", p.type)
-#                        param.setAttribute("value", p.value_string)
-                        rawdata = doc.createTextNode(p.value_string)
-                        param.appendChild(rawdata)
-
-                        entityElem.appendChild(param)
-                    
-                    for child in mkXml(e.children):
-                        entityElem.appendChild(child)
-                    elems.append(entityElem)
-                return elems
-
-            # get entities with no parent
-            entities = session.query(Entity).filter(Entity.parent_id==None).all()
-            e = doc.createElement("values")
-        
-            for child in mkXml(entities):
-                e.appendChild(child)
-            return e
-
-        main.appendChild(save_types(doc))
-        main.appendChild(save_entities(doc))
-        
-        return doc.toprettyxml()
+            return klasses[klasses_guessed[0]](**kwargs)
 
 if __name__ == "__main__":
     pass

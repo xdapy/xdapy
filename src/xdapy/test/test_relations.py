@@ -75,12 +75,9 @@ exp_monorail.connect("C", obs_1)
 exp_monorail.connect("C", obs_2)
 exp_neptune.connect("C", obs_1)
 
-import pdb
-pdb.set_trace()
-
 print exp_neptune.connections
 
-exp_neptune.connect("C", obs_1)
+#exp_neptune.connect("C", obs_1)
 
 from xdapy.structures import Context
 
@@ -100,7 +97,9 @@ contx = m.find_first(Context)
 
 exp_monorail.connect("Observer", obs_1)
 
-print m.toXML()
+from xdapy.io import XmlIO
+xmlio = XmlIO(m, EntityObject.__subclasses__())
+print xmlio.write()
 
 
 

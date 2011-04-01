@@ -19,7 +19,7 @@ class Experiment(EntityObject):
     }
 
 #class Experiment(EntityObject):
-#    """Concrete class for experiments"""    
+#    """Concrete class for experiments"""
 #    parameter_types = {
 #        'experimenter': 'string',
 #        'project': 'string'

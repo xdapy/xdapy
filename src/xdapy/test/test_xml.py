@@ -1,13 +1,27 @@
+# -*- coding: utf-8 -*-
+
 from xdapy import Connection, Mapper
+from xdapy.io import XmlIO
 from xdapy.structures import EntityObject
 import unittest
 
+objects = []
+
+def autoappend(a_list):
+    """Decorator which automatically appends the decorated class or method to a_list."""
+    def wrapper(obj):
+        a_list.append(obj)
+        return obj
+    return wrapper
+
+@autoappend(objects)
 class Experiment(EntityObject):
     parameter_types = {
             'project': 'string',
             'experimenter': 'string'
             }
 
+@autoappend(objects)
 class Observer(EntityObject):
     parameter_types = {
         'name': 'string',
@@ -15,11 +29,29 @@ class Observer(EntityObject):
         'handedness': 'string'
     }
      
+@autoappend(objects)
 class Session(EntityObject):
     parameter_types = {
         'date': 'date'
     }
 
+xml_types = """<types>
+    <entity name="Experiment">
+      <parameter name="project" type="string"/>
+      <parameter name="experimenter" type="string"/>
+    </entity>
+    <entity name="Observer">
+      <parameter name="name" type="string"/>
+      <parameter name="age" type="integer"/>
+      <parameter name="handedness" type="string"/>
+    </entity>
+    <entity name="Session">
+      <parameter name="date" type="date"/>
+    </entity></types>"""
+
+def wrap_xml_values(values):
+    return """<?xml version="1.0" ?><xdapy>""" + xml_types + """
+        <values>""" + values + """</values>""" + """</xdapy>"""
 
 class TestXml(unittest.TestCase):
 
@@ -66,13 +98,22 @@ class TestXml(unittest.TestCase):
         self.connection = Connection.test()
         self.mapper = Mapper(self.connection)
         self.mapper.create_tables(overwrite=True)
+        self.mapper.register(*objects)
 
     def tearDown(self):
         pass
     
-    def testXml(self):
-        vals = self.mapper.fromXML(TestXml.test_xml)
-        assert len(vals) == 6
+#    def testXml(self):
+#        objects = EntityObject.__subclasses__()
+#        xmlio = XmlIO(self.mapper, objects)
+#        xmlio.read_file("xml.xml")
+#        vals = self.mapper.fromXML(TestXml.test_xml)
+#        assert len(vals) == 6
+
+    def test_bad_uuid(self):
+        test_xml = wrap_xml_values("""<entity id="1" type="Experiment" uuid="2" />""")
+        xmlio = XmlIO(self.mapper, objects)
+        self.assertRaises(ValueError, xmlio.read, test_xml)
 
 if __name__ == '__main__':
     unittest.main()

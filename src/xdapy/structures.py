@@ -14,6 +14,7 @@ TODO: Make Data truncation an error
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
+import uuid as py_uuid
 
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy.schema import UniqueConstraint
@@ -104,12 +105,16 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    type = Column('type', String(60)) # TODO: type is never set on fresh entities
+    _type = Column('type', String(60)) # TODO: type is never set on fresh entities
     _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
      
     @property
     def uuid(self):
         return self._uuid
+
+    @property
+    def type(self):
+        return self._type.split('_')[0]
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
@@ -141,7 +146,7 @@ class Entity(Base):
     
     __tablename__ = 'entities'
     __table_args__ = {'mysql_engine':'InnoDB'}
-    __mapper_args__ = {'polymorphic_on':type}
+    __mapper_args__ = {'polymorphic_on':_type}
     
     _parameterdict = relationship(Parameter,
         collection_class=column_mapped_collection(Parameter.name), # FIXME ???
@@ -174,7 +179,7 @@ class Entity(Base):
     def back_referenced(self):
         return [c.back_referenced for c in self.back_references]
     
-    @validates('type')
+    @validates('_type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
             raise TypeError("Argument must be a string")
@@ -191,8 +196,11 @@ class Entity(Base):
         '''
         raise Error("Entity.__init__ should not be called directly.")
 
+    def _attributes(self):
+        return {'type': self.type, 'id': self.id, 'uuid': self.uuid}
+
     def to_json(self, full=False):
-        json = {'type': self.type, 'id': self.id, 'uuid': self.uuid}
+        json = self._attributes()
         if full:
             json["param"] = self.param.copy()
             data = []
@@ -210,6 +218,7 @@ class Entity(Base):
     def info(self):
         '''Prints information about the entity.'''
 
+from xdapy.parameters import strToType
 
 class Meta(DeclarativeMeta):
     @staticmethod
@@ -217,14 +226,9 @@ class Meta(DeclarativeMeta):
         if not "EntityObject" in [bscls.__name__ for bscls in bases]:
             return name
 
-        if "_" in name:
-            raise EntityDefinitionError("Entity class must not contain an underscore")
-
-        # create hash from sorted parameter_types
         parameter_types = attrs["parameter_types"]
-        the_hash = hash_dict(parameter_types)
+        return calculate_polymorphic_name(name, parameter_types)
 
-        return name + "_" + the_hash
 
     def __new__(cls, name, bases, attrs):
         name = cls._calculate_polymorphic_name(name, bases, attrs)
@@ -246,13 +250,49 @@ class Meta(DeclarativeMeta):
         
         return super(Meta, cls).__init__(name, bases, attrs)
 
+import collections
+class _StrParams(collections.MutableMapping):
+    """Association dict for stringified parameters."""
+    def __init__(self, owning):
+        self.owning = owning
+
+    def __getitem__(self, key):
+        val = self.owning._parameterdict[key].value_string
+        return val
+
+    def __setitem__(self, key, val):
+        # TODO: Make more consistent
+        parameter_type = self.owning.parameter_types[key]
+        typed_val = strToType(val, parameter_type)
+        self.owning.param[key] = typed_val
+
+    def __repr__(self):
+        dictrepr = dict((k, v.value_string) for k, v in self.owning._parameterdict.iteritems()).__repr__()
+        return dictrepr
+
+    def __len__(self):
+        return len(self.owning.param)
+
+    def __delitem__(self, key):
+        del self.owning.param[key]
+
+    def __iter__(self):
+        return iter(self.owning.param)
 
 class EntityObject(Entity):
     __metaclass__ = Meta
     
     def __init__(self, _uuid=None, **kwargs):
-        self._uuid = _uuid
+        # if we received an _uuid, check that it is valid
+        self._uuid = _uuid and str(py_uuid.UUID(_uuid))
         self._set_items_from_arguments(kwargs)
+
+    @property
+    def str_param(self):
+        # Make str_param available also if we did never go through __init__
+        if not hasattr(self, '_str_param'):
+            self._str_param = _StrParams(self)
+        return self._str_param
 
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items""" 
@@ -274,8 +314,26 @@ class EntityObject(Entity):
 
 
 def create_entity(name, parameters):
-    """Creates a dynamic subclass of EntityObject."""
+    """Creates a dynamic subclass of EntityObject.
+    
+    MyEntity = create_entity("MyEntity", {"name": "string"})
+
+    is equivalent to
+
+    class MyEntity(EntityObject):
+        parameter_types = {"name": "string"}
+
+    """
     return type(name, (EntityObject,), {'parameter_types': parameters})
+
+def calculate_polymorphic_name(name, params):
+    if "_" in name:
+        raise EntityDefinitionError("Entity class must not contain an underscore")
+    
+    # create hash from sorted parameter_types
+    the_hash = hash_dict(params)
+
+    return name + "_" + the_hash
 
 
 class Context(Base):
