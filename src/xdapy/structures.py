@@ -59,7 +59,6 @@ class Data(Base):
     data = synonym('_data', descriptor=data)
     
     
-    
     _length = Column('length', Integer)
     
     @synonym_for('_length')
@@ -109,6 +108,7 @@ class Entity(Base):
     _type = Column('type', String(60)) # TODO: type is never set on fresh entities
     _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
      
+    @synonym_for("_uuid")
     @property
     def uuid(self):
         return self._uuid
@@ -281,6 +281,7 @@ class _StrParams(collections.MutableMapping):
         return iter(self.owning.param)
 
 class EntityObject(Entity):
+    """EntityObject is the base class for all entity object definitions."""
     __metaclass__ = Meta
     
     def __init__(self, _uuid=None, **kwargs):

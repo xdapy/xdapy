@@ -33,10 +33,7 @@ class Session(EntityObject):
 objects = EntityObject.__subclasses__()
 m.register(*objects)
 xmlio = XmlIO(m, objects)
-xmlio.read_file("xml.xml")
-import pdb
-#pdb.set_trace()
-
+xmlio.read_file("demo/xml.xml")
 
 with m.auto_session as session:
     e = Experiment()

@@ -254,9 +254,6 @@ class XmlIO(IO):
 
 
     def write_entity(self, elem, types):
-        import pdb
-        pdb.set_trace()
-
         entity = ET.Element("entity")
         types.add(elem.__class__)
 
