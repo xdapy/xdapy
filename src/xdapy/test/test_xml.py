@@ -57,7 +57,7 @@ class TestXml(unittest.TestCase):
 
     test_xml = """<?xml version="1.0" ?>
     <xdapy><values>
-    	<entity id="1" type="Experiment" parent="None">
+    	<entity id="1" type="Experiment">
     		<data encoding="base64" name="hlkk">
     			bGtqbGtqa2wjw6Rqa2xqeXNkc2E=
     		</data>
@@ -69,28 +69,30 @@ class TestXml(unittest.TestCase):
     			<parameter name="name" type="string" value="Max Mustermann"/>
     		</entity>
     	</entity>
-    	<entity id="2" type="Session" parent="None">
-    		<context note="Some Context" relates="1"/>
+    	<entity id="2" type="Session">
     		<parameter name="date" type="date" value="2010-12-21"/>
     	</entity>
-    	<entity id="3" type="Experiment" parent="None">
+    	<entity id="3" type="Experiment">
     		<parameter name="project" type="string" value="PPP1"/>
     		<parameter name="experimenter" type="string" value="John Doe"/>
     	</entity>
-    	<entity id="5" type="Observer" parent="None">
+    	<entity id="5" type="Observer">
     		<parameter name="age" type="integer" value="38"/>
     		<parameter name="handedness" type="string" value="left"/>
     		<parameter name="name" type="string" value="Susanne Sorgenfrei"/>
     	</entity>
-    	<entity id="6" type="Observer" parent="None">
+    	<entity id="6" type="Observer">
     		<parameter name="age" type="integer" value="40"/>
     		<parameter name="handedness" type="string" value="left"/>
     		<parameter name="name" type="string" value="Susi Sorgen"/>
     	</entity>
-    	<entity id="7" type="Session" parent="None">
+    	<entity id="7" type="Session">
     		<parameter name="date" type="date" value="2010-12-21"/>
     	</entity>
     </values>
+    <relations>
+        <context name="Some Context" from="id:1" to="id:5" />
+    </relations>
     </xdapy>"""
     
     def setUp(self):
@@ -103,12 +105,13 @@ class TestXml(unittest.TestCase):
     def tearDown(self):
         pass
     
-#    def testXml(self):
-#        objects = EntityObject.__subclasses__()
-#        xmlio = XmlIO(self.mapper, objects)
-#        xmlio.read_file("xml.xml")
-#        vals = self.mapper.fromXML(TestXml.test_xml)
-#        assert len(vals) == 6
+    def testXml(self):
+        xmlio = XmlIO(self.mapper, objects)
+        xmlio.read(self.test_xml)
+        objs = self.mapper.find_all(EntityObject)
+        roots = self.mapper.find_roots()
+        self.assertEqual(len(objs), 7)
+        self.assertEqual(len(roots), 6)
 
     def test_bad_uuid(self):
         test_xml = wrap_xml_values("""<entity id="1" type="Experiment" uuid="2" />""")
