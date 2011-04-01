@@ -160,11 +160,9 @@ class XmlIO(IO):
 
     def parse_entity(self, entity, ref_ids):
         type = entity.attrib["type"]
-        if "uuid" in entity.attrib:
-            uuid = entity.attrib["uuid"]
-            new_entity = self.entity_by_name(type, _uuid=uuid)
-        else:
-            new_entity = self.entity_by_name(type)
+        
+        uuid = entity.attrib.get("uuid") # _uuid defaults to None
+        new_entity = self.entity_by_name(type, _uuid=uuid)
 
         if new_entity is None:
             return new_entity
@@ -206,7 +204,7 @@ class XmlIO(IO):
 
     def parse_data(self, data):
         name = data.attrib["name"]
-        mimetype = data.attrib["mimetype"]
+        mimetype = data.attrib.get("mimetype") # it is not bad, if mimetype is not given
         try:
             encoding = data.attrib["encoding"]
         except KeyError:
