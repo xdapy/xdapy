@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
-from xdapy.errors import AmbiguousObjectError
+from xdapy.errors import AmbiguousObjectError, InvalidXMLError
 from xdapy.io import XmlIO, UnregisteredTypesError
 from xdapy.structures import EntityObject
 import unittest
@@ -177,6 +177,14 @@ class TestXml(unittest.TestCase):
         xmlio = XmlIO(self.mapper)
         self.assertRaises(UnregisteredTypesError, xmlio.read, test_xml)
 
+    def test_invalid_type_entity(self):
+        test_xml = """<xdapy><types>
+            <entty name="Experiment">
+                <parameter name="project" type="strong" />
+            </entty>
+        </types></xdapy>"""
+        xmlio = XmlIO(self.mapper)
+        self.assertRaises(InvalidXMLError, xmlio.read, test_xml)
 
 if __name__ == '__main__':
     unittest.main()

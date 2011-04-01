@@ -62,3 +62,7 @@ class DataInconsistencyError(Error):
     """Raised whenever something is fatal with the data."""
     pass
 
+class InvalidXMLError(Error):
+    """Raised when XML is malformed."""
+    pass
+

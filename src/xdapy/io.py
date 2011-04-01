@@ -11,14 +11,10 @@ class UnregisteredTypesError:
         self.types = types
 
 
-class InvalidXML:
-    pass
-
 from xml.etree import ElementTree as ET
 
 from xdapy.structures import Context, Data, calculate_polymorphic_name
-from xdapy.errors import StringConversionError, AmbiguousObjectError
-from xdapy.parameters import strToType
+from xdapy.errors import AmbiguousObjectError, InvalidXMLError
 
 
 class BinaryEncoder(object):
@@ -105,7 +101,7 @@ class XmlIO(IO):
 
     def filter(self, root):
         if root.tag != "xdapy":
-            raise InvalidXML
+            raise InvalidXMLError("Tag {0} does not belong here".format(root.tag))
 
         for e in root:
             if e.tag == "types":
@@ -115,7 +111,6 @@ class XmlIO(IO):
         for e in root:
             if e.tag == "values":
                 self.filter_values(e, references)
-        print references
 
         for e in root:
             if e.tag == "relations":
@@ -134,7 +129,7 @@ class XmlIO(IO):
         not_found = []
         for entity in e:
             if not entity.tag == "entity":
-                pass
+                raise InvalidXMLError("Tag {0} does not belong here".format(entity.tag))
             try:
                 type, params, key = self.parse_entity_type(entity)
 
@@ -210,7 +205,7 @@ class XmlIO(IO):
             # add id attribute to ref_ids
             id = "id:" + entity.attrib["id"]
             if id in ref_ids:
-                raise InvalidXML
+                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             print new_entity
             ref_ids[id] = new_entity
 
@@ -218,7 +213,7 @@ class XmlIO(IO):
             # add id attribute to ref_ids
             id = "uuid:" + entity.attrib["uuid"]
             if id in ref_ids:
-                raise InvalidXML
+                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             print new_entity
             ref_ids[id] = new_entity
 
