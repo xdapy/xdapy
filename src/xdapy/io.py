@@ -5,10 +5,11 @@
 
 __authors__ = ['"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
-class ParsingError:
-    def __init__(self, msg, type, params):
-        self.type = type
-        self.params = params
+class UnregisteredTypesError:
+    """Raised when there are types in the XML file which have not been imported / registered with mapper"""
+    def __init__(self, msg, *types):
+        self.types = types
+
 
 class InvalidXML:
     pass
@@ -16,7 +17,7 @@ class InvalidXML:
 from xml.etree import ElementTree as ET
 
 from xdapy.structures import Context, Data, calculate_polymorphic_name
-from xdapy.errors import StringConversionError
+from xdapy.errors import StringConversionError, AmbiguousObjectError
 from xdapy.parameters import strToType
 
 
@@ -70,11 +71,28 @@ class JsonIO(IO):
     pass
 
 class XmlIO(IO):
-    def __init__(self, mapper, known_objects):
+    def __init__(self, mapper, known_objects=None):
+        """If known_objects is None (or left empty), it defaults to mapper.registered_objects.
+        This is most likely the right thing and supplying other objects might lead to inconsistencies.
+
+        An empty dict means there are no known_objects.
+
+        For debugging reasons, it could be useful, though."""
+
         self.mapper = mapper
-        self.known_objects = {}
-        for obj in known_objects:
-            self.known_objects[obj.__name__] = obj
+
+        if known_objects is not None:
+            self._known_objects = {}
+            for obj in known_objects:
+                self.known_objects[obj.__name__] = obj
+        else:
+            self._known_objects = None
+
+    @property
+    def known_objects(self):
+        if self._known_objects is None:
+            return dict((obj.__name__, obj) for obj in self.mapper.registered_objects)
+        return self._known_objects
 
     def read(self, xml):
         root = ET.fromstring(xml)
@@ -91,7 +109,7 @@ class XmlIO(IO):
 
         for e in root:
             if e.tag == "types":
-                self.filter_types(e)
+                self.filter_types(e) # The filter_types is currently only for validation
 
         references = {}
         for e in root:
@@ -112,24 +130,33 @@ class XmlIO(IO):
             references[from_id].connect(name, references[to_id])
 
     def filter_types(self, e):
-        types = []
+        types = {}
         not_found = []
         for entity in e:
             if not entity.tag == "entity":
                 pass
             try:
-                types.append(self.parse_entity_type(entity))
-            except ParsingError as p:
-                not_found.append(p)
+                type, params, key = self.parse_entity_type(entity)
+
+                if type in types:
+                    if types[type]["key"] == key:
+                        pass
+                    else:
+                        raise AmbiguousObjectError("Type with name {0} has already been declared".format(type))
+                else:
+                    types[type] = {"key": key, "params": params}
+            except UnregisteredTypesError as err:
+                not_found += err.types
 
         if not_found:
-            print """The following objects were declared in the XML file but never imported."""
+            print """The following objects were declared in the XML file but never imported:"""
         for nf in not_found:
             print """class {name}(EntityObject):
     parameter_types = {types!r}
-""".format(name=nf.type, types=nf.params)
-            
-        print types
+""".format(name=nf[0], types=nf[1])
+
+        if not_found:
+            raise UnregisteredTypesError("Types in XML not defined", not_found)
 
     def parse_entity_type(self, entity):
         type = entity.attrib["name"]
@@ -138,10 +165,11 @@ class XmlIO(IO):
             if sub.tag == "parameter":
                 key, val = self.parse_parameter_type(sub)
                 params[key] = val
-        if calculate_polymorphic_name(type, params) in self.known_objects:
-            return type, params
+        polymorphic_name = calculate_polymorphic_name(type, params)
+        if polymorphic_name in self.known_objects:
+            return type, params, polymorphic_name
         else:
-            raise ParsingError("Object not found", type, params)
+            raise UnregisteredTypesError("Object not found", (type, params))
 
     def parse_parameter_type(self, parameter):
         name = parameter.attrib["name"]

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
-from xdapy.io import XmlIO
+from xdapy.errors import AmbiguousObjectError
+from xdapy.io import XmlIO, UnregisteredTypesError
 from xdapy.structures import EntityObject
 import unittest
 
@@ -106,7 +107,7 @@ class TestXml(unittest.TestCase):
         pass
     
     def testXml(self):
-        xmlio = XmlIO(self.mapper, objects)
+        xmlio = XmlIO(self.mapper)
         xmlio.read(self.test_xml)
         objs = self.mapper.find_all(EntityObject)
         roots = self.mapper.find_roots()
@@ -115,8 +116,67 @@ class TestXml(unittest.TestCase):
 
     def test_bad_uuid(self):
         test_xml = wrap_xml_values("""<entity id="1" type="Experiment" uuid="2" />""")
-        xmlio = XmlIO(self.mapper, objects)
+        xmlio = XmlIO(self.mapper)
         self.assertRaises(ValueError, xmlio.read, test_xml)
+
+    def test_undefined_type(self):
+        test_xml = """<xdapy><types>
+            <entity name="Experiment" />
+        </types></xdapy>"""
+        xmlio = XmlIO(self.mapper)
+        self.assertRaises(UnregisteredTypesError, xmlio.read, test_xml)
+
+    def test_type_name_twice(self):
+        class Experiment(EntityObject):
+            parameter_types = {"project": "string"}
+
+        test_xml = """<xdapy><types>
+            <entity name="Experiment">
+                <parameter name="project" type="string"/>
+                <parameter name="experimenter" type="string"/>
+            </entity>
+            <entity name="Experiment">
+                <parameter name="project" type="string"/>
+            </entity>
+        </types></xdapy>"""
+        objects = self.mapper.registered_objects
+        objects.append(Experiment)
+        xmlio = XmlIO(self.mapper, objects)
+        self.assertRaises(AmbiguousObjectError, xmlio.read, test_xml)
+
+
+    def test_same_type_defined_twice(self):
+        test_xml = """<xdapy><types>
+            <entity name="Experiment">
+                <parameter name="project" type="string"/>
+                <parameter name="experimenter" type="string"/>
+            </entity>
+            <entity name="Experiment">
+                <parameter name="project" type="string"/>
+                <parameter name="experimenter" type="string"/>
+            </entity>
+        </types></xdapy>"""
+        xmlio = XmlIO(self.mapper)
+        xmlio.read(test_xml)
+
+    def test_wrong_parameter(self):
+        test_xml = """<xdapy><types>
+            <entity name="Experiment">
+                <parameter name="s" type="string" />
+            </entity>
+        </types></xdapy>"""
+        xmlio = XmlIO(self.mapper)
+        self.assertRaises(UnregisteredTypesError, xmlio.read, test_xml)
+
+    def test_wrong_parameter_type(self):
+        test_xml = """<xdapy><types>
+            <entity name="Experiment">
+                <parameter name="project" type="strong" />
+            </entity>
+        </types></xdapy>"""
+        xmlio = XmlIO(self.mapper)
+        self.assertRaises(UnregisteredTypesError, xmlio.read, test_xml)
+
 
 if __name__ == '__main__':
     unittest.main()
