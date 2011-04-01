@@ -18,7 +18,8 @@ import uuid as py_uuid
 
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.orm import relationship, backref, validates, synonym, Session
+from sqlalchemy.orm import relationship, backref, validates, synonym
+from sqlalchemy.orm.session import Session
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
