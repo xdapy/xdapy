@@ -181,7 +181,7 @@ class XmlIO(IO):
         if "id" in entity.attrib:
             # add id attribute to ref_ids
             id = "id:" + entity.attrib["id"]
-            if id in ref_ids.keys():
+            if id in ref_ids:
                 raise InvalidXML
             print new_entity
             ref_ids[id] = new_entity
@@ -189,7 +189,7 @@ class XmlIO(IO):
         if "uuid" in entity.attrib:
             # add id attribute to ref_ids
             id = "uuid:" + entity.attrib["uuid"]
-            if id in ref_ids.keys():
+            if id in ref_ids:
                 raise InvalidXML
             print new_entity
             ref_ids[id] = new_entity

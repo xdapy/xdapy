@@ -268,7 +268,7 @@ class Mapper(object):
         klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
         if name in klasses:
             return klasses[name](**kwargs)
-        klasses_guessed = [cls for cls in klasses.keys() if cls.startswith(name)]
+        klasses_guessed = [cls for cls in klasses if cls.startswith(name)]
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]](**kwargs)
 
