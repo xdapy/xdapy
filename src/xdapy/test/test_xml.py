@@ -4,16 +4,10 @@ from xdapy import Connection, Mapper
 from xdapy.errors import AmbiguousObjectError, InvalidXMLError
 from xdapy.io import XmlIO, UnregisteredTypesError
 from xdapy.structures import EntityObject
+from xdapy.utils.decorators import autoappend
 import unittest
 
 objects = []
-
-def autoappend(a_list):
-    """Decorator which automatically appends the decorated class or method to a_list."""
-    def wrapper(obj):
-        a_list.append(obj)
-        return obj
-    return wrapper
 
 @autoappend(objects)
 class Experiment(EntityObject):
