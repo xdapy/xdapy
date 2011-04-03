@@ -116,7 +116,7 @@ class Mapper(object):
                     filter = {}
                 f = {}
                 # filter comes second, so we assume it has higher priority
-                f.update(entity.param)
+                f.update(entity.params)
                 f.update(filter)
                 filter = f
                 entity = entity.__class__
@@ -195,7 +195,7 @@ class Mapper(object):
                     for param in items[rel.__class__]:
                         if not rel.__class__.__name__ in row:
                             row[rel.__class__.__name__] = {}
-                        row[rel.__class__.__name__][param] = rel.param[param]
+                        row[rel.__class__.__name__][param] = rel.params[param]
                 if row and row not in matrix:
                     matrix.append(row)
 

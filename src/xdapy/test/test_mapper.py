@@ -79,12 +79,12 @@ class TestMapper(Setup):
         
         exp = Experiment(project='MyProject', experimenter="John Doe")
         def assignment():
-            exp.param['parameter'] = 'new'
+            exp.params['parameter'] = 'new'
         self.assertRaises(KeyError, assignment)
         
         exp = Experiment(project='MyProject', experimenter="John Doe")
         def assignment2():
-            exp.param['perimenter'] = 'new'
+            exp.params['perimenter'] = 'new'
         self.assertRaises(KeyError, assignment2)
     
         exp = Experiment(project='MyProject', experimenter="John Doe")

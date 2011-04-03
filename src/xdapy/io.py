@@ -194,7 +194,7 @@ class XmlIO(IO):
             if sub.tag == "parameter":
                 name, value = self.parse_parameter(sub)
                 if value is not None:
-                    new_entity.str_param[name] = value
+                    new_entity.str_params[name] = value
             if sub.tag == "entity":
                 new_entity.children.append(self.parse_entity(sub, ref_ids))
             if sub.tag == "data":
@@ -282,7 +282,7 @@ class XmlIO(IO):
 
         for k, v in elem._attributes().iteritems():
             entity.attrib[k] = unicode(v)
-        for name, value in elem.str_param.iteritems():
+        for name, value in elem.str_params.iteritems():
             parameter = ET.Element("parameter")
             parameter.attrib["name"] = name
             parameter.attrib["value"] = value

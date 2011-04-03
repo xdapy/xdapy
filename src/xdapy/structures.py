@@ -203,7 +203,7 @@ class Entity(Base):
     def to_json(self, full=False):
         json = self._attributes()
         if full:
-            json["param"] = self.param.copy()
+            json["param"] = self.params.copy()
             data = []
             for d in self._datadict.values():
                 data.append({'id': d.id,
@@ -246,7 +246,7 @@ class Meta(DeclarativeMeta):
             ParameterType = ParameterMap[cls.parameter_types[k]]
             return ParameterType(name=k, value=v)
 
-        cls.param = association_proxy('_params', 'value', creator=_saveParam)
+        cls.params = association_proxy('_params', 'value', creator=_saveParam)
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
         
         return super(Meta, cls).__init__(name, bases, attrs)
@@ -265,20 +265,20 @@ class _StrParams(collections.MutableMapping):
         # TODO: Make more consistent
         parameter_type = self.owning.parameter_types[key]
         typed_val = strToType(val, parameter_type)
-        self.owning.param[key] = typed_val
+        self.owning.params[key] = typed_val
 
     def __repr__(self):
         dictrepr = dict((k, v.value_string) for k, v in self.owning._params.iteritems()).__repr__()
         return dictrepr
 
     def __len__(self):
-        return len(self.owning.param)
+        return len(self.owning.params)
 
     def __delitem__(self, key):
         del self.owning.param[key]
 
     def __iter__(self):
-        return iter(self.owning.param)
+        return iter(self.owning.params)
 
 class EntityObject(Entity):
     """EntityObject is the base class for all entity object definitions."""
@@ -290,17 +290,17 @@ class EntityObject(Entity):
         self._set_items_from_arguments(kwargs)
 
     @property
-    def str_param(self):
+    def str_params(self):
         # Make str_param available also if we did never go through __init__
-        if not hasattr(self, '_str_param'):
-            self._str_param = _StrParams(self)
-        return self._str_param
+        if not hasattr(self, '_str_params'):
+            self._str_params = _StrParams(self)
+        return self._str_params
 
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items""" 
         for n, v in d.iteritems():
             if v:
-                self.param[n] = v
+                self.params[n] = v
 
     def to_json(self, full=False):
         return super(EntityObject, self).to_json(full)
@@ -310,7 +310,7 @@ class EntityObject(Entity):
 
     def __str__(self):
         import itertools
-        items  = itertools.chain([('id', self.id)], self.param.iteritems())
+        items  = itertools.chain([('id', self.id)], self.params.iteritems())
         params = ", ".join(["{0!s}={1!r}".format(key, val) for key, val in items])
         return "{cls}({params})".format(cls=self.__class__.__name__, params=params)
 
