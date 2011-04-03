@@ -31,10 +31,14 @@ class AutoSession(object):
             self.session.commit()
 
 class Connection(object):
-    def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None, uri=None, **kwargs):
-        if "profile" in kwargs:
-            raise ConfigurationError("The profile parameter is not supported. \n"\
-                                     "Please use the Connection.profile() classmethod.")
+    def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
+                       uri=None, echo=False, session_opts=None, engine_opts=None):
+        """Initialises a Connection object which holds all parameters to create engines and sessions.
+
+        Additional options for the sessionmaker or create_engine may be passed as a dict
+        in session_opts and engine_opts.
+        """
+
         if uri:
             if host or dialect or user or password:
                 raise ConfigurationError("If uri is given neither of host, dialect, user or password may be specified")
@@ -52,11 +56,14 @@ class Connection(object):
             uri = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
         self.uri = uri
 
-        session_opts = kwargs.get("session", {})
-        self._engine_opts = kwargs.get("engine", {})
-        if "echo" in kwargs:
-            self._engine_opts["echo"] = kwargs["echo"]
+        if session_opts is None:
+            session_opts = {}
 
+        if engine_opts is None:
+            engine_opts = {}
+
+        self._engine_opts = engine_opts
+        self._engine_opts["echo"] = echo
 
         self.Session = scoped_session(sessionmaker(autocommit=True, **session_opts))
         self._engine = None

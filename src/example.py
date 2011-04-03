@@ -2,7 +2,7 @@
 
 from xdapy import Connection, Mapper
 
-connection = Connection(profile="test") # use standard profile
+connection = Connection.profile("test") # use standard profile
 m = Mapper(connection)
 m.create_tables(overwrite=True)
 
@@ -15,7 +15,7 @@ m.register(Session)
 
 
 
-f = open("xml.xml")
+f = open("demo/xml.xml")
 xml = f.read()
 m.typesFromXML(xml)
 
