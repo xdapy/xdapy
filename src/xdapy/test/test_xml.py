@@ -104,7 +104,8 @@ class TestXml(unittest.TestCase):
         self.mapper.register(*objects)
 
     def tearDown(self):
-        pass
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
     
     def testXml(self):
         xmlio = XmlIO(self.mapper)

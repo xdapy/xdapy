@@ -141,6 +141,8 @@ class TestParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         base.metadata.drop_all(self.engine)
 
@@ -178,6 +180,8 @@ class TestStringParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
     def testValidInput(self):
@@ -256,6 +260,8 @@ class TestIntegerParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
         
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
     def testValidInput(self):
@@ -291,6 +297,8 @@ class TestFloatParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
     def testValidInput(self):
@@ -330,6 +338,8 @@ class TestDateParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
     def testValidInput(self):
@@ -363,6 +373,8 @@ class TestTimeParameter(unittest.TestCase):
         self.session = Settings.Session(bind=self.connection)
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
     def testValidInput(self):
@@ -396,6 +408,8 @@ class TestInheritance(unittest.TestCase):
         self.session = self.Session()
 
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
         
         #Change DB engines to transactional (BDB or InnoDB).
@@ -485,6 +499,8 @@ class TestEntity(unittest.TestCase):
         self.session = Session()
         
     def tearDown(self):         
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
 
     def testValidInput(self):
@@ -626,7 +642,9 @@ class TestParameterOption(unittest.TestCase):
 
         self.session = Settings.Session(bind=self.connection)
 
-    def tearDown(self):         
+    def tearDown(self):
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
         self.session.close()         
 
     def testValidInput(self):

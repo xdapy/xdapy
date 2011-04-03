@@ -75,7 +75,7 @@ class TestObjectDict(unittest.TestCase):
         self.assertRaises(TypeError, dic.data, [])
         dic.data = {'newkey':'newvalue'}
         self.assertEqual(dic.get_concurrent(), False)
-        
+
 if __name__ == "__main__":
     unittest.main()    
 #===============================================================================

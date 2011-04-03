@@ -44,14 +44,15 @@ class Trial(EntityObject):
 
 class Setup(unittest.TestCase):
     def setUp(self):
-        db = Connection.test()
-        self.m = Mapper(db)
+        self.connection = Connection.test()
+        self.m = Mapper(self.connection)
         self.m.create_tables(overwrite=True)
         
         self.m.register(Observer, Experiment, Trial)
         
     def tearDown(self):
-        pass
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
 
 class TestMapper(Setup):
         

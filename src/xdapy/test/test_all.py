@@ -130,7 +130,8 @@ class Test(unittest.TestCase):
 
         
     def tearDown(self):
-        pass
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
        
     def testReturn(self):
         self.assertEqual(self.mapper.find_first(Observer(name="Susanne Sorgenfrei")).children, [self.s8, self.s9, self.s10])

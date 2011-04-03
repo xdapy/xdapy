@@ -14,7 +14,8 @@ class TestParameter(unittest.TestCase):
         mapper.create_tables(overwrite=True)
 
     def tearDown(self):         
-        pass
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
     
     def test_parameters(self):
         from datetime import datetime, date, time
