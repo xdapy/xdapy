@@ -88,17 +88,17 @@ def require(arg_name, *allowed_types):
 
     return make_wrapper
 
-@require("x", int, float)
-@require("y", float)
-def foo(x, y):
-    return x + y
-
-@accepts(int, (int, float))
-@returns((int, float))
-def func(arg1, arg2):
-    return arg1 * arg2
-
 if __name__ == '__main__':
+    @require("x", int, float)
+    @require("y", float)
+    def foo(x, y):
+        return x + y
+
+    @accepts(int, (int, float))
+    @returns((int, float))
+    def func(arg1, arg2):
+        return arg1 * arg2
+
     print foo(1, 2.5)      # Prints 3.5.
     print foo(2.0, 2.5)    # Prints 4.5.
     #print foo("asdf", 2.5) # Raises TypeError exception.
