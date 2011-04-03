@@ -199,7 +199,7 @@ class XmlIO(IO):
                 new_entity.children.append(self.parse_entity(sub, ref_ids))
             if sub.tag == "data":
                 name, value = self.parse_data(sub)
-                new_entity._datadict[name] = value
+                new_entity._data[name] = value
 
         if "id" in entity.attrib:
             # add id attribute to ref_ids
@@ -289,7 +289,7 @@ class XmlIO(IO):
             entity.append(parameter)
         for child in elem.children:
             entity.append(self.write_entity(child, types))
-        for name, value in elem._datadict.iteritems():
+        for name, value in elem._data.iteritems():
             data = ET.Element("data")
             data.attrib["name"] = name
             data.attrib["mimetype"] = value.mimetype

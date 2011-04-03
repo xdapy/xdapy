@@ -103,7 +103,7 @@ class Mapper(object):
                         or_clause.append(ParameterType.value.like(v))
                     else:
                         or_clause.append(ParameterType.value == v)
-                return entity._parameterdict.of_type(ParameterType).any(or_(*or_clause))
+                return entity._params.of_type(ParameterType).any(or_(*or_clause))
 
             and_clause.append(makeParam(key, value))
         return and_(*and_clause)

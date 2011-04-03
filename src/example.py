@@ -78,13 +78,13 @@ print "---"
 experiments = m.find_all(Experiment)
 
 for num, experiment in enumerate(experiments):
-    print experiment._parameterdict
+    print experiment._params
 #        experiment.param["countme"] = num
     experiment.param["project"] = "PPP" + str(num)
 
 experiments = m.find_all(Experiment(project="PPP1"))
 for num, experiment in enumerate(experiments):
-    print experiment._parameterdict
+    print experiment._params
     
 e1.data = {"hlkk": "lkjlkjkl#√§jkljysdsa"}
 

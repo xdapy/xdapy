@@ -75,7 +75,7 @@ class TestObjectDict(unittest.TestCase):
 
         # exp is not actually modified itself (only the param is)
         # but the parameter is considered dirty
-        self.assertTrue(exp._parameterdict['project'] in self.m.session.dirty)
+        self.assertTrue(exp._params['project'] in self.m.session.dirty)
         self.assertFalse(self.m.session.is_modified(exp))
 
         self.assertEqual(exp.param['project'], "PP")
@@ -83,7 +83,7 @@ class TestObjectDict(unittest.TestCase):
         self.m.save(exp)
 
         # Everything is clean again
-        self.assertFalse(exp._parameterdict['project'] in self.m.session.dirty)
+        self.assertFalse(exp._params['project'] in self.m.session.dirty)
         self.assertFalse(exp in self.m.session.dirty)
 
         self.assertEqual(exp.param['project'], "PP")

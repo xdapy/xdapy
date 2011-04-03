@@ -149,15 +149,15 @@ class Entity(Base):
     __table_args__ = {'mysql_engine':'InnoDB'}
     __mapper_args__ = {'polymorphic_on':_type}
     
-    _parameterdict = relationship(Parameter,
+    _params = relationship(Parameter,
         collection_class=column_mapped_collection(Parameter.name), # FIXME ???
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
-    _datadict = relationship(Data,
+    _data = relationship(Data,
         collection_class=column_mapped_collection(Data.name),
         cascade="save-update, merge, delete")
-    data = association_proxy('_datadict', 'data', creator=Data)
+    data = association_proxy('_data', 'data', creator=Data)
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""
@@ -246,7 +246,7 @@ class Meta(DeclarativeMeta):
             ParameterType = ParameterMap[cls.parameter_types[k]]
             return ParameterType(name=k, value=v)
 
-        cls.param = association_proxy('_parameterdict', 'value', creator=_saveParam)
+        cls.param = association_proxy('_params', 'value', creator=_saveParam)
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
         
         return super(Meta, cls).__init__(name, bases, attrs)
@@ -258,7 +258,7 @@ class _StrParams(collections.MutableMapping):
         self.owning = owning
 
     def __getitem__(self, key):
-        val = self.owning._parameterdict[key].value_string
+        val = self.owning._params[key].value_string
         return val
 
     def __setitem__(self, key, val):
@@ -268,7 +268,7 @@ class _StrParams(collections.MutableMapping):
         self.owning.param[key] = typed_val
 
     def __repr__(self):
-        dictrepr = dict((k, v.value_string) for k, v in self.owning._parameterdict.iteritems()).__repr__()
+        dictrepr = dict((k, v.value_string) for k, v in self.owning._params.iteritems()).__repr__()
         return dictrepr
 
     def __len__(self):
