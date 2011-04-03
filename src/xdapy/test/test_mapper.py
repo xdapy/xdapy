@@ -2,13 +2,10 @@
 
 Created on Jun 17, 2009
 """
-from sqlalchemy.exceptions import IntegrityError, CircularDependencyError
+from sqlalchemy.exceptions import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
-from xdapy.errors import InsertionError, SelectionError, ContextError
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject, Context
-from xdapy.utils.algorithms import listequal
-from xdapy.structures import ParameterOption
 import unittest
 """
 TODO: Real test for create_tables
@@ -86,9 +83,9 @@ class TestMapper(Setup):
         self.assertRaises(KeyError, assignment)
         
         exp = Experiment(project='MyProject', experimenter="John Doe")
-        def assignment():
+        def assignment2():
             exp.param['perimenter'] = 'new'
-        self.assertRaises(KeyError, assignment)
+        self.assertRaises(KeyError, assignment2)
     
         exp = Experiment(project='MyProject', experimenter="John Doe")
         exp.data['somedata'] = """[0, 1, 2, 3]"""

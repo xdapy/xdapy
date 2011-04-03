@@ -40,16 +40,6 @@ class InsertionError(Error):
     """
     pass
 
-class ContextError(Error):
-    """Raised when the context of an object can not be determined. 
-    """
-    pass
-
-class ContextWarning(Warning):
-    """Raised when the context of an object is ambiguous. 
-    """
-    pass
-
 class StringConversionError(Error):
     """Raised when a value can’t be generated from string."""
     pass
