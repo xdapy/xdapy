@@ -4,7 +4,7 @@ from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
 
 connection = Connection.profile("test") # use standard profile
-connection_2 = Connection() # use standard profile
+connection_2 = Connection.default() # use standard profile
 m = Mapper(connection)
 m_2 = Mapper(connection_2)
 
@@ -95,8 +95,8 @@ def migrate(old_mapper, new_mapper, mapping):
             raise DataInconsistencyError("UUID in mapper {0} is not unique".format(new_mapper))
 
         # copy params
-        for k,v in obj.param.iteritems():
-            new_obj.param[k] = v
+        for k,v in obj.params.iteritems():
+            new_obj.params[k] = v
 
         # copy data
         new_obj.data = obj.data

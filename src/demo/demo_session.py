@@ -60,7 +60,7 @@ e1 = Experiment(project="My Project", experimenter="John Do")
 m.save(e1)
 
 e2 = Experiment()
-e2.param["project"] = "My other project"
+e2.params["project"] = "My other project"
 
 t1 = Trial()
 t1.belongs_to(e1) # t1.parent = e1
