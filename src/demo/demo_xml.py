@@ -7,7 +7,8 @@ from xdapy.io import XmlIO
 
 from xdapy import Connection, Mapper
 
-connection = Connection(profile="test") # use standard profile
+connection = Connection.test() # use standard profile
+#connection = Connection(dbname="xdapy")
 m = Mapper(connection)
 
 # drop the old database structure

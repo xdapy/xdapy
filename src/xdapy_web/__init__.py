@@ -183,7 +183,7 @@ if __name__ == "__main__":
     from xdapy import Connection
     from xdapy import Mapper
 
-    connection = Connection(profile=args.database) # use standard profile
+    connection = Connection.profile(args.database) # use standard profile
     mapper = Mapper(connection)
 
     urls = (

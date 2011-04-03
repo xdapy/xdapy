@@ -3,7 +3,7 @@
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
 
-connection = Connection(profile="test") # use standard profile
+connection = Connection.profile("test") # use standard profile
 m = Mapper(connection)
 
 # drop the old database structure

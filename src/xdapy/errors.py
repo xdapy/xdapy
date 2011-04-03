@@ -56,3 +56,6 @@ class InvalidXMLError(Error):
     """Raised when XML is malformed."""
     pass
 
+class ConfigurationError(Error):
+    """Raised when there is something wrong with the configuration."""
+    pass
