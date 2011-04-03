@@ -100,6 +100,17 @@ class TestMapper(Setup):
         o1 = Observer(name="Maxime Mustermann", handedness="right", age=26)
         o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
         self.m.save(e, o1, o2)
+
+        self.assertEqual(len(self.m.find_all(Experiment)), 2)
+        self.assertEqual(len(self.m.find_all(Observer)), 2)
+        self.assertEqual(len(self.m.find_all(EntityObject)), 4)
+        self.assertEqual(len(self.m.find_all(Trial)), 0)
+
+        obs = self.m.find_all(Observer)
+        self.m.delete(*obs)
+        self.m.delete(e)
+        self.assertEqual(len(self.m.find_all(EntityObject)), 1)
+
         
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
