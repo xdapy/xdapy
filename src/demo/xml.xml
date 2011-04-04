@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xdapy>
-  <types>
+  <types><!-- Hier folgen alle Typ-Definitionen, die wir zur Validierung brauchen. -->
     <entity name="Trial">
       <parameter name="count" type="string"/>
       <parameter name="note" type="string"/>
@@ -58,13 +58,13 @@
     </entity>
   </types>
 
-  <values>
-    <entity type="Observer" name="observer 1" id="1">
-      <parameter name="birthday">2011-01-01</parameter>
-      <parameter name="glasses">True</parameter>
+  <values><!-- Jetzt die Entity-Daten -->
+    <entity type="Observer" name="observer 1" id="1"> <!-- id ist xml-Datei intern und kann beliebig, aber eindeutig sein -->
+      <parameter name="birthday">2011-01-01</parameter> <!-- value kann entweder zwischen die parameter eingefügt werden oder als spezieller value= Wert -->
+      <parameter name="glasses">True</parameter> 
       <parameter name="handedness">LEFT</parameter>
       <parameter name="initials" />
-      <data name="data 1" mimetype="none">
+      <data name="data 1" mimetype="none" encryption="plain"> <!-- Daten werden in das Data-Tag gelegt, encryption gibt an, wie die (binären) Daten extrahiert werden sollen. -->
         123abc
       </data>
     </entity>
@@ -76,8 +76,7 @@
       <parameter name="serial_number_visage"/>
       <parameter name="software"/>
     </entity>
-    <entity type="Experiment" name="experiment 1" id="2">
-      <context note="Some Observer" relates="observer 1"/>
+    <entity type="Experiment" name="experiment 1" id="2"> 
       <parameter name="data_directory" />
       <parameter name="experimenter" />
       <parameter name="keywords" />
@@ -87,7 +86,8 @@
       <parameter name="source_directory" />
       <parameter name="source_file" />
       <parameter name="stimulus_file" />
-      <entity type="Session" uuid="dd77d125-2eb8-4d65-a506-173d79edfed5">
+      <!-- Kind-Entities werden inline angehängt, alternativ lässt sich aber auch das parent-Attribut verweden (mit Präfix id/uuid, siehe unten) -->
+      <entity type="Session" uuid="dd77d125-2eb8-4d65-a506-173d79edfed5"> <!-- beim Exportieren werden die UUIDs mit geschrieben. Diese bleiben auch nach dem Import unverändert. -->
         <parameter name="Number_of_Trials">50</parameter>
         <parameter name="count" />
         <parameter name="data_file" />
@@ -129,9 +129,9 @@
       </entity>
     </entity>
   </values>
-  <relations>
-    <context name="Observer" from="id:1" to="id:2" />
+  <relations> <!-- Relationen kommen ans Ende der Datei in einen Extra-Abschnitt -->
+    <context name="Observer" from="id:1" to="id:2" /> <!-- id:1 hat einen Oberserver, nämlich id:2 -->
     <context name="Setup" from="id:3" to="id:5" />
-    <context name="Setup" from="id:4" to="id:5" />
+    <context name="Setup" from="id:4" to="uuid:dd77d125-2eb8-4d65-a506-173d79edfed5"> <!-- kann auch als uuid spezifiziert werden -->
   </relations>
 </xdapy>
