@@ -3,6 +3,7 @@
 # alphabetical order by last name, please
 __authors__ = ['"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
+from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject, create_entity
 from xdapy.errors import EntityDefinitionError
 import unittest
@@ -44,9 +45,40 @@ class Test(unittest.TestCase):
         self.assertNotEqual(self.Experiment.__name__, self.ExperimentalProject.__name__)
 
     def test_entities_must_not_contain_underscore(self):
-        def mkEntity():
-            return create_entity("Some_Entity", {})
-        self.assertRaises(EntityDefinitionError, mkEntity)
+        self.assertRaises(EntityDefinitionError, create_entity, "Some_Entity", {})
+
+
+class TestSavedTypes(unittest.TestCase):
+    def setUp(self):
+
+        class MyTestEntity(EntityObject):
+            parameter_types = { "some_param": "string" }
+
+        self.MyTestEntity = MyTestEntity
+
+        self.connection = Connection.test()
+        self.m = Mapper(self.connection)
+        self.m.create_tables(overwrite=True)
+        
+        self.m.register(self.MyTestEntity)
+        
+    def tearDown(self):
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
+
+
+    def test_entity_type_is_correct(self):
+        ent = self.MyTestEntity(some_param = "a short string")
+        self.assertEqual(ent.type, "MyTestEntity")
+        self.assertEqual(ent._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
+
+        self.m.save(ent)
+        self.assertEqual(ent.type, "MyTestEntity")
+        self.assertEqual(ent._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
+
+        found = self.m.find_first(EntityObject)[0]
+        self.assertEqual(found.type, "MyTestEntity")
+        self.assertEqual(found._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
         
 
 if __name__ == "__main__":

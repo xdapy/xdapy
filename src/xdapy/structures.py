@@ -105,7 +105,7 @@ class Entity(Base):
     parents attributes.
     '''
     id = Column('id', Integer, primary_key=True)
-    _type = Column('type', String(60)) # TODO: type is never set on fresh entities
+    _type = Column('type', String(60))
     _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
      
     @synonym_for("_uuid")
@@ -119,7 +119,8 @@ class Entity(Base):
     
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
-    children = relationship("Entity", backref=backref("parent", remote_side=[id]))
+    children = relationship("Entity", backref=backref("parent", remote_side=[id]),
+            doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
     
     def belongs_to(self, parent):
         """Can be used as an alternative for self.parent = parent."""
@@ -247,6 +248,8 @@ class Meta(DeclarativeMeta):
             return ParameterType(name=k, value=v)
 
         cls.params = association_proxy('_params', 'value', creator=_saveParam)
+
+        # We set the polymorphic_identity to the name of the class
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
         
         return super(Meta, cls).__init__(name, bases, attrs)
@@ -285,8 +288,13 @@ class EntityObject(Entity):
     __metaclass__ = Meta
     
     def __init__(self, _uuid=None, **kwargs):
+        # We are here in init because we are a completely new object
+        # Hence, the _type (our polymorphic_identity) has not been set yet.
+        self._type = self.__mapper_args__['polymorphic_identity'] # which should be self.__class__.__name__
+
         # if we received an _uuid, check that it is valid
         self._uuid = _uuid and str(py_uuid.UUID(_uuid))
+
         self._set_items_from_arguments(kwargs)
 
     @property
@@ -306,13 +314,13 @@ class EntityObject(Entity):
         return super(EntityObject, self).to_json(full)
 
     def __repr__(self):
-        return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.__class__.__name__, id=self.id, uuid=self.uuid)
+        return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.type, id=self.id, uuid=self.uuid)
 
     def __str__(self):
         import itertools
         items  = itertools.chain([('id', self.id)], self.params.iteritems())
         params = ", ".join(["{0!s}={1!r}".format(key, val) for key, val in items])
-        return "{cls}({params})".format(cls=self.__class__.__name__, params=params)
+        return "{cls}({params})".format(cls=self.type, params=params)
 
 
 def create_entity(name, parameters):
