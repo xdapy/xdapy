@@ -159,6 +159,35 @@ class Entity(Base):
         collection_class=column_mapped_collection(Data.name),
         cascade="save-update, merge, delete")
     data = association_proxy('_data', 'data', creator=Data)
+
+
+    def del_data(self, key):
+        for k in self._data:
+            if k.startswith(key + "#"):
+                del self._data[k]
+
+    def put_data(self, key, fileish):
+        self.del_data(key)
+
+        buffer_size = 50000000
+        idx = 0
+        
+        chunk = fileish.read(buffer_size)
+        while chunk:
+            self.data[key + "#" + str(idx)] = chunk
+            idx += 1
+            chunk = fileish.read(buffer_size)
+            Session.object_session(self).flush()
+
+
+    def get_data(self, key, fileish):
+        idx = 0
+        gen_key = key + "#" + str(idx)
+        while gen_key in self.data:
+            fileish.write(self.data[gen_key])
+            idx += 1
+            gen_key = key + "#" + str(idx)
+
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""
