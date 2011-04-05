@@ -190,23 +190,18 @@ class XmlIO(IO):
         if new_entity is None:
             return new_entity
 
-        for sub in entity:
-            if sub.tag == "parameter":
-                name, value = self.parse_parameter(sub)
-                if value is not None:
-                    new_entity.str_params[name] = value
-            if sub.tag == "entity":
-                new_entity.children.append(self.parse_entity(sub, ref_ids))
-            if sub.tag == "data":
-                name, value = self.parse_data(sub)
-                new_entity._data[name] = value
+        if "parent" in entity.attrib:
+            parent_id = entity.attrib["parent"]
+            if parent_id in ref_ids:
+                new_entity.parent = ref_ids[parent_id]
+            else:
+                raise InvalidXMLError("Parent {0} undefined for entity {1}".format(parent_id, new_entity))
 
         if "id" in entity.attrib:
             # add id attribute to ref_ids
             id = "id:" + entity.attrib["id"]
             if id in ref_ids:
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
-            print new_entity
             ref_ids[id] = new_entity
 
         if "uuid" in entity.attrib:
@@ -214,8 +209,22 @@ class XmlIO(IO):
             id = "uuid:" + entity.attrib["uuid"]
             if id in ref_ids:
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
-            print new_entity
             ref_ids[id] = new_entity
+
+        for sub in entity:
+            if sub.tag == "parameter":
+                name, value = self.parse_parameter(sub)
+                if value is not None:
+                    new_entity.str_params[name] = value
+            if sub.tag == "entity":
+                child = self.parse_entity(sub, ref_ids)
+                if child.parent is not new_entity:
+                    raise InvalidXMLError("Trying to mix nesting with explicit parent specification for {0}".format(child))
+
+                new_entity.children.append(child)
+            if sub.tag == "data":
+                name, value = self.parse_data(sub)
+                new_entity._data[name] = value
 
         return new_entity
 
