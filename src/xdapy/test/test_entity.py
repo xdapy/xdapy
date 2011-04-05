@@ -79,7 +79,15 @@ class TestSavedTypes(unittest.TestCase):
         found = self.m.find(EntityObject).one()
         self.assertEqual(found.type, "MyTestEntity")
         self.assertEqual(found._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
-        
+
+    def test_entity_type_is_class_name(self):
+        ent = self.MyTestEntity(some_param = "a short string")
+        self.assertEqual(ent._type, ent.__class__.__name__)
+
+    def test_polymorphic_id_is_type(self):
+        ent = self.MyTestEntity(some_param = "a short string")
+        self.assertEqual(ent._type, ent.__mapper_args__["polymorphic_identity"])
+
 
 if __name__ == "__main__":
     unittest.main()
