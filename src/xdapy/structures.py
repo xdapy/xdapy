@@ -25,11 +25,11 @@ from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
 
 # So we really want to support only Postgresql?
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, BYTEA
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
-from xdapy.errors import Error, EntityDefinitionError, InsertionError
+from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 class Data(Base):
@@ -44,7 +44,7 @@ class Data(Base):
     name = Column('name', String(40))
     mimetype = Column('mimetype', String(40))
     
-    _data = Column('data', LargeBinary, nullable=False)
+    _data = Column('data', BYTEA, nullable=False)
     @property
     def data(self):
         return self._data
@@ -92,6 +92,58 @@ class Data(Base):
         
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.mimetype, self.entity_id)
+
+
+class _DataInterface(object):
+    def __init__(self, owning):
+        self.owning = owning
+
+    def ids(self, key):
+        gen_key = key + "#%"
+
+        return self.owning._session().query(Data.id).filter(Data.entity_id==self.owning.id).filter(Data.name.like(gen_key))
+
+    def delete(self, key):
+        print "DEL"
+        print self.ids(key).delete(synchronize_session='fetch')
+        self.owning._session().flush()
+
+    def put(self, key, fileish):
+        self.delete(key)
+        print "PUT"
+
+        buffer_size = 500000 # chunk size 500kb
+        idx = 0
+        
+        chunk = fileish.read(buffer_size)
+        while chunk:
+            print "+", idx, (buffer_size / 1000000.0 * idx), "MB"
+            gen_key = key + "#" + str(idx)
+            d = Data(gen_key, chunk)
+            self.owning._session().add(d)
+            d.entity_id = self.owning.id
+            idx += 1
+            del chunk
+            chunk = fileish.read(buffer_size)
+            if idx % 10 == 0:
+                # we flush every now and then
+                self.owning._session().flush()
+#            Session.object_session(self).expunge(d)
+
+        self.owning._session().flush()
+
+
+    def get(self, key, fileish):
+        print "GET", self.ids(key).all()
+        idx = 0
+
+        for id in self.ids(key):
+            d = self.owning._session().query(Data.data).filter(Data.id==id).one()
+
+#        for d in Session.object_session(self).query(Data.data).filter(Data.entity_id==self.id).filter(Data.name.like(gen_key)):
+            print "\\", id
+            fileish.write(d.data) # self._data[gen_key].data)
+#            fileish.flush()
 
     
 class Entity(Base):
@@ -160,34 +212,11 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     data = association_proxy('_data', 'data', creator=Data)
 
-
-    def del_data(self, key):
-        for k in self._data:
-            if k.startswith(key + "#"):
-                del self._data[k]
-
-    def put_data(self, key, fileish):
-        self.del_data(key)
-
-        buffer_size = 50000000
-        idx = 0
-        
-        chunk = fileish.read(buffer_size)
-        while chunk:
-            self.data[key + "#" + str(idx)] = chunk
-            idx += 1
-            chunk = fileish.read(buffer_size)
-            Session.object_session(self).flush()
-
-
-    def get_data(self, key, fileish):
-        idx = 0
-        gen_key = key + "#" + str(idx)
-        while gen_key in self.data:
-            fileish.write(self.data[gen_key])
-            idx += 1
-            gen_key = key + "#" + str(idx)
-
+    @property
+    def dataIF(self):
+        if not hasattr(self, "_dataif"):
+            self._dataif = _DataInterface(self)
+        return self._dataif
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""
@@ -245,6 +274,14 @@ class Entity(Base):
                 
     def __repr__(self):
         return "<Entity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
+
+
+    def _session(self):
+        session = Session.object_session(self)
+        if session is None:
+            raise MissingSessionError("Object has no session")
+        return session
+
     
     def info(self):
         '''Prints information about the entity.'''
