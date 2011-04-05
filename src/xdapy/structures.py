@@ -162,29 +162,41 @@ class Entity(Base):
 
 
     def del_data(self, key):
+        print "DEL"
         for k in self._data:
+            print "-"
             if k.startswith(key + "#"):
                 del self._data[k]
 
     def put_data(self, key, fileish):
         self.del_data(key)
+        print "PUT"
 
-        buffer_size = 50000000
+        buffer_size = 5000000
         idx = 0
         
         chunk = fileish.read(buffer_size)
         while chunk:
-            self.data[key + "#" + str(idx)] = chunk
+            print "+", idx
+            gen_key = key + "#" + str(idx)
+            d = Data(gen_key, chunk)
+            Session.object_session(self).add(d)
+            d.entity_id = self.id
             idx += 1
+            del chunk
             chunk = fileish.read(buffer_size)
             Session.object_session(self).flush()
+#            Session.object_session(self).expunge(d)
 
 
     def get_data(self, key, fileish):
+        print "GET"
         idx = 0
         gen_key = key + "#" + str(idx)
         while gen_key in self.data:
+            print "\\", idx
             fileish.write(self.data[gen_key])
+            fileish.flush()
             idx += 1
             gen_key = key + "#" + str(idx)
 
