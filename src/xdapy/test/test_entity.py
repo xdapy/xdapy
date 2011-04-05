@@ -76,7 +76,7 @@ class TestSavedTypes(unittest.TestCase):
         self.assertEqual(ent.type, "MyTestEntity")
         self.assertEqual(ent._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
 
-        found = self.m.find_first(EntityObject)[0]
+        found = self.m.find(EntityObject).one()
         self.assertEqual(found.type, "MyTestEntity")
         self.assertEqual(found._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
         
