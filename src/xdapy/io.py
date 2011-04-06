@@ -218,7 +218,7 @@ class XmlIO(IO):
                     new_entity.str_params[name] = value
             if sub.tag == "entity":
                 child = self.parse_entity(sub, ref_ids)
-                if child.parent is not new_entity:
+                if child.parent and child.parent is not new_entity:
                     raise InvalidXMLError("Trying to mix nesting with explicit parent specification for {0}".format(child))
 
                 new_entity.children.append(child)
