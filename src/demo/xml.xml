@@ -69,6 +69,7 @@
       </data>
     </entity>
     <entity type="Setup" name="setup 1" id="5">
+      <data name="set1" encoding="ascii" mimetype="ascii" >  j </data>
       <parameter name="calibration_file" />
       <parameter name="frame_rate"/>
       <parameter name="hardware"/>

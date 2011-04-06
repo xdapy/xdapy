@@ -32,7 +32,8 @@ class BinaryEncoder(object):
 recode = {}
 import base64
 recode["base64"] = BinaryEncoder(base64.b64encode, base64.b64decode)
-recode["plain"] = BinaryEncoder(lambda x: x, lambda x: x)
+recode["plain"] = BinaryEncoder(str.strip, str.strip)
+recode["ascii"] = recode["plain"]
 
 def gen_keys(entity):
     """Returns a list of keys for an entity."""
@@ -247,6 +248,8 @@ class XmlIO(IO):
             encoding = data.attrib["encoding"]
         except KeyError:
             encoding = "plain"
+        if encoding == "ascii" and mimetype is None:
+            mimetype = encoding
         raw_data = recode[encoding].decode(data.text)
         new_data = Data(name=name, data=raw_data, mimetype=mimetype)
         return name, new_data
@@ -307,8 +310,12 @@ class XmlIO(IO):
         for name, value in elem._data.iteritems():
             data = ET.Element("data")
             data.attrib["name"] = name
-            data.attrib["mimetype"] = value.mimetype
-            encoding = "base64"
+            if value.mimetype:
+                data.attrib["mimetype"] = value.mimetype
+            if value.mimetype and value.mimetype == "ascii":
+                encoding = value.mimetype
+            else:
+                encoding = "base64"
             data.text = recode[encoding].encode(value.data)
             data.attrib["encoding"] = encoding
             entity.append(data)
