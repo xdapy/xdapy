@@ -229,8 +229,14 @@ class XmlIO(IO):
         return new_entity
 
     def parse_parameter(self, parameter):
-        value = parameter.text
-    #    value = parameter.attrib["value"]
+        if "value" in parameter.attrib:
+            value = parameter.attrib["value"]
+            if parameter.text and parameter.text.strip():
+                raise InvalidXMLError("Value and text given for parameter {0}".format(parameter))
+        else:
+            value = parameter.text
+            if value is not None:
+                value = value.strip()
         name = parameter.attrib["name"]
         return name, value
 

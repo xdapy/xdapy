@@ -62,7 +62,7 @@
     <entity type="Observer" name="observer 1" id="1"> <!-- id ist xml-Datei intern und kann beliebig, aber eindeutig sein -->
       <parameter name="birthday">2011-01-01</parameter> <!-- value kann entweder zwischen die parameter eingefügt werden oder als spezieller value= Wert -->
       <parameter name="glasses">True</parameter> 
-      <parameter name="handedness">LEFT</parameter>
+      <parameter name="handedness" value="LEFT"></parameter>
       <parameter name="initials" />
       <data name="data 1" mimetype="none" encryption="plain"> <!-- Daten werden in das Data-Tag gelegt, encryption gibt an, wie die (binären) Daten extrahiert werden sollen. -->
         123abc
