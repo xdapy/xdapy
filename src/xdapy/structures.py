@@ -258,9 +258,6 @@ class Entity(Base):
     def __repr__(self):
         return "<Entity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
     
-    def info(self):
-        '''Prints information about the entity.'''
-
 from xdapy.parameters import strToType
 
 class Meta(DeclarativeMeta):
@@ -362,6 +359,30 @@ class EntityObject(Entity):
         items  = itertools.chain([('id', self.id)], self.params.iteritems())
         params = ", ".join(["{0!s}={1!r}".format(key, val) for key, val in items])
         return "{cls}({params})".format(cls=self.type, params=params)
+
+    def info(self):
+        '''Prints information about the entity.'''
+        print str(self)
+        parents = self.all_parents()
+        print parents
+        print "has", len(self.children), "children and", len(self.all_children()), "siblings"
+
+
+    def print_tree(self):
+        """Prints a graphical representation of the entity and its parents and grand-parents."""
+        parents = self.all_parents()
+        for p in parents:
+            print "+-", p
+            for c in p.connections:
+                print "|", "+-", "has a", c.connection_type, c.connected
+            for c in p.back_references:
+                print "|", "+-", "belongs to", c.back_referenced
+            print "|"
+        print "+-", self
+        for c in self.connections:
+            print " ", "+-", "has a", c.connection_type, c.connected
+        for c in self.back_references:
+            print " ", "+-", "belongs to", c.back_referenced
 
 
 def create_entity(name, parameters):
