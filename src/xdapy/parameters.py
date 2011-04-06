@@ -11,7 +11,7 @@ from xdapy import Base
 from xdapy.errors import StringConversionError
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 
 class Parameter(Base):

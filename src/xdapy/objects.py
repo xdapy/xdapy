@@ -3,7 +3,7 @@
 """
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 
 from xdapy.structures import EntityObject

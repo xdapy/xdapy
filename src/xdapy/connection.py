@@ -13,7 +13,7 @@ from utils.decorators import lazyprop
 
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 class AutoSession(object):
     """Provides an automatically commiting session."""

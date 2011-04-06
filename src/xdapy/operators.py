@@ -2,7 +2,7 @@
 
 """Defines some operators for filter expressions."""
 
-__authors__ = ['"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+__authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from sqlalchemy import and_
 

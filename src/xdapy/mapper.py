@@ -21,7 +21,7 @@ TODO: Error if the commiting fails
 """
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 class Mapper(object):
     """Handle database access and sessions"""

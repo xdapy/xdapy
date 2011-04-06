@@ -1,7 +1,7 @@
 """Entity basic tests."""
 
 # alphabetical order by last name, please
-__authors__ = ['"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+__authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject, create_entity

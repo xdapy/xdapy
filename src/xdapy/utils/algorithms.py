@@ -8,7 +8,7 @@ Created on Jul 30, 2009
 import copy, uuid, hashlib
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 def levenshtein(s1, s2):
     """Find the Levenshtein distance between two strings.

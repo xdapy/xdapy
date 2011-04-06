@@ -10,7 +10,7 @@ Created on Jun 23, 2009
 """
 # alphabetical order by last name, please
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 class Error(Exception):
     """Base class for exceptions in this module."""
