@@ -74,37 +74,63 @@ m.save(e1, e2, e3)
 e4 = Experiment(project="My other Project", experimenter="Nichol Pauline")
 m_2.save(e4)
 
+e3.connect("O", e1)
+m.save(e3, e2)
+
 mapping = {Experiment_nodate: Experiment}
 
 from sqlalchemy.orm import exc
 
+def migrate_obj(obj, old_mapper, new_mapper, mapping):
+    klass = obj.__class__
+    mapto = klass
+    if klass in mapping:
+        mapto = mapping[klass]
+    
+    # check, if uuid is already present
+    try:
+        new_obj = new_mapper.find_by_uuid(obj.uuid) # TODO Deal with closed sessions
+    except exc.NoResultFound:
+        new_obj = mapto(_uuid = obj.uuid)
+    except exc.MultipleResultsFound:
+        raise DataInconsistencyError("UUID in mapper {0} is not unique".format(new_mapper))
+
+    # copy params
+    for k,v in obj.params.iteritems():
+        new_obj.params[k] = v
+
+    # copy data
+    new_obj.data = obj.data
+
+    new_mapper.save(new_obj)
+
 def migrate(old_mapper, new_mapper, mapping):
     for obj in old_mapper.find_roots():
+        migrate_obj(obj, old_mapper, new_mapper, mapping)
 
-        klass = obj.__class__
-        mapto = klass
-        if klass in mapping:
-            mapto = mapping[klass]
-        
-        # check, if uuid is already present
+from xdapy.structures import Context
+from sqlalchemy.orm.exc import NoResultFound
+def migrate_connections(m1, m2):
+    conn1 = m1.find(Context)
+    for c1 in conn1:
+        from_uuid = c1.from_entity.uuid
+        to_uuid = c1.to_entity.uuid
+        name = c1.connection_type
+
+        print from_uuid, to_uuid
+
         try:
-            new_obj = new_mapper.find_by_uuid(obj.uuid) # TODO Deal with closed sessions
-        except exc.NoResultFound:
-            new_obj = mapto(_uuid = obj.uuid)
-        except exc.MultipleResultsFound:
-            raise DataInconsistencyError("UUID in mapper {0} is not unique".format(new_mapper))
+            m2_from = m2.find_by_uuid(from_uuid)
+            m2_to = m2.find_by_uuid(to_uuid)
+            m2_from.connect(name, m2_to)
+        except NoResultFound:
+            pass
 
-        # copy params
-        for k,v in obj.params.iteritems():
-            new_obj.params[k] = v
-
-        # copy data
-        new_obj.data = obj.data
-
-        new_mapper.save(new_obj)
 
 migrate(m, m_2, mapping)
 migrate(m_2, m, mapping)
+
+migrate_connections(m, m_2)
 
 print m.find_roots()
 print m_2.find_roots()
