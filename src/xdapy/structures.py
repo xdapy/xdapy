@@ -41,7 +41,8 @@ class Data(Base):
     '''
     id = Column('id', Integer, autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey('entities.id'))
-    name = Column('name', String(40))
+    key = Column('key', String(40))
+    index = Column("index", Integer)
     mimetype = Column('mimetype', String(40))
     
     _data = Column('data', BYTEA, nullable=False)
@@ -67,16 +68,16 @@ class Data(Base):
         return self._length
     
     __tablename__ = 'data'
-    __table_args__ = (UniqueConstraint(entity_id, name),
+    __table_args__ = (UniqueConstraint(entity_id, key, index),
                     {'mysql_engine':'InnoDB'})
     
-    @validates('name')
+    @validates('key')
     def validate_name(self, key, parameter):
         if not isinstance(parameter, basestring):
             raise TypeError("Argument must be a string")
         return parameter 
     
-    def __init__(self, name, data, mimetype=None):
+    def __init__(self, entity_id, key, index, data, mimetype=None):
         '''Initialize a parameter with the given name.
         
         Argument:
@@ -86,22 +87,22 @@ class Data(Base):
         Raises:
         TypeError -- Occurs if name is not a string
         '''
-        self.name = name
-        self.mimetype = mimetype
+        self.entity_id = entity_id
+        self.key = key
+        self.index = index
         self.data = data
+        self.mimetype = mimetype
         
     def __repr__(self):
-        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.name, self.mimetype, self.entity_id)
+        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.key, self.mimetype, self.entity_id)
 
 
-class _DataInterface(object):
+class _DataProxy(object):
     def __init__(self, owning):
         self.owning = owning
 
     def ids(self, key):
-        gen_key = key + "#%"
-
-        return self.owning._session().query(Data.id).filter(Data.entity_id==self.owning.id).filter(Data.name.like(gen_key))
+        return self.owning._session().query(Data.id).filter(Data.entity_id==self.owning.id).filter(Data.key.like(key))
 
     def delete(self, key):
         print "DEL"
@@ -117,33 +118,25 @@ class _DataInterface(object):
         
         chunk = fileish.read(buffer_size)
         while chunk:
-            print "+", idx, (buffer_size / 1000000.0 * idx), "MB"
-            gen_key = key + "#" + str(idx)
-            d = Data(gen_key, chunk)
-            self.owning._session().add(d)
-            d.entity_id = self.owning.id
             idx += 1
-            del chunk
+
+            d = Data(self.owning.id, key, idx, chunk)
+
+            self.owning._session().add(d)
             chunk = fileish.read(buffer_size)
             if idx % 10 == 0:
                 # we flush every now and then
                 self.owning._session().flush()
-#            Session.object_session(self).expunge(d)
 
         self.owning._session().flush()
 
 
     def get(self, key, fileish):
         print "GET", self.ids(key).all()
-        idx = 0
 
         for id in self.ids(key):
             d = self.owning._session().query(Data.data).filter(Data.id==id).one()
-
-#        for d in Session.object_session(self).query(Data.data).filter(Data.entity_id==self.id).filter(Data.name.like(gen_key)):
-            print "\\", id
             fileish.write(d.data) # self._data[gen_key].data)
-#            fileish.flush()
 
     
 class Entity(Base):
@@ -207,16 +200,13 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
-    _data = relationship(Data,
-        collection_class=column_mapped_collection(Data.name),
-        cascade="save-update, merge, delete")
-    data = association_proxy('_data', 'data', creator=Data)
+    _data = relationship(Data, cascade="save-update, merge, delete")
 
     @property
-    def dataIF(self):
-        if not hasattr(self, "_dataif"):
-            self._dataif = _DataInterface(self)
-        return self._dataif
+    def data(self):
+        if not hasattr(self, "__data_proxy"):
+            self.__data_proxy = _DataProxy(self)
+        return self.__data_proxy
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""

@@ -16,7 +16,7 @@ f = open("10M.dat")
 e = E()
 m.save(e)
 
-e.dataIF.put("100M", f)
+e.data.put("100M", f)
 m.save(e)
 f.close()
 
@@ -25,9 +25,9 @@ ee = m.find_all(E)
 for e in ee:
 
     out = open("out.dat", "w")
-    e.dataIF.get("100M", out)
+    e.data.get("100M", out)
     out.close()
-
+    
     m.delete(e)
 
 
