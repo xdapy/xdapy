@@ -430,6 +430,14 @@ class Context(Base):
         backref=backref('back_references', cascade="all"),
         primaryjoin=connected_id==Entity.id)
 
+    @property
+    def from_entity(self):
+        return self.back_referenced
+
+    @property
+    def to_entity(self):
+        return self.connected
+
     __tablename__ = 'contexts'
     __table_args__ = {'mysql_engine':'InnoDB'}
 
