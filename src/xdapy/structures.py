@@ -15,6 +15,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner <rikebs@debilski.de>"']
 
 import uuid as py_uuid
+import collections
 
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy import func
@@ -102,27 +103,24 @@ class Data(Base):
 
 
 class _DataProxy(object):
-    def __init__(self, owning):
-        self.owning = owning
+    def __init__(self, assoc, key):
+        self.assoc = assoc
+        self.key = key
 
-    def _query(self, *entities, **kwargs):
-        """Issues a query on the session of the owning object, with a filter on the owning id."""
-        return self.owning._session().query(*entities, **kwargs).filter(Data.entity_id==self.owning.id)
+    def ids(self):
+        return self._key_query(Data.id)
 
-    def ids(self, key):
-        return self._query(Data.id).filter(Data.key.like(key))
+    def _key_query(self, *entities, **kwargs):
+        return self.assoc._query(*entities, **kwargs).filter(Data.key.like(self.key))
 
-    def keys(self):
-        return [k.key for k in self._query(Data.key).group_by(Data.key)]
-
-    def delete(self, key):
+    def delete(self):
         print "DEL"
 
-        print self.ids(key).delete(synchronize_session='fetch')
-        self.owning._session().flush()
+        print self._key_query(Data.id).delete(synchronize_session='fetch')
+        self.assoc.owning._session().flush()
 
-    def put(self, key, fileish):
-        self.delete(key)
+    def put(self, fileish):
+        self.delete()
         print "PUT"
 
         buffer_size = DATA_CHUNK_SIZE
@@ -132,34 +130,52 @@ class _DataProxy(object):
         while chunk:
             idx += 1
 
-            d = Data(self.owning.id, key, idx, chunk)
+            d = Data(self.assoc.owning.id, self.key, idx, chunk)
 
-            self.owning._session().add(d)
+            self.assoc.owning._session().add(d)
             chunk = fileish.read(buffer_size)
             if idx % 10 == 0:
                 # we flush every now and then
                 self.owning._session().flush()
 
-        self.owning._session().flush()
+        self.assoc.owning._session().flush()
 
-    def get(self, key, fileish):
-        for data in (self._query(Data).
-                        filter(Data.key.like(key)).
-                        order_by(Data.index)):
+    def get(self, fileish):
+        for data in (self._key_query(Data).order_by(Data.index)):
             fileish.write(data.data) # self._data[gen_key].data)
 
-    def size(self, key):
-        return self._query(func.sum(Data.length)).filter(Data.key.like(key)).scalar()
-    def chunks(self, key):
-        return self._query(Data.id).filter(Data.key.like(key)).count()
+    def size(self):
+        return self._key_query(func.sum(Data.length)).scalar()
 
-    def is_consistent(self, key):
+    def chunks(self):
+        return self._key_query(Data.id).count()
+
+    def is_consistent(self):
         check = 1
-        for idx in self._query(Data.index).filter(Data.key.like(key)).order_by(Data.index):
+        for idx in self._key_query(Data.index).order_by(Data.index):
             if check != idx.index:
                 raise DataInconsistencyError("Chunked data is inconsistent.")
             check += 1
         return True
+
+
+class _DataAssoc(collections.Mapping):
+    """Association dict for data."""
+    def __init__(self, owning):
+        self.owning = owning
+
+    def _query(self, *entities, **kwargs):
+        """Issues a query on the session of the owning object, with a filter on the owning id."""
+        return self.owning._session().query(*entities, **kwargs).filter(Data.entity_id==self.owning.id)
+
+    def __getitem__(self, key):
+        return _DataProxy(self, key)
+
+    def __len__(self):
+        return self._query(Data.key).group_by(Data.key).count()
+
+    def __iter__(self):
+        return (k.key for k in self._query(Data.key).group_by(Data.key))
 
 
 class Entity(Base):
@@ -227,9 +243,9 @@ class Entity(Base):
 
     @property
     def data(self):
-        if not hasattr(self, "__data_proxy"):
-            self.__data_proxy = _DataProxy(self)
-        return self.__data_proxy
+        if not hasattr(self, "__data_assoc"):
+            self.__data_assoc = _DataAssoc(self)
+        return self.__data_assoc
     
     def connect(self, connection_type, connection_object):
         """Connect this entity with connection_object via the connection_type."""
@@ -333,7 +349,6 @@ class Meta(DeclarativeMeta):
         
         return super(Meta, cls).__init__(name, bases, attrs)
 
-import collections
 class _StrParams(collections.MutableMapping):
     """Association dict for stringified parameters."""
     def __init__(self, owning):

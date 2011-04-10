@@ -16,7 +16,7 @@ f = open("10M.dat")
 e = E()
 m.save(e)
 
-e.data.put("100M", f)
+e.data["100M"].put(f)
 m.save(e)
 f.close()
 
@@ -25,12 +25,12 @@ ee = m.find_all(E)
 for e in ee:
 
     out = open("out.dat", "w")
-    e.data.get("100M", out)
-    print e.data.size("100M")
-    print e.data.is_consistent("100M")
-    print e.data.chunks("100M")
+    e.data["100M"].get(out)
+    print e.data["100M"].size()
+    print e.data["100M"].is_consistent()
+    print e.data["100M"].chunks()
     print e.data.keys()
-    e.data.delete("100M")
+    e.data["100M"].delete()
     out.close()
     
     m.delete(e)
