@@ -17,6 +17,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 import uuid as py_uuid
 
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
+from sqlalchemy import func
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, backref, validates, synonym
 from sqlalchemy.orm.session import Session
@@ -29,8 +30,11 @@ from sqlalchemy.dialects.postgresql import UUID, BYTEA
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
-from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError
+from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
+
+DATA_CHUNK_SIZE = 5 * 1000 * 1000 # Byte
+DATA_COLUMN_LENGTH = DATA_CHUNK_SIZE
 
 class Data(Base):
     '''
@@ -45,7 +49,7 @@ class Data(Base):
     index = Column("index", Integer)
     mimetype = Column('mimetype', String(40))
     
-    _data = Column('data', BYTEA, nullable=False)
+    _data = Column('data', BYTEA(DATA_COLUMN_LENGTH), nullable=False)
     @property
     def data(self):
         return self._data
@@ -101,11 +105,19 @@ class _DataProxy(object):
     def __init__(self, owning):
         self.owning = owning
 
+    def _query(self, *entities, **kwargs):
+        """Issues a query on the session of the owning object, with a filter on the owning id."""
+        return self.owning._session().query(*entities, **kwargs).filter(Data.entity_id==self.owning.id)
+
     def ids(self, key):
-        return self.owning._session().query(Data.id).filter(Data.entity_id==self.owning.id).filter(Data.key.like(key))
+        return self._query(Data.id).filter(Data.key.like(key))
+
+    def keys(self):
+        return [k.key for k in self._query(Data.key).group_by(Data.key)]
 
     def delete(self, key):
         print "DEL"
+
         print self.ids(key).delete(synchronize_session='fetch')
         self.owning._session().flush()
 
@@ -113,7 +125,7 @@ class _DataProxy(object):
         self.delete(key)
         print "PUT"
 
-        buffer_size = 500000 # chunk size 500kb
+        buffer_size = DATA_CHUNK_SIZE
         idx = 0
         
         chunk = fileish.read(buffer_size)
@@ -130,15 +142,26 @@ class _DataProxy(object):
 
         self.owning._session().flush()
 
-
     def get(self, key, fileish):
-        print "GET", self.ids(key).all()
+        for data in (self._query(Data).
+                        filter(Data.key.like(key)).
+                        order_by(Data.index)):
+            fileish.write(data.data) # self._data[gen_key].data)
 
-        for id in self.ids(key):
-            d = self.owning._session().query(Data.data).filter(Data.id==id).one()
-            fileish.write(d.data) # self._data[gen_key].data)
+    def size(self, key):
+        return self._query(func.sum(Data.length)).filter(Data.key.like(key)).scalar()
+    def chunks(self, key):
+        return self._query(Data.id).filter(Data.key.like(key)).count()
 
-    
+    def is_consistent(self, key):
+        check = 1
+        for idx in self._query(Data.index).filter(Data.key.like(key)).order_by(Data.index):
+            if check != idx.index:
+                raise DataInconsistencyError("Chunked data is inconsistent.")
+            check += 1
+        return True
+
+
 class Entity(Base):
     '''
     The class 'Entity' is mapped on the table 'entities'. The name column 
