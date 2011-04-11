@@ -4,7 +4,7 @@ from xdapy.structures import EntityObject
 class E(EntityObject):
     parameter_types = {}
 
-connection = Connection.profile("test") # use standard profile
+connection = Connection.profile("test")#, echo=True) # use standard profile
 m = Mapper(connection)
 m.create_tables(overwrite=True)
 
@@ -15,6 +15,9 @@ f = open("10M.dat")
 #f = open("1G.dat")
 e = E()
 m.save(e)
+
+import pdb
+#pdb.set_trace()
 
 e.data["100M"].put(f)
 m.save(e)
@@ -28,7 +31,11 @@ for e in ee:
     e.data["100M"].get(out)
     print e.data["100M"].size()
     print e.data["100M"].is_consistent()
+    print ""
+    print "CHUNKS"
     print e.data["100M"].chunks()
+    print ""
+    print "KEYS"
     print e.data.keys()
     e.data["100M"].delete()
     out.close()

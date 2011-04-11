@@ -37,6 +37,41 @@ from xdapy.utils.algorithms import gen_uuid, hash_dict
 DATA_CHUNK_SIZE = 5 * 1000 * 1000 # Byte
 DATA_COLUMN_LENGTH = DATA_CHUNK_SIZE
 
+class DataChunks(Base):
+    id = Column('id', Integer, autoincrement=True, primary_key=True)
+    data_id = Column(Integer, ForeignKey('data.id'))
+    index = Column("index", Integer)
+    
+    _chunk = Column('data', BYTEA(DATA_COLUMN_LENGTH), nullable=False)
+    @property
+    def chunk(self):
+        return self._chunk
+    
+    @chunk.setter
+    def chunk(self, chunk):
+        if not isinstance(chunk, basestring): # TODO what about real binary?
+            raise ValueError("Data must be a string")
+        self._chunk = chunk
+        self._length = len(chunk)
+        
+    chunk = synonym('_chunk', descriptor=chunk)
+    
+    
+    _length = Column('length', Integer)
+    
+    @synonym_for('_length')
+    @property
+    def length(self):
+        return self._length
+
+    __tablename__ = 'data_chunks'
+    __table_args__ = (UniqueConstraint(data_id, index),
+                    {'mysql_engine':'InnoDB'})
+
+    def __init__(self, index, chunk):
+        self.index = index
+        self.chunk = chunk
+
 class Data(Base):
     '''
     The class 'Data' is mapped on the table 'data'. The name assigned to Data 
@@ -47,33 +82,16 @@ class Data(Base):
     id = Column('id', Integer, autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey('entities.id'))
     key = Column('key', String(40))
-    index = Column("index", Integer)
     mimetype = Column('mimetype', String(40))
     
-    _data = Column('data', BYTEA(DATA_COLUMN_LENGTH), nullable=False)
-    @property
-    def data(self):
-        return self._data
-    
-    @data.setter
-    def data(self, data):
-        if not isinstance(data, basestring): # TODO what about real binary?
-            raise ValueError("Data must be a string")
-        self._data = data
-        self._length = len(data)
-        
-    data = synonym('_data', descriptor=data)
-    
-    
-    _length = Column('length', Integer)
-    
-    @synonym_for('_length')
     @property
     def length(self):
         return self._length
     
+    _chunks = relationship(DataChunks, cascade="save-update, merge, delete")
+
     __tablename__ = 'data'
-    __table_args__ = (UniqueConstraint(entity_id, key, index),
+    __table_args__ = (UniqueConstraint(entity_id, key),
                     {'mysql_engine':'InnoDB'})
     
     @validates('key')
@@ -81,31 +99,19 @@ class Data(Base):
         if not isinstance(parameter, basestring):
             raise TypeError("Argument must be a string")
         return parameter 
-    
-    def __init__(self, entity_id, key, index, data, mimetype=None):
-        '''Initialize a parameter with the given name.
-        
-        Argument:
-        name -- A one-word-description of data
-        data -- The data to be saved
-        
-        Raises:
-        TypeError -- Occurs if name is not a string
-        '''
-        self.entity_id = entity_id
-        self.key = key
-        self.index = index
-        self.data = data
-        self.mimetype = mimetype
-        
+   
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.key, self.mimetype, self.entity_id)
-
 
 class _DataProxy(object):
     def __init__(self, assoc, key):
         self.assoc = assoc
         self.key = key
+
+    def get_or_create_data(self):
+        if not self.key in self.assoc.owning._data:
+            self.assoc.owning._data[self.key] = Data(key=self.key)
+        return self.assoc.owning._data[self.key]
 
     def ids(self):
         return self._key_query(Data.id)
@@ -116,12 +122,17 @@ class _DataProxy(object):
     def delete(self):
         print "DEL"
 
-        print self._key_query(Data.id).delete(synchronize_session='fetch')
+        if self.key in self.assoc.owning._data:
+            del self.assoc.owning._data[self.key]
         self.assoc.owning._session().flush()
 
     def put(self, fileish):
         self.delete()
         print "PUT"
+
+        data = self.get_or_create_data()
+#        self.assoc.owning._session().add(data)
+#        self.assoc.owning._session().flush()
 
         buffer_size = DATA_CHUNK_SIZE
         idx = 0
@@ -130,29 +141,33 @@ class _DataProxy(object):
         while chunk:
             idx += 1
 
-            d = Data(self.assoc.owning.id, self.key, idx, chunk)
+            chunk = DataChunks(idx, chunk)
+            data._chunks.append(chunk)
+ #           self.assoc.owning._session().add(chunk)
 
-            self.assoc.owning._session().add(d)
             chunk = fileish.read(buffer_size)
             if idx % 10 == 0:
                 # we flush every now and then
-                self.owning._session().flush()
+                self.assoc.owning._session().flush()
 
         self.assoc.owning._session().flush()
 
+    def _chunk_query(self, *entities, **kwargs):
+        return self.assoc.owning._session().query(*entities, **kwargs).join(Data).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key)
+
     def get(self, fileish):
-        for data in (self._key_query(Data).order_by(Data.index)):
-            fileish.write(data.data) # self._data[gen_key].data)
+        for chunk in self._chunk_query(DataChunks.chunk).order_by(DataChunks.index):
+            fileish.write(chunk.chunk) # self._data[gen_key].data)
 
     def size(self):
-        return self._key_query(func.sum(Data.length)).scalar()
+        return self._chunk_query(func.sum(DataChunks.length)).scalar()
 
     def chunks(self):
-        return self._key_query(Data.id).count()
+        return self._chunk_query(DataChunks.id).count()
 
     def is_consistent(self):
         check = 1
-        for idx in self._key_query(Data.index).order_by(Data.index):
+        for idx in self._chunk_query(DataChunks.index).order_by(DataChunks.index):
             if check != idx.index:
                 raise DataInconsistencyError("Chunked data is inconsistent.")
             check += 1
@@ -172,10 +187,10 @@ class _DataAssoc(collections.Mapping):
         return _DataProxy(self, key)
 
     def __len__(self):
-        return self._query(Data.key).group_by(Data.key).count()
+        return len(self.owning._data)
 
     def __iter__(self):
-        return (k.key for k in self._query(Data.key).group_by(Data.key))
+        return iter(self.owning._data)
 
 
 class Entity(Base):
@@ -239,7 +254,9 @@ class Entity(Base):
         cascade="save-update, merge, delete")
     
     # one to many Entity->Data
-    _data = relationship(Data, cascade="save-update, merge, delete")
+    _data = relationship(Data,
+            collection_class=column_mapped_collection(Data.key),
+            cascade="save-update, merge, delete")
 
     @property
     def data(self):
