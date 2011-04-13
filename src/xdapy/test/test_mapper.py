@@ -201,6 +201,25 @@ class TestConnections(Setup):
 
         self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
 
+    def test_connections_have_set_ids(self):
+        # need to check that connections have correct id and entity_id, 
+        # although the Experiment and Observer did not have an id 
+        # when the connection was established
+        connections = self.m.find_all(Context)
+
+        self.assertTrue(len(connections), 4)
+
+        experiment_ids = [self.e1.id, self.e2.id]
+        observer_ids = [self.o1.id, self.o2.id, self.o3.id]
+
+        # check that neither list has a 0 or None entry
+        self.assertTrue(all(experiment_ids))
+        self.assertTrue(all(observer_ids))
+
+        for conn in connections:
+            self.assertTrue(conn.entity_id in experiment_ids)
+            self.assertTrue(conn.connected_id in observer_ids)
+
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
 
