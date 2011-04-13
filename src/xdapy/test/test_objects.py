@@ -116,15 +116,25 @@ class TestObjectDict(unittest.TestCase):
         self.assertTrue('1' in exp.data)
         self.assertTrue('2' in exp.data)
 
-        def access_mimetype():
-            return exp.data['3'].mimetype
-        def access_data():
-            return exp.data['4'].get_string()
-        self.assertRaises(KeyError, access_mimetype)
-        self.assertRaises(KeyError, access_mimetype) # We check twice - maybe it has been set during our check
+        def access_mimetype(key):
+            return exp.data[key].mimetype
+        def access_data(key):
+            return exp.data[key].get_string()
+        self.assertRaises(KeyError, access_mimetype, "3")
+        self.assertRaises(KeyError, access_mimetype, "3") # We check twice - maybe it has been set during our check
 
-        self.assertRaises(KeyError, access_data)
-        self.assertRaises(KeyError, access_data)
+        self.assertRaises(KeyError, access_data, "4")
+        self.assertRaises(KeyError, access_data, "4")
+        
+        self.assertRaises(KeyError, exp.data['0'].delete)
+        exp.data['1'].delete()
+        exp.data['2'].delete()
+
+        self.assertRaises(KeyError, access_mimetype, "1")
+        self.assertRaises(KeyError, access_mimetype, "2")
+
+        self.assertRaises(KeyError, access_data, "1")
+        self.assertRaises(KeyError, access_data, "2")
 
     def testAdvancedData(self):
         exp_1 = Experiment()

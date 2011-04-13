@@ -90,7 +90,7 @@ class Data(Base):
     the entities attribute of the Data class.
     '''
     id = Column('id', Integer, autoincrement=True, primary_key=True)
-    entity_id = Column(Integer, ForeignKey('entities.id'))
+    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)
     key = Column('key', String(40))
     mimetype = Column('mimetype', String(40))
     
@@ -152,8 +152,10 @@ class _DataProxy(object):
 
     def delete(self):
         if self.key in self.assoc.owning._data:
-            del self.assoc.owning._data[self.key]
+            self.assoc.owning._session().delete(self.assoc.owning._data[self.key])
             self.assoc.owning._session().flush()
+        else:
+            raise KeyError("Key {0} not in data.".format(self.key))
 
     def clear(self):
         if self.key in self.assoc.owning._data:

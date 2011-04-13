@@ -24,7 +24,7 @@ class Parameter(Base):
     the entities attribute of the Parameter class.
     '''
     id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, primary_key=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"))
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
     
     name = Column('name', String(40), index=True)
     type = Column('type', String(20), nullable=False)
