@@ -241,7 +241,7 @@ class _DataProxy(object):
         return True
 
 
-class _DataAssoc(collections.Mapping):
+class _DataAssoc(collections.MutableMapping):
     """Association dict for data."""
     def __init__(self, owning):
         self.owning = owning
@@ -252,6 +252,20 @@ class _DataAssoc(collections.Mapping):
 
     def __getitem__(self, key):
         return _DataProxy(self, key)
+
+    def __delitem__(self, key):
+        del self.owning._data[key]
+
+    def __setitem__(self, key, value):
+        if not isinstance(value, _DataProxy):
+            raise ValueError("value needs to be instance of DataProxy")
+        """Note that this is only expected to work if value *really* has the same semantics."""
+        with tempfile.TemporaryFile() as f:
+            value.get(f)
+            f.seek(0) # Reset the file pointer, otherwise we'll only see EOF
+            self[key].put(f)
+
+        self[key].mimetype = value.mimetype
 
     def __len__(self):
         return len(self.owning._data)
@@ -268,11 +282,7 @@ class _DataAssoc(collections.Mapping):
     def copy(self, other):
         """Copys everything from another DataAssoc into this."""
         for data_key in other:
-            with tempfile.TemporaryFile() as f:
-                other[data_key].get(f)
-                self[data_key].put(f)
-
-                self[data_key].mimetype = self[data_key].mimetype
+            self[data_key] = other[data_key]
 
 class Entity(Base):
     '''

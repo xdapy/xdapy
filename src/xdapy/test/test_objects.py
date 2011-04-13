@@ -126,6 +126,34 @@ class TestObjectDict(unittest.TestCase):
         self.assertRaises(KeyError, access_data)
         self.assertRaises(KeyError, access_data)
 
+    def testAdvancedData(self):
+        exp_1 = Experiment()
+        exp_2 = Experiment()
+
+        self.m.save(exp_1, exp_2)
+        exp_1.data['a'].put("1")
+        exp_1.data['b'].put("1")
+        exp_1.data['M'].mimetype = "plain"
+        exp_2.data['b'].put("2")
+        exp_2.data['c'].put("2")
+
+        exp_2.data.update(exp_1.data)
+
+        self.assertEqual(len(exp_2.data), 4)
+        self.assertEqual(len(exp_1.data), 3)
+
+        self.assertEqual(exp_2.data["a"].get_string(), "1")
+        self.assertEqual(exp_2.data["b"].get_string(), "1")
+        self.assertEqual(exp_2.data["c"].get_string(), "2")
+        self.assertEqual(exp_2.data["M"].mimetype, "plain")
+
+        for v in ["a", "b", "c"]:
+            self.assertEqual(exp_2.data[v].chunks(), 1)
+
+        self.assertEqual(exp_1.data["M"].chunks(), 0)
+        self.assertEqual(exp_2.data["M"].chunks(), 0)
+
+
 
     def testAssignDataTooEarly(self):
         exp = Experiment()
