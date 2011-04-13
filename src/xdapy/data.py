@@ -96,10 +96,25 @@ class _DataProxy(object):
     def __init__(self, assoc, key):
         self.assoc = assoc
         self.key = key
-        self.data_id = None
+
+    @property
+    def __session(self):
+        """Returns the session of the associated entity."""
+        # makes code more readable
+        return self.assoc.owning._session()
+
+    @property
+    def __data(self):
+        """Returns the data relation object of the associated entity.
+        This method also raises a MissingSessionError, if no session is
+        associated with the entity.
+        """
+        self.__session
+        return self.assoc.owning._data
 
     @property
     def mimetype(self):
+        """Return the mimetype of the related data object."""
         return self.get_data().mimetype
 
     @mimetype.setter
@@ -107,19 +122,27 @@ class _DataProxy(object):
         data = self.get_or_create_data()
         data.mimetype = mimetype
 
+    @mimetype.deleter
+    def mimetype(self):
+        self.get_data().mimetype = None
+
+    def has_data(self):
+        return self.key in self.__data
+
     def get_data(self):
-        data = self.assoc.owning._data[self.key]
+        """Returns the associated data for self.key."""
+        # raises a KeyError, if no data is associated
+        data = self.__data[self.key]
         
         assert data.id is not None, "data.id has not been set" # we check explicitly to avoid complications at a later point
         return data
 
     def get_or_create_data(self):
-        if not self.key in self.assoc.owning._data:
+        if not self.has_data():
             # Add a new data entry to the owning list (which should add it to the session)
-            self.assoc.owning._data[self.key] = Data(key=self.key)
+            self.__data[self.key] = Data(key=self.key)
             # and flush it
-            self.assoc.owning._session().flush()
-        
+            self.__session.flush()
         return self.get_data()
 
     def chunk_ids(self):
@@ -128,19 +151,16 @@ class _DataProxy(object):
     def chunk_index(self):
         return [chunk.index for chunk in self._chunk_query(DataChunks.index)]
 
-
     def delete(self):
-        if self.key in self.assoc.owning._data:
-            self.assoc.owning._session().delete(self.assoc.owning._data[self.key])
-            self.assoc.owning._session().flush()
-        else:
-            raise KeyError("Key {0} not in data.".format(self.key))
+        data = self.get_data()
+        self.__session.delete(data)
+        self.__session.flush()
 
-    def clear(self):
-        if self.key in self.assoc.owning._data:
-            for ch in self.assoc.owning._data[self.key]._chunks:
-                self.assoc.owning._session().delete(ch)
-                self.assoc.owning._session().flush()
+    def clear_data(self):
+        data = self.get_data()
+        for ch in data._chunks:
+            self.__session.delete(ch)
+            self.__session.flush()
 
     def put(self, file_or_str, mimetype=None):
         if isinstance(file_or_str, basestring):
@@ -158,14 +178,13 @@ class _DataProxy(object):
             string.close()
 
     def put_file(self, fileish):
-
         if not hasattr(fileish, 'read'):
             # if there is no 'read' method, is is 
             # probably the wrong type
             raise ValueError("Unassignable Type")
 
         data = self.get_or_create_data()
-        self.clear()
+        self.clear_data()
 
         buffer_size = DATA_CHUNK_SIZE
         idx = 0
@@ -180,23 +199,23 @@ class _DataProxy(object):
             chunk = fileish.read(buffer_size)
             if idx % 10 == 0:
                 # we flush every now and then
-                self.assoc.owning._session().flush()
+                self.__session.flush()
 
-        self.assoc.owning._session().flush()
+        self.__session.flush()
 
     def _chunk_query(self, *entities, **kwargs):
         # Version which uses caching of data_id
 #        if not hasattr(self, "data_id") or self.data_id is None:
 #            try:
-#                self.data_id = self.assoc.owning._session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
+#                self.data_id = self.__session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
 #            except NoResultFound:
 #                raise SelectionError("Could not find a result. Maybe there is no data associated with this key.")
-        self.data_id = self.get_data().id # this probably does the same as above code and raises a KeyError
+        data_id = self.get_data().id # this probably does the same as above code and raises a KeyError
 
-        return self.assoc.owning._session().query(*entities, **kwargs).filter(DataChunks.data_id==self.data_id)
+        return self.__session.query(*entities, **kwargs).filter(DataChunks.data_id==data_id)
 
         # Version which uses a join each time
-        # return self.assoc.owning._session().query(*entities, **kwargs).join(Data).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key)
+        # return self.__session.query(*entities, **kwargs).join(Data).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key)
 
     def get(self, fileish):
         for chunk in self._chunk_query(DataChunks.chunk).order_by(DataChunks.index):
@@ -244,6 +263,7 @@ class _DataAssoc(collections.MutableMapping):
         if not isinstance(value, _DataProxy):
             raise ValueError("value needs to be instance of DataProxy")
         """Note that this is only expected to work if value *really* has the same semantics."""
+        # We use a tempfile as long as chunk based copying is not established
         with tempfile.TemporaryFile() as f:
             value.get(f)
             f.seek(0) # Reset the file pointer, otherwise we'll only see EOF

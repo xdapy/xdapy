@@ -167,7 +167,7 @@ class Entity(Base):
     def _session(self):
         session = Session.object_session(self)
         if session is None:
-            raise MissingSessionError("Object has no session")
+            raise MissingSessionError("Entity has no associated session.")
         return session
 
     
