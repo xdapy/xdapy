@@ -16,6 +16,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 import uuid as py_uuid
 import collections
+import tempfile
 
 try:
     from cStringIO import StringIO
@@ -27,6 +28,7 @@ from sqlalchemy import func
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, backref, validates, synonym
 from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
@@ -36,7 +38,7 @@ from sqlalchemy.dialects.postgresql import UUID, BYTEA
         
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
-from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
+from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError, SelectionError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 
@@ -200,8 +202,12 @@ class _DataProxy(object):
 
     def _chunk_query(self, *entities, **kwargs):
         # Version which uses caching of data_id
-        if not hasattr(self, "data_id") or self.data_id is None:
-            self.data_id = self.assoc.owning._session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
+#        if not hasattr(self, "data_id") or self.data_id is None:
+#            try:
+#                self.data_id = self.assoc.owning._session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
+#            except NoResultFound:
+#                raise SelectionError("Could not find a result. Maybe there is no data associated with this key.")
+        self.data_id = self.get_data().id # this probably does the same as above code and raises a KeyError
 
         return self.assoc.owning._session().query(*entities, **kwargs).filter(DataChunks.data_id==self.data_id)
 
@@ -219,8 +225,6 @@ class _DataProxy(object):
             return string_io.getvalue()
         finally:
             string_io.close()
-        
-
 
     def size(self):
         return self._chunk_query(func.sum(DataChunks.length)).scalar()
@@ -255,6 +259,20 @@ class _DataAssoc(collections.Mapping):
     def __iter__(self):
         """Iterate over the keys."""
         return iter(self.owning._data) # our keys are of course the same as _data's
+
+    def __contains__(self, key):
+        """Is key in self?"""
+        # We must do this, because we do not raise a KeyError in __getitem__
+        return key in self.owning._data
+
+    def copy(self, other):
+        """Copys everything from another DataAssoc into this."""
+        for data_key in other:
+            with tempfile.TemporaryFile() as f:
+                other[data_key].get(f)
+                self[data_key].put(f)
+
+                self[data_key].mimetype = self[data_key].mimetype
 
 class Entity(Base):
     '''

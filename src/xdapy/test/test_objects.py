@@ -107,6 +107,26 @@ class TestObjectDict(unittest.TestCase):
         # adding to data saves automatically
         self.assertFalse(exp in self.m.session.dirty)
 
+        # check how the data keys behave
+        exp.data['0']
+        exp.data['1'].mimetype = "m"
+        exp.data['2'].put("V")
+
+        self.assertFalse('0' in exp.data)
+        self.assertTrue('1' in exp.data)
+        self.assertTrue('2' in exp.data)
+
+        def access_mimetype():
+            return exp.data['3'].mimetype
+        def access_data():
+            return exp.data['4'].get_string()
+        self.assertRaises(KeyError, access_mimetype)
+        self.assertRaises(KeyError, access_mimetype) # We check twice - maybe it has been set during our check
+
+        self.assertRaises(KeyError, access_data)
+        self.assertRaises(KeyError, access_data)
+
+
     def testAssignDataTooEarly(self):
         exp = Experiment()
         self.assertRaises(MissingSessionError, exp.data['default'].put, "2")

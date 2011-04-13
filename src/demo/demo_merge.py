@@ -65,11 +65,11 @@ e1 = Experiment(project="My Project", experimenter=u"Dareios Marika Nainsí")
 e2 = Experiment(project="My Project", experimenter=u"Malin Calliope Lilly")
 e2.parent = e1
 e3 = Experiment(project="My Project", experimenter=u"Ilinka Iodocus")
-e3.data = {
-        'a': "Some Data",
-        'b': "Even more data"
-        }
 m.save(e1, e2, e3)
+
+e3.data["a"].put("Some Data")
+e3.data["b"].put("Even more data")
+
 
 e4 = Experiment(project="My other Project", experimenter="Nichol Pauline")
 m_2.save(e4)
@@ -98,16 +98,24 @@ def migrate(old_mapper, new_mapper, mapping):
         for k,v in obj.params.iteritems():
             new_obj.params[k] = v
 
-        # copy data
-        new_obj.data = obj.data
-
         new_mapper.save(new_obj)
+
+        # copy data
+        new_obj.data.copy(obj.data)
+
+        import pdb
+        pdb.set_trace()
+        print new_obj.data.keys(), "a" in new_obj.data
+
+        if "a" in new_obj.data:
+            print new_obj.data["a"].get_string()
 
 migrate(m, m_2, mapping)
 migrate(m_2, m, mapping)
 
 print m.find_roots()
 print m_2.find_roots()
+
 
 assert len(m.find_roots()) == len(m_2.find_roots())
 
