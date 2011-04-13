@@ -19,9 +19,21 @@ m.save(e)
 import pdb
 #pdb.set_trace()
 
+e.data["100M"].mimetype = "a"
+
+e.data["100M"].put("f")
+print e.data["100M"].get_string()
+
 e.data["100M"].put(f)
+
+print e.data["100M"].mimetype
+print "CHUNKS"
+print e.data["100M"].chunks()
+print e.data["100M"].chunk_ids()
+
 m.save(e)
 f.close()
+
 
 ee = m.find_all(E)
 
@@ -34,6 +46,7 @@ for e in ee:
     print ""
     print "CHUNKS"
     print e.data["100M"].chunks()
+    print e.data["100M"].chunk_ids()
     print ""
     print "KEYS"
     print e.data.keys()

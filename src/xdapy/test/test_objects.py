@@ -9,6 +9,7 @@ from sqlalchemy.orm.session import Session
 
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
+from xdapy.errors import MissingSessionError
 import unittest
 
 
@@ -93,16 +94,23 @@ class TestObjectDict(unittest.TestCase):
         exp.params['project'] = "P"
         exp.params['experimenter'] = "E"
 
-        exp.data['default'] = "2"
-        exp.data['input'] = "1"
-        self.assertEqual(exp.data['default'], "2")
+        self.m.save(exp)
+        exp.data['default'].put("2")
+        exp.data['input'].put("1")
+        self.assertEqual(exp.data['default'].get_string(), "2")
         
         #Sideeffects of assignments
         self.m.save(exp)
         self.assertRaises(TypeError, exp.data, [])
-        exp.data = {'newkey':'newvalue'}
+        exp.data['newkey'].put('newvalue')
         
-        self.assertTrue(exp in self.m.session.dirty)
+        # adding to data saves automatically
+        self.assertFalse(exp in self.m.session.dirty)
+
+    def testAssignDataTooEarly(self):
+        exp = Experiment()
+        self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
+
 
 if __name__ == "__main__":
     unittest.main()    

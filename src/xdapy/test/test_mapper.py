@@ -88,10 +88,11 @@ class TestMapper(Setup):
         self.assertRaises(KeyError, assignment2)
     
         exp = Experiment(project='MyProject', experimenter="John Doe")
-        exp.data['somedata'] = """[0, 1, 2, 3]"""
+        self.m.save(exp)
+        exp.data['somedata'].put("""[0, 1, 2, 3]""")
         
         def assign_list():
-            exp.data['somedata'] = [0, 1, 2, 3]
+            exp.data['somedata'].put([0, 1, 2, 3])
 
         self.assertRaises(ValueError, assign_list)
         self.m.save(exp)
@@ -114,8 +115,9 @@ class TestMapper(Setup):
         
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
-        obs.data['moredata'] = """(0, 3, 6, 8)""" # TODO: Deal with non-string data?
-        obs.data['otherredata'] = """(0, 3, 6, 8)"""
+        self.m.save(obs)
+        obs.data['moredata'].put("""(0, 3, 6, 8)""") # TODO: Deal with non-string data?
+        obs.data['otherredata'].put("""(0, 3, 6, 8)""")
         self.m.save(obs)
        
         obs = Observer(name="Max Mustermann")

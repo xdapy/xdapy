@@ -211,6 +211,10 @@ class XmlIO(IO):
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
+        # We will save the entity now. Otherwise, we cannot add data
+
+        self.mapper.save(new_entity)
+
         for sub in entity:
             if sub.tag == "parameter":
                 name, value = self.parse_parameter(sub)
@@ -224,7 +228,8 @@ class XmlIO(IO):
                 new_entity.children.append(child)
             if sub.tag == "data":
                 name, value = self.parse_data(sub)
-                new_entity._data[name] = value
+                new_entity.data[name].put(value["data"])
+                new_entity.data[name].mimetype = value["mimetype"]
 
         return new_entity
 
@@ -242,7 +247,7 @@ class XmlIO(IO):
         except KeyError:
             encoding = "plain"
         raw_data = recode[encoding].decode(data.text)
-        new_data = Data(name=name, data=raw_data, mimetype=mimetype)
+        new_data = {"name": name, "data": raw_data, "mimetype": mimetype}
         return name, new_data
 
     def entity_by_name(self, entity, **kwargs):

@@ -17,6 +17,11 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 import uuid as py_uuid
 import collections
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 from sqlalchemy import Column, ForeignKey, LargeBinary, String, Integer
 from sqlalchemy import func
 from sqlalchemy.schema import UniqueConstraint
@@ -33,6 +38,7 @@ from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
 from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
+
 
 DATA_CHUNK_SIZE = 5 * 1000 * 1000 # Byte
 DATA_COLUMN_LENGTH = DATA_CHUNK_SIZE
@@ -56,7 +62,6 @@ class DataChunks(Base):
         
     chunk = synonym('_chunk', descriptor=chunk)
     
-    
     _length = Column('length', Integer)
     
     @synonym_for('_length')
@@ -71,6 +76,9 @@ class DataChunks(Base):
     def __init__(self, index, chunk):
         self.index = index
         self.chunk = chunk
+
+    def __repr__(self):
+        return "<Datachunk #{0} for Data[{1}], length {2}>".format(self.index, self.data_id, self.length)
 
 class Data(Base):
     '''
@@ -107,43 +115,81 @@ class _DataProxy(object):
     def __init__(self, assoc, key):
         self.assoc = assoc
         self.key = key
+        self.data_id = None
+
+    @property
+    def mimetype(self):
+        return self.get_data().mimetype
+
+    @mimetype.setter
+    def mimetype(self, mimetype):
+        data = self.get_or_create_data()
+        data.mimetype = mimetype
+
+    def get_data(self):
+        data = self.assoc.owning._data[self.key]
+        
+        assert data.id is not None, "data.id has not been set" # we check explicitly to avoid complications at a later point
+        return data
 
     def get_or_create_data(self):
         if not self.key in self.assoc.owning._data:
+            # Add a new data entry to the owning list (which should add it to the session)
             self.assoc.owning._data[self.key] = Data(key=self.key)
-        return self.assoc.owning._data[self.key]
+            # and flush it
+            self.assoc.owning._session().flush()
+        
+        return self.get_data()
 
-    def ids(self):
-        return self._key_query(Data.id)
-
-    def _key_query(self, *entities, **kwargs):
-        return self.assoc._query(*entities, **kwargs).filter(Data.key.like(self.key))
+    def chunk_ids(self):
+        return [chunk.id for chunk in self._chunk_query(DataChunks.id)]
 
     def delete(self):
-        print "DEL"
-
         if self.key in self.assoc.owning._data:
             del self.assoc.owning._data[self.key]
-        self.assoc.owning._session().flush()
+            self.assoc.owning._session().flush()
 
-    def put(self, fileish):
-        self.delete()
-        print "PUT"
+    def clear(self):
+        if self.key in self.assoc.owning._data:
+            del self.assoc.owning._data[self.key]._chunks[:]
+            self.assoc.owning._session().flush()
+
+    def put(self, file_or_str, mimetype=None):
+        if isinstance(file_or_str, basestring):
+            self.put_string(file_or_str)
+        else:
+            self.put_file(file_or_str)
+        if mimetype:
+            self.mimetype = mimetype
+
+    def put_string(self, string):
+        string = StringIO(string)
+        try:
+            self.put_file(string)
+        finally:
+            string.close()
+
+    def put_file(self, fileish):
+
+        if not hasattr(fileish, 'read'):
+            # if there is no 'read' method, is is 
+            # probably the wrong type
+            raise ValueError("Unassignable Type")
+
+        self.clear()
 
         data = self.get_or_create_data()
-#        self.assoc.owning._session().add(data)
-#        self.assoc.owning._session().flush()
 
         buffer_size = DATA_CHUNK_SIZE
         idx = 0
-        
+       
         chunk = fileish.read(buffer_size)
+
         while chunk:
             idx += 1
 
             chunk = DataChunks(idx, chunk)
             data._chunks.append(chunk)
- #           self.assoc.owning._session().add(chunk)
 
             chunk = fileish.read(buffer_size)
             if idx % 10 == 0:
@@ -153,11 +199,28 @@ class _DataProxy(object):
         self.assoc.owning._session().flush()
 
     def _chunk_query(self, *entities, **kwargs):
-        return self.assoc.owning._session().query(*entities, **kwargs).join(Data).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key)
+        # Version which uses caching of data_id
+        if not hasattr(self, "data_id") or self.data_id is None:
+            self.data_id = self.assoc.owning._session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
+
+        return self.assoc.owning._session().query(*entities, **kwargs).filter(DataChunks.data_id==self.data_id)
+
+        # Version which uses a join each time
+        # return self.assoc.owning._session().query(*entities, **kwargs).join(Data).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key)
 
     def get(self, fileish):
         for chunk in self._chunk_query(DataChunks.chunk).order_by(DataChunks.index):
             fileish.write(chunk.chunk) # self._data[gen_key].data)
+
+    def get_string(self):
+        string_io = StringIO()
+        try:
+            self.get(string_io)
+            return string_io.getvalue()
+        finally:
+            string_io.close()
+        
+
 
     def size(self):
         return self._chunk_query(func.sum(DataChunks.length)).scalar()
@@ -190,8 +253,8 @@ class _DataAssoc(collections.Mapping):
         return len(self.owning._data)
 
     def __iter__(self):
-        return iter(self.owning._data)
-
+        """Iterate over the keys."""
+        return iter(self.owning._data) # our keys are of course the same as _data's
 
 class Entity(Base):
     '''
