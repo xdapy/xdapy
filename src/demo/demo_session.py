@@ -40,9 +40,6 @@ class Observer(EntityObject):
         'glasses': 'boolean'
     }
 
-import pdb
-pdb.set_trace()
-
 # available types:
 #    'integer', 'float', 'string', 'date', 'time', 'datetime', 'boolean'
 
@@ -65,7 +62,7 @@ e2.params["project"] = "My other project"
 t1 = Trial()
 t1.belongs_to(e1) # t1.parent = e1
 
-t1.data["data set 1"] = "Some data"
+t1.data["data set 1"].put("Some data")
 
 o1 = Observer(name="John H. Observer", age=31)
 t1.connect("Observer", o1)

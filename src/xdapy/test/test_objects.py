@@ -9,6 +9,7 @@ from sqlalchemy.orm.session import Session
 
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
+from xdapy.errors import MissingSessionError
 import unittest
 
 
@@ -93,16 +94,71 @@ class TestObjectDict(unittest.TestCase):
         exp.params['project'] = "P"
         exp.params['experimenter'] = "E"
 
-        exp.data['default'] = "2"
-        exp.data['input'] = "1"
-        self.assertEqual(exp.data['default'], "2")
+        self.m.save(exp)
+        exp.data['default'].put("2")
+        exp.data['input'].put("1")
+        self.assertEqual(exp.data['default'].get_string(), "2")
         
         #Sideeffects of assignments
         self.m.save(exp)
         self.assertRaises(TypeError, exp.data, [])
-        exp.data = {'newkey':'newvalue'}
+        exp.data['newkey'].put('newvalue')
         
-        self.assertTrue(exp in self.m.session.dirty)
+        # adding to data saves automatically
+        self.assertFalse(exp in self.m.session.dirty)
+
+        # check how the data keys behave
+        exp.data['0']
+        exp.data['1'].mimetype = "m"
+        exp.data['2'].put("V")
+
+        self.assertFalse('0' in exp.data)
+        self.assertTrue('1' in exp.data)
+        self.assertTrue('2' in exp.data)
+
+        def access_mimetype():
+            return exp.data['3'].mimetype
+        def access_data():
+            return exp.data['4'].get_string()
+        self.assertRaises(KeyError, access_mimetype)
+        self.assertRaises(KeyError, access_mimetype) # We check twice - maybe it has been set during our check
+
+        self.assertRaises(KeyError, access_data)
+        self.assertRaises(KeyError, access_data)
+
+    def testAdvancedData(self):
+        exp_1 = Experiment()
+        exp_2 = Experiment()
+
+        self.m.save(exp_1, exp_2)
+        exp_1.data['a'].put("1")
+        exp_1.data['b'].put("1")
+        exp_1.data['M'].mimetype = "plain"
+        exp_2.data['b'].put("2")
+        exp_2.data['c'].put("2")
+
+        exp_2.data.update(exp_1.data)
+
+        self.assertEqual(len(exp_2.data), 4)
+        self.assertEqual(len(exp_1.data), 3)
+
+        self.assertEqual(exp_2.data["a"].get_string(), "1")
+        self.assertEqual(exp_2.data["b"].get_string(), "1")
+        self.assertEqual(exp_2.data["c"].get_string(), "2")
+        self.assertEqual(exp_2.data["M"].mimetype, "plain")
+
+        for v in ["a", "b", "c"]:
+            self.assertEqual(exp_2.data[v].chunks(), 1)
+
+        self.assertEqual(exp_1.data["M"].chunks(), 0)
+        self.assertEqual(exp_2.data["M"].chunks(), 0)
+
+
+
+    def testAssignDataTooEarly(self):
+        exp = Experiment()
+        self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
+
 
 if __name__ == "__main__":
     unittest.main()    

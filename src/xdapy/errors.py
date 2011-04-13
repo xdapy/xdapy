@@ -40,6 +40,10 @@ class InsertionError(Error):
     """
     pass
 
+class MissingSessionError(Error):
+    """Raised when an object is not in a session."""
+    pass
+
 class StringConversionError(Error):
     """Raised when a value can’t be generated from string."""
     pass
