@@ -150,7 +150,7 @@ class Entity(Base):
     def to_json(self, full=False):
         json = self._attributes()
         if full:
-            json["param"] = self.params.copy()
+            json["param"] = dict(self.str_params)
             data = []
             for key, val in self.data.iteritems():
                 data.append({'id': val.get_data().id,
