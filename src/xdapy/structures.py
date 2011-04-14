@@ -189,6 +189,7 @@ class Meta(DeclarativeMeta):
 
 
     def __init__(cls, name, bases, attrs):
+        cls.__original_class_name__ = name
         name = cls._calculate_polymorphic_name(name, bases, attrs)
 
         if getattr(cls, '_decl_class_registry', None) is None:
