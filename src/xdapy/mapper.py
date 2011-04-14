@@ -73,7 +73,7 @@ class Mapper(object):
                     session.delete(arg)
             except Exception:
                 raise
-    
+
     def create(self, type, *args, **kwargs):
         entity = self.entity_by_name(type)(*args, **kwargs)
         self.save(entity)
@@ -259,6 +259,10 @@ class Mapper(object):
     def register(self, *klasses):
         """Registers the class and the class’s parameters."""
         for klass in klasses:
+            if not issubclass(klass, EntityObject):
+                raise ValueError("Class must be subclass of EntityObject.")
+            if klass is EntityObject:
+                raise ValueError("EntityObject is no valid class.")
             self.registered_objects.append(klass)
 
             for name, paramtype in klass.parameter_types.iteritems():
