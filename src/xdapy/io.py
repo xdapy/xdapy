@@ -312,16 +312,16 @@ class XmlIO(IO):
             entity.append(parameter)
         for child in elem.children:
             entity.append(self.write_entity(child, types))
-        for name, value in elem._data.iteritems():
+        for key, value in elem.data.iteritems():
             data = ET.Element("data")
-            data.attrib["name"] = name
+            data.attrib["name"] = key
             if value.mimetype:
                 data.attrib["mimetype"] = value.mimetype
             if value.mimetype and value.mimetype == "ascii":
                 encoding = value.mimetype
             else:
                 encoding = "base64"
-            data.text = recode[encoding].encode(value.data)
+            data.text = recode[encoding].encode(value.get_string())
             data.attrib["encoding"] = encoding
             entity.append(data)
             
