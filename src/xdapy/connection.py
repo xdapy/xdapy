@@ -21,6 +21,12 @@ class AutoSession(object):
         self.session = session
         
     def __enter__(self):
+        self.session.begin()
+        # We are in autocommit mode. If we do not explicitly begin a session
+        # we must flush afterwards because we cannot be sure WHEN the session
+        # is really commited.
+        # Especially the last commit may get lost without an explicit flush
+        # or a session.close
         return self.session
     
     def __exit__(self, e_type, e_val, e_tb):
