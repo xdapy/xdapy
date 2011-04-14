@@ -152,11 +152,11 @@ class Entity(Base):
         if full:
             json["param"] = self.params.copy()
             data = []
-            for d in self._datadict.values():
-                data.append({'id': d.id,
-                              'mimetype': d.mimetype,
-                              'name': d.name,
-                              'content-length': d.length})
+            for key, val in self.data.iteritems():
+                data.append({'id': val.get_data().id,
+                              'mimetype': val.mimetype,
+                              'name': key,
+                              'content-length': val.size()})
             json["data"] = data
         return json
                 
