@@ -47,7 +47,7 @@ class Connection(object):
 
         if uri:
             if host or dialect or user or password:
-                raise ConfigurationError("If uri is given neither of host, dialect, user or password may be specified")
+                raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
         else:
             if not dialect:
                 dialect = "postgresql"
