@@ -75,9 +75,16 @@ class Mapper(object):
                 raise
 
     def create(self, type, *args, **kwargs):
+        """Returns an instance of the entity named type."""
         entity = self.entity_by_name(type)(*args, **kwargs)
+        return entity
+
+    def create_and_save(self, type, *args, **kwargs):
+        """Returns and saves an instance of the entity named type."""
+        entity = self.create(type, *args, **kwargs)
         self.save(entity)
         return entity
+
     
     def _mkfilter(self, entity, filter):
         and_clause = []
@@ -103,6 +110,7 @@ class Mapper(object):
                         or_clause.append(ParameterType.value.like(v))
                     else:
                         or_clause.append(ParameterType.value == v)
+                # FIXME
                 return entity._params.of_type(ParameterType).any(or_(*or_clause))
 
             and_clause.append(makeParam(key, value))
@@ -110,23 +118,35 @@ class Mapper(object):
         
     def find(self, entity, filter=None):
         with self.auto_session as session:
+            # We can only query for the entity's class
+            # if it is something else, transform it
+
+            if isinstance(entity, basestring):
+                # if we've been given a string, return the appropriate
+                # entity class
+                entity = self.entity_by_name(entity)
+
             if isinstance(entity, EntityObject):
+                # if we've been given an instance, get the parameters
+                # and update the filter
+
                 # check for EntityObject and filter parameters
-                if not filter:
-                    filter = {}
-                f = {}
                 # filter comes second, so we assume it has higher priority
-                f.update(entity.params)
-                f.update(filter)
+                f = dict(entity.params)
+                if filter:
+                    f.update(filter)
+                
                 filter = f
+                # replace the entity name with its class
                 entity = entity.__class__
-    
+
+            query = session.query(entity)
+
             if filter:
                 f = self._mkfilter(entity, filter)
-                objects = session.query(entity).filter(f)
+                return query.filter(f)
             else:
-                objects = session.query(entity)
-            return objects
+                return query
         
     def find_by_id(self, entity, id):
         with self.auto_session as session:
@@ -268,13 +288,13 @@ class Mapper(object):
             for name, paramtype in klass.parameter_types.iteritems():
                 self.register_parameter(klass.__name__, name, paramtype)
     
-    def entity_by_name(self, name, **kwargs):
+    def entity_by_name(self, name):
         klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
         if name in klasses:
-            return klasses[name](**kwargs)
+            return klasses[name]
         klasses_guessed = [cls for cls in klasses if cls.startswith(name)]
         if len(klasses_guessed) == 1:
-            return klasses[klasses_guessed[0]](**kwargs)
+            return klasses[klasses_guessed[0]]
 
 if __name__ == "__main__":
     pass
