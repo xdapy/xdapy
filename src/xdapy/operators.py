@@ -22,4 +22,9 @@ def between(v1, v2):
     return lambda type: and_(ge(v1)(type), le(v2)(type))
 
 
+def eq(v):
+    return lambda type: type == v
+
+def like(v):
+    return lambda type: type.like(v) # TODO or the other way round?
 

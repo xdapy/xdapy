@@ -88,7 +88,7 @@ class Mapper(object):
     
     def _mkfilter(self, entity, filter):
         and_clause = []
-        for key,value in filter.iteritems():
+        for key, value in filter.iteritems():
         # create sql for each key and concatenate with AND
             def makeParam(key, value):
                 """ Takes a value list as input and concatenates with OR.
@@ -113,32 +113,51 @@ class Mapper(object):
                 # FIXME
                 return entity._params.of_type(ParameterType).any(or_(*or_clause))
 
-            and_clause.append(makeParam(key, value))
+            def makeAttr(key, value):
+                if not callable(value):
+                    value = lambda v: v == value
+                return value(getattr(entity, key))
+
+            if key.startswith("_"):
+                # the key is a direct attribute
+                k = key[1::]
+                and_clause.append(makeAttr(k, value))
+            else:
+                # the key is a parameter
+                and_clause.append(makeParam(key, value))
         return and_(*and_clause)
-        
+
+    def _mk_entity_filter(self, entity, filter=None):
+        """Returns the appropriate entity class and a filter dict."""
+        # TODO Rename this function
+
+        # We can only query for the entity's class
+        # if it is something else, transform it
+        if isinstance(entity, basestring):
+            # if we've been given a string, return the appropriate
+            # entity class
+            entity = self.entity_by_name(entity)
+
+        if isinstance(entity, EntityObject):
+            # if we've been given an instance, get the parameters
+            # and update the filter
+
+            # check for EntityObject and filter parameters
+            # filter comes second, so we assume it has higher priority
+            f = dict(entity.params)
+            if filter:
+                f.update(filter)
+            
+            filter = f
+            # replace the entity name with its class
+            entity = entity.__class__
+
+        return entity, filter
+
+
     def find(self, entity, filter=None):
         with self.auto_session as session:
-            # We can only query for the entity's class
-            # if it is something else, transform it
-
-            if isinstance(entity, basestring):
-                # if we've been given a string, return the appropriate
-                # entity class
-                entity = self.entity_by_name(entity)
-
-            if isinstance(entity, EntityObject):
-                # if we've been given an instance, get the parameters
-                # and update the filter
-
-                # check for EntityObject and filter parameters
-                # filter comes second, so we assume it has higher priority
-                f = dict(entity.params)
-                if filter:
-                    f.update(filter)
-                
-                filter = f
-                # replace the entity name with its class
-                entity = entity.__class__
+            entity, filter = self._mk_entity_filter(entity, filter)
 
             query = session.query(entity)
 
@@ -220,6 +239,10 @@ class Mapper(object):
                     matrix.append(row)
 
         return matrix
+
+    def find_with(self, entity, filter=None):
+        query = self.find(entity, filter)
+        return FindWith(query)
     
     def connect_objects(self, parent, child, force=False):
         """Connect two related objects
@@ -295,6 +318,50 @@ class Mapper(object):
         klasses_guessed = [cls for cls in klasses if cls.startswith(name)]
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]]
+        if len(klasses_guessed) > 1:
+            raise ValueError("To many entities for name \"{0}\".".format(name))
+
+        raise ValueError("No entity found for name \"{0}\".".format(name))
+
+
+class FindWith(object):
+    def __init__(self, query):
+        self._query = query
+
+    def _check(self, func, iterable):
+        if isinstance(iterable, FindWith):
+            iterable = iterable.all()
+
+        ret = []
+        for x in self._query:
+            for o in iterable:
+                if func(x, o):
+                    ret.append(x)
+        return ret
+
+    def parent(self, iterable):
+        func = lambda x, o: o == x.parent
+        return FindWith(self._check(func, iterable))
+
+    def child(self, iterable):
+        func = lambda x, o: o.parent == x
+        return FindWith(self._check(func, iterable))
+
+    def connected(self, iterable):
+        func = lambda x, o: o in x.connected
+        return FindWith(self._check(func, iterable))
+
+    def related(self, iterable):
+        func = lambda x, o: o in x.related
+        return FindWith(self._check(func, iterable))
+
+
+    def all(self):
+        try:
+            return self._query.all()
+        except:
+            return self._query
+
 
 if __name__ == "__main__":
     pass
