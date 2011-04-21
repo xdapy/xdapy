@@ -8,7 +8,7 @@ from xdapy import Base
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
-from xdapy.parameters import Parameter, StringParameter, ParameterMap, strToType
+from xdapy.parameters import Parameter, StringParameter, DateParameter, ParameterMap, strToType
 from xdapy.errors import StringConversionError
 
 from sqlalchemy.sql import or_, and_
@@ -86,7 +86,16 @@ class Mapper(object):
         return entity
 
     
-    def _mkfilter(self, entity, filter):
+    def param_filter(self, entity, filter, options=None):
+        default_options = {
+            "convert_string": False,
+            "strict": True
+            }
+
+        if options:
+            default_options.update(options)
+        options = default_options
+
         and_clause = []
         for key, value in filter.iteritems():
         # create sql for each key and concatenate with AND
@@ -101,15 +110,40 @@ class Mapper(object):
                 or_clause = []
                 # Ask for the type of the parameter according to the entity
                 ParameterType = ParameterMap[entity.parameter_types[key]]
-                for v in value:
-                    if callable(v):
+                for val in value:
+                    if callable(val):
                         # we’ve been given a function
-                        or_clause.append(v(ParameterType.value))
+                        or_clause.append(val(ParameterType.value))
                     elif ParameterType == StringParameter:
                         # test string using ‘like’
-                        or_clause.append(ParameterType.value.like(v))
+                        if not options["strict"]:
+                            val = "%" + val + "%"
+
+                        or_clause.append(ParameterType.value.like(val))
                     else:
-                        or_clause.append(ParameterType.value == v)
+                        if options["convert_string"]:
+                            try:
+                                val = ParameterType.from_string(val)
+                            except StringConversionError:
+                                if ParameterType == DateParameter:
+                                    # get year month day
+                                    ymd = val.split('-')
+
+                                    clauses = []
+                                    from sqlalchemy.sql.expression import func
+                                    if len(ymd) > 0:
+                                         clauses.append(func.date_part('year', ParameterType.value) ==  ymd[0])
+                                    if len(ymd) > 1:
+                                         clauses.append(func.date_part('month', ParameterType.value) ==  ymd[1])
+                                    if len(ymd) > 2:
+                                         clauses.append(func.date_part('day', ParameterType.value) ==  ymd[2])
+                                    
+                                    clause = (and_(*clauses))
+                                    or_clause.append(clause)
+                                else:
+                                    raise
+                        else:
+                            or_clause.append(ParameterType.value == val)
                 # FIXME
                 return entity._params.of_type(ParameterType).any(or_(*or_clause))
 
@@ -154,15 +188,15 @@ class Mapper(object):
 
         return entity, filter
 
-
-    def find(self, entity, filter=None):
+ 
+    def find(self, entity, filter=None, options=None):
         with self.auto_session as session:
             entity, filter = self._mk_entity_filter(entity, filter)
 
             query = session.query(entity)
 
             if filter:
-                f = self._mkfilter(entity, filter)
+                f = self.param_filter(entity, filter, options)
                 return query.filter(f)
             else:
                 return query
@@ -171,11 +205,11 @@ class Mapper(object):
         with self.auto_session as session:
             return session.query(entity).filter(Entity.id==id).one()
    
-    def find_first(self, entity, filter=None):
-        return self.find(entity, filter).first()
+    def find_first(self, entity, filter=None, options=None):
+        return self.find(entity, filter, options).first()
     
-    def find_all(self, entity, filter=None):
-        return self.find(entity, filter).all()
+    def find_all(self, entity, filter=None, options=None):
+        return self.find(entity, filter, options).all()
     
     def find_roots(self, entity=None):
         if not entity:

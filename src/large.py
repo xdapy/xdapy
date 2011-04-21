@@ -6,7 +6,7 @@ class E(EntityObject):
 
 connection = Connection.profile("test")#, echo=True) # use standard profile
 m = Mapper(connection)
-m.create_tables(overwrite=True)
+m.create_tables()#overwrite=True)
 
 m.register(E)
 
@@ -17,14 +17,13 @@ e = E()
 m.save(e)
 
 import pdb
-#pdb.set_trace()
 
 e.data["100M"].mimetype = "a"
 
 e.data["100M"].put("f")
 print e.data["100M"].get_string()
 
-e.data["100M"].put(f)
+#e.data["100M"].put(f)
 
 print e.data["100M"].mimetype
 print "CHUNKS"
@@ -38,6 +37,11 @@ f.close()
 ee = m.find_all(E)
 
 for e in ee:
+    if not "100M" in e.data.keys():
+        print "N"
+        m.delete(e)
+        continue
+    print "KEYS", e.data.keys()
 
     out = open("out.dat", "w")
     e.data["100M"].get(out)
@@ -51,8 +55,14 @@ for e in ee:
     print "KEYS"
     print e.data.keys()
     e.data["100M"].delete()
+    print e.data.keys()
     out.close()
     
     m.delete(e)
 
+
+#ee = m.find_all(E)
+
+#for e in ee:
+#    print "KEYS", e.data.keys()
 
