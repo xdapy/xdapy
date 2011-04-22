@@ -164,6 +164,8 @@ class Mapper(object):
     def _mk_entity_filter(self, entity, filter=None):
         """Returns the appropriate entity class and a filter dict."""
         # TODO Rename this function
+        if filter is None:
+            filter = {}
 
         # We can only query for the entity's class
         # if it is something else, transform it
@@ -275,8 +277,30 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
-        query = self.find(entity, filter)
-        return FindWith(query)
+        entity, filter = self._mk_entity_filter(entity, filter)
+
+        new_filter = {}
+        relations = {}
+        for key, value in filter.iteritems():
+            if key == "_parent":
+                v = self.find_with(*value)
+                relations[key] = v
+            else:
+                new_filter[key] = value
+
+
+        print "FIND", entity, new_filter
+        elements = self.find(entity, new_filter)
+        res = []
+        print "RELA", relations
+
+        for elem in elements:
+            if "_parent" in relations and elem.parent not in relations["_parent"]:
+                pass
+            else:
+                res.append(elem)
+
+        return res
     
     def connect_objects(self, parent, child, force=False):
         """Connect two related objects
