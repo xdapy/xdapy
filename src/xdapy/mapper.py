@@ -279,11 +279,27 @@ class Mapper(object):
     def find_with(self, entity, filter=None):
         entity, filter = self._mk_entity_filter(entity, filter)
 
+        special_keys = {}
+        special_keys["_parent"] = lambda elem, related: elem.parent == related
+        special_keys["_child"] = lambda elem, related: related in elem.children
+        special_keys["_related"] = lambda elem, related: related in elem.related
+
+        special_keys["_with"] = None
+
         new_filter = {}
         relations = {}
         for key, value in filter.iteritems():
-            if key == "_parent":
-                v = self.find_with(*value)
+            if key in special_keys:
+                if key == "_with":
+                    v = value
+                elif isinstance(value, list):
+                    # if the value is a list, assemble all objects
+                    v = [self.find_with(*val) for val in value]
+                elif isinstance(value, tuple):
+                    # if it is a tuple
+                    v = self.find_with(*value)
+                else:
+                    raise ValueError("Expecting tuple or list.")
                 relations[key] = v
             else:
                 new_filter[key] = value
@@ -295,9 +311,16 @@ class Mapper(object):
         print "RELA", relations
 
         for elem in elements:
-            if "_parent" in relations and elem.parent not in relations["_parent"]:
-                pass
-            else:
+            check = []
+            for rel_key, rel_val in relations.iteritems():
+                if rel_key == "_with":
+                    one_hit = rel_val(elem)
+                else:
+                # check that any of the found relations matches
+                    one_hit = any(special_keys[rel_key](elem, val) for val in rel_val)
+                check.append(one_hit)
+
+            if all(check):
                 res.append(elem)
 
         return res
