@@ -136,6 +136,8 @@ class Connection(object):
         opts = {}
         opts.update(config_obj)
         if profile:
+            if config_obj.get(profile) is None:
+                raise Exception("The profile '%s' is not specified in your configuration."%(profile))
             # merge the profile options to base
             opts.update(config_obj.get(profile))
 
