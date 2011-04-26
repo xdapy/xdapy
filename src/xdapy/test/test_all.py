@@ -137,6 +137,7 @@ class Test(unittest.TestCase):
         self.assertEqual(self.mapper.find_first(Observer(name="Susanne Sorgenfrei")).children, [self.s8, self.s9, self.s10])
         self.assertEqual(self.mapper.find_first(Observer(name="Susi Sorgen")).children, [])
         self.assertEqual(self.mapper.find_first(Observer(name="Max Mustermann")).children, [self.s6, self.s7])
+        self.assertEqual(self.mapper.find_first("Observer", {"name": "Max Mustermann"}).children, [self.s6, self.s7])
     
 if __name__ == "__main__":
     unittest.main()

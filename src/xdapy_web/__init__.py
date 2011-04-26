@@ -100,7 +100,7 @@ class Entity(object):
             type = data_dict["type"]
             del data_dict["type"]
             
-            entity = mapper.create(type, **data_dict)
+            entity = mapper.create_and_save(type, **data_dict)
             return entity.to_json()
             
         

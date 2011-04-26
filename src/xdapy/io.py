@@ -260,8 +260,7 @@ class XmlIO(IO):
         return name, new_data
 
     def entity_by_name(self, entity, **kwargs):
-        return self.mapper.entity_by_name(entity, **kwargs)
-
+        return self.mapper.entity_by_name(entity)(**kwargs)
 
     def write(self):
         root = ET.Element("xdapy")

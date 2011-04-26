@@ -243,6 +243,9 @@ class _DataProxy(object):
             check += 1
         return True
 
+    def __repr__(self):
+        return "DataProxy(mimetype={0}, chunks={1}, size={2})".format(self.mimetype, self.chunks(), self.size())
+
 
 class _DataAssoc(collections.MutableMapping):
     """Association dict for data."""
@@ -287,5 +290,8 @@ class _DataAssoc(collections.MutableMapping):
         """Copys everything from another DataAssoc into this."""
         for data_key in other:
             self[data_key] = other[data_key]
+
+    def __repr__(self):
+        return str(dict(self.iteritems()))
 
 
