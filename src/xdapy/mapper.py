@@ -85,6 +85,8 @@ class Mapper(object):
         self.save(entity)
         return entity
 
+    def is_in_session(self, entity):
+        return entity in self.session
     
     def param_filter(self, entity, filter, options=None):
         default_options = {
@@ -277,61 +279,116 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
-        entity, filter = self._mk_entity_filter(entity, filter)
-
         relation_funcs = {}
-        relation_funcs["_parent"] = lambda related: lambda elem: elem.parent in related
-        relation_funcs["_child"] = lambda related: lambda elem: bool(set.intersection(set(related), set(elem.children)))
-        relation_funcs["_related"] = lambda related: lambda elem: bool(set.intersection(set(related), set(elem.related)))
-
+        # these take:
+        # the recur function (for lazy evaluation)
+        # the 
+        # the element they are compared with
+        relation_funcs["_parent"] = lambda recur: lambda related: lambda elem: tr(related) and elem.parent in recur(related)
+        relation_funcs["_child"] = lambda recur: lambda related: lambda elem: bool(set.intersection(set(recur(related)), set(elem.children)))
+        relation_funcs["_related"] = lambda recur: lambda related: lambda elem: bool(set.intersection(set(recur(related)), set(elem.related)))
         relation_funcs["_with"] = None
 
+        def tr(v):
+            print "TRACE", v
+            return True
+
         boolean_funcs = {}
-        boolean_funcs["_all"] = lambda func: lambda vals: all(func(v) for v in vals)
-        boolean_funcs["_any"] = lambda func: lambda vals: any(func(v) for v in vals)
-        boolean_funcs["_none"] = lambda func: lambda vals: not any(func(v) for v in vals)
+        # these take:
+        # the recur function (for lazy evaluation)
+        # the relation they act on
+        # the values of the relation
+        boolean_funcs["_all"] = lambda recur: lambda relfunc: lambda vals: all(relfunc(v) for v in recur(vals))
+        boolean_funcs["_any"] = lambda recur: lambda relfunc: lambda vals: tr(relfunc) and tr(relfunc) and any(relfunc(v) for v in recur(vals))
+        boolean_funcs["_none"] = lambda recur: lambda relfunc: lambda vals: not any(relfunc(v) for v in recur(vals))
+
 
         def eval_filter(key, func):
+            print "EVAL_FILTER", key, func
+
             if key == "_with":
                 return lambda recur: func
             else:
                 if isinstance(func, tuple):
-                    return lambda recur: relation_funcs[key](recur(*func))
+                    return lambda recur: relation_funcs[key](recur)(func)
                 elif isinstance(func, dict):
                     filters = []
                     for func_key, func_func in func.iteritems():
                         print "DICT", func_key, func_func
-                        fun = lambda recur: boolean_funcs[func_key](recur(*func_func))
+                        print "DICT", key
+                        fun = lambda recur: boolean_funcs[func_key](recur)(relation_funcs[key])(func_func)
                     return fun # lambda recur: boolean_funcs[func_key
                 else:
                     print "PACKING", key, type(func)
-                    return lambda recur: relation_funcs[key](func)
+                    return lambda recur: relation_funcs[key](recur)(func)
+
+        import itertools
+
+        def find_w(entityish):
+
+            if isinstance(entityish, EntityObject) and self.is_in_session(entityish):
+                return [entityish]
+
+            if isinstance(entityish, list):
+                if all(isinstance(e, EntityObject) and self.is_in_session(e) for e in entityish):
+                    return entityish
+                else:
+                    res = []
+                    for e in entityish:
+                        res += find_w(e)
+                    return res
+#                    raise ValueError("Inhomogenous list given. {0}", entityish)
+
+            if isinstance(entityish, tuple):
+                entity = entityish[0]
+                filter = entityish[1]
+                entity, filter = self._mk_entity_filter(entity, filter)
+
+                param_filter = {}
+                relation_filter = []
+                for filter_key, filter_func in filter.iteritems():
+                    #print filter_key, filter_func
+
+                    if filter_key in relation_funcs:
+                        relation_filter.append(eval_filter(filter_key, filter_func))
+                    
+                    elif filter_key in boolean_funcs:
+                        print "BOOLEAN", filter_key
+                        pass
+                    else:
+                        # param_filter is everything which is neither relation_func nor boolean_func
+                        param_filter[filter_key] = filter_func
+
+    
+                #print relation_filter
+
+                def filtered(elem):
+                    # this basically means: evaluate all "_with" statements
+                    res = []
+                    for fi in relation_filter:
+                        f = fi(find_w)
+                        if callable(f):
+                            res.append(f(elem))
+                        elif isinstance(f, bool):
+                            res.append(f)
+                        else:
+                            ValueError("filter")
+                    return all(res)
+
+                # filter everything
+                elements = self.find(entity, param_filter)
+                return [elem for elem in elements if filtered(elem)]
+
+            if callable(entityish):
+                return entityish
+            print type(entityish)
+            raise ValueError(entityish)
 
 
-        param_filter = {}
-        relation_filter = []
-        for filter_key, filter_func in filter.iteritems():
-            print filter_key, filter_func
+        res = find_w((entity, filter))
 
-            if filter_key in relation_funcs:
-                relation_filter.append(eval_filter(filter_key, filter_func))
-            
-            elif filter_key in boolean_funcs:
-                print "BOOLEAN", filter_key
-                pass
-            else:
-                # param_filter is everything which is neither relation_func nor boolean_func
-                param_filter[filter_key] = filter_func
+        return res 
 
-        print relation_filter
-
-        def filtered(elem):
-            # this basically means: evaluate all "_with" statements
-            return all([fi(self.find_with)(elem) for fi in relation_filter])
-
-        # filter everything
-        elements = self.find(entity, param_filter)
-        return [elem for elem in elements if filtered(elem)]
 
         new_filter = {}
         relations = {}
