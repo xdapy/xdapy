@@ -55,12 +55,17 @@ obs = m.find("Observer", {"name": "%Frank%"}).all()
 
 from xdapy.operators import gt, lt
 
+trials = m.find_with("Session", {"_parent": ("Experiment", {"project": "%E1%"})})
+
+print "---"
+
 trials = m.find_with("Session", {"_id": lambda id: id*id < 300,
     "_parent": 
         {"_any": 
         [
         ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E1%"})}),
         ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E2%"})}),
+        t1
         ]
         }
         ,

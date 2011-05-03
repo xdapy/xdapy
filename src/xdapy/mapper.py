@@ -279,6 +279,42 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
+
+        def traverse(entityish):
+        
+            if isinstance(entityish, tuple):
+                if isinstance(entityish[1], dict):
+                    traversed_dict = {}
+                    for item in entityish[1].iteritems():
+                        ti = traverse(item)
+                        traversed_dict[item[0]] = ti
+                        print entityish[0]
+#                        print item
+                    return traversed_dict
+                elif isinstance(entityish[1], list):
+                    traversed_list = []
+                    for item in entityish[1]:
+                        ti = traverse(item)
+                        traversed_list.append(ti)
+                        print entityish[0]
+#                        print (entityish[0], item)
+                    return traversed_list
+                elif isinstance(entityish[1], tuple):
+                    traverse(entityish[1])
+                    print entityish[0]
+#                    print entityish[1]
+                else:
+                    pass
+                    print "NODICT, NOLIST", entityish
+
+            else:
+                print entityish
+                pass
+#                print type(entityish), entityish
+
+        return traverse( (entity, filter) )
+
+
         relation_funcs = {}
         # these take:
         # the recur function (for lazy evaluation)
