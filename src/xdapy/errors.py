@@ -63,3 +63,8 @@ class InvalidXMLError(Error):
 class ConfigurationError(Error):
     """Raised when there is something wrong with the configuration."""
     pass
+
+class FilterError(Error):
+    """Something is wrong with the filter."""
+    pass
+

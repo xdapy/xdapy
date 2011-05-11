@@ -19,3 +19,5 @@ Alle Trials.reaktionszeit mit Trial.correct=True vom Exp E1 mit Observer O1 und 
 
 Kommentarfeld auf Entity-Ebene
 
+Rewrite param_filter: Return the elements which could not be filtered and which need to be considered afterwards.
+

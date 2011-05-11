@@ -9,7 +9,7 @@ from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
 from xdapy.parameters import Parameter, StringParameter, DateParameter, ParameterMap, strToType
-from xdapy.errors import StringConversionError
+from xdapy.errors import StringConversionError, FilterError
 
 from sqlalchemy.sql import or_, and_
 
@@ -164,7 +164,7 @@ class Mapper(object):
         return and_(*and_clause)
 
     def _mk_entity_filter(self, entity, filter=None):
-        """Returns the appropriate entity class and a filter dict."""
+        """Returns the appropriate entity class, and a filter dict."""
         # TODO Rename this function
         if filter is None:
             filter = {}
@@ -185,14 +185,13 @@ class Mapper(object):
             f = dict(entity.params)
             if filter:
                 f.update(filter)
-            
+
             filter = f
             # replace the entity name with its class
             entity = entity.__class__
 
         return entity, filter
 
- 
     def find(self, entity, filter=None, options=None):
         with self.auto_session as session:
             entity, filter = self._mk_entity_filter(entity, filter)
@@ -204,11 +203,11 @@ class Mapper(object):
                 return query.filter(f)
             else:
                 return query
-        
+
     def find_by_id(self, entity, id):
         with self.auto_session as session:
             return session.query(entity).filter(Entity.id==id).one()
-   
+
     def find_first(self, entity, filter=None, options=None):
         return self.find(entity, filter, options).first()
     
@@ -279,19 +278,126 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
+        # alias reference for inner classes
+        _mapper = self
+
+        class FindHelper(object):
+            def __init__(self, entityish):
+                self._parent = None
+                self._children = None
+                self._with = None
+
+                if isinstance(entityish, tuple):
+                    self.entity_name, filter = _mapper._mk_entity_filter(*entityish)
+                    self.params = {}
+
+                    for key, value in filter.iteritems():
+                        if key == "_parent":
+                            self._parent = value
+                        elif key == "_children":
+                            self._children = value
+                        elif key == "_with":
+                            self._with = value
+                        else:
+                            self.params[key] = value
+
+            def reduce_parent(self, obj):
+                if isinstance(self._parent, tuple):
+                    # find all parents and assign to this object
+                    self._parent = FindHelper(self._parent).search()
+                    # check again
+                    return True
+
+                if isinstance(self._parent, dict):
+                    for key, value in self._parent.iteritems():
+                        if key == "_any":
+#                            self.
+                            pass
+
+                return False
+
+
+            def check_parent(self, obj):
+                if not self._parent:
+                    return True
+
+                while self.reduce_parent(obj):
+                    pass
+
+                if isinstance(self._parent, list):
+                    return obj.parent in self._parent
+
+                raise FilterError("Unknown parent function '{0}'".format(self._parent))
+
+            def check_children(self, obj):
+                if not self._children:
+                    return True
+                raise FilterError("Unknown children function '{0}'".format(self._children))
+
+            def check_with(self, obj):
+                if not self._with:
+                    return True
+                return self._with(obj)
+
+            def search(self):
+                valid_objs = _mapper.find(self.entity_name, self.params)
+
+                def is_valid(obj):
+                    check_func = [self.check_parent,
+                                  self.check_children,
+                                  self.check_with]
+                    return all(check(obj) for check in check_func)
+
+                from itertools import ifilter
+                return list(ifilter(is_valid, valid_objs))
+
+
+        return FindHelper((entity, filter)).search()
+
+        def produce_function(tupleish):
+            print "TTT", tupleish
+            
+            if callable(tupleish[1]):
+                f = tupleish[1]
+            else:
+                f = lambda v: lambda t: v == t
+
+            if tupleish[0].startswith("_"):
+                fun = lambda entity: f(entity)
+            else:
+                fun = lambda entity: f(entity.param[tupleish[0]])
+            return fun
+                
 
         def traverse(entityish):
+            """Traverses the arguments depth-first and returns a lambda function."""
         
             if isinstance(entityish, tuple):
                 if isinstance(entityish[1], dict):
+                    # ("SomeEntity", {param: "" })
+
                     traversed_dict = {}
                     for item in entityish[1].iteritems():
                         ti = traverse(item)
                         traversed_dict[item[0]] = ti
-                        print entityish[0]
+                        print "D", entityish[0]
 #                        print item
-                    return traversed_dict
+
+                    print "DICT", traversed_dict
+
+                    # transform dict to _all([])
+
+                    l = []
+                    for item in traversed_dict.iteritems():
+                        l.append(item[1])
+
+                    la = lambda find: [f for f in find(entityish[0]) if all(ll(f) for ll in l)]
+
+                    return la
+                
                 elif isinstance(entityish[1], list):
+                    # ("_any", [("Ent", {param: "" })])
+
                     traversed_list = []
                     for item in entityish[1]:
                         ti = traverse(item)
@@ -299,20 +405,29 @@ class Mapper(object):
                         print entityish[0]
 #                        print (entityish[0], item)
                     return traversed_list
+                
                 elif isinstance(entityish[1], tuple):
+                    # ("SomeEntity", (param, ""))
+
                     traverse(entityish[1])
                     print entityish[0]
 #                    print entityish[1]
+                
                 else:
-                    pass
+                    # (param, "")
+
                     print "NODICT, NOLIST", entityish
+                    # nothing to traverse anymore
+                    return produce_function(entityish)
 
             else:
                 print entityish
                 pass
 #                print type(entityish), entityish
 
-        return traverse( (entity, filter) )
+        res = traverse( (entity, filter) )
+        print "RES", res
+        return res
 
 
         relation_funcs = {}
