@@ -22,10 +22,7 @@ class _BooleanOperator(object):
 
                 return (key, res)
             if isinstance(inner, dict):
-                res = []
-                for t in inner.iteritems():
-                    res.append(traverse(t))
-                return traverse(("_all", res))
+                return traverse(("_all", inner.items()))
             if isinstance(inner, list):
                 return [traverse(i) for i in inner]
 
