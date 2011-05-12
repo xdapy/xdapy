@@ -655,7 +655,7 @@ class Mapper(object):
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]]
         if len(klasses_guessed) > 1:
-            raise ValueError("To many entities for name \"{0}\".".format(name))
+            raise ValueError("Too many entities for name \"{0}\".".format(name))
 
         raise ValueError("No entity found for name \"{0}\".".format(name))
 
