@@ -74,6 +74,15 @@ trials = m.find_with("Session", {"_id": lambda id: id*id < 300,
         ,
     "_with": lambda entiy: entiy.id != 10})
 
+
+find_with(Session,
+  _all(["_id": lambda id: id*id < 300,
+        "_parent": _any(
+            [("Trial", _all(["_id": lt(300),
+                             "_parent": ("Experiment", _all(["project": "%E1%"]))),
+             ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
+             t1
+
 #Object:
 #    name: Session
 #    params: {_id: lambda...}
