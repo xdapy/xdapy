@@ -660,6 +660,35 @@ class Mapper(object):
         raise ValueError("No entity found for name \"{0}\".".format(name))
 
 
+class _BooleanOperator(object):
+    def __init__(self, inner):
+        self.inner = inner
+
+        def traverse(inner):
+            if isinstance(inner, tuple):
+                res = traverse(inner[1])
+            if isinstance(inner, dict):
+                res = []
+                for key, value in inner.iteritems():
+                    if key == "_any":
+                        res.append(_any(traverse(value)))
+                    else:
+                        res.append((key, traverse(value)))
+                return _all(res)
+            if isinstance(inner, list):
+                return inner
+
+    def __str__(self):
+        pass
+
+class _any(_BooleanOperator):
+    pass
+
+class _all(_BooleanOperator):
+    pass
+
+
+
 class FindWith(object):
     def __init__(self, query):
         self._query = query
