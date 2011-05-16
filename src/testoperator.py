@@ -62,7 +62,7 @@ class _BooleanOperator(object):
         return self.__class__.__name__
 
     def __repr__(self):
-        return "\n" + (" " * len(self.parents) * 2) + self.type + "( " + repr( self.inner ) + "{"+ str(self.stack) + str(id(self.parent)) + "<" + str(id(self)) + "} ) "
+        return "\n" + (" " * len(self.parents) * 2) + self.type + "( " + repr( self.inner ) + " )" # + "{"+ str(self.stack) + str(id(self.parent)) + "<" + str(id(self)) + "} ) "
 
 class _any(_BooleanOperator):
     pass
@@ -91,6 +91,9 @@ class entity(_BooleanOperator):
     @property
     def type(self):
         return "entity:" + self.key
+
+    def search(self):
+        pass
 
 
 class _parent(_BooleanOperator):
