@@ -51,14 +51,16 @@ m.save(o1, o2, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 
 print set(str(o.parent) for o in m.find_all("Session"))
 
-obs = m.find("Observer", {"name": "%Frank%"}).all()
+#obs = m.find("Observer", {"name": "%Frank%"}).all()
 
 from xdapy.operators import gt, lt
 
 #trials = m.find_with("Session", {"_parent": ("Experiment", {"project": "%E1%"})})
-trials = m.find_with("Session", {"_parent": ("Trial", {"count": gt(2)})})
+trials = m.super_find("Session", {"_parent": ("Trial", {"count": gt(2)})})
 
 print "T", trials
+
+exit()
 
 print "---"
 
@@ -75,13 +77,13 @@ trials = m.find_with("Session", {"_id": lambda id: id*id < 300,
     "_with": lambda entiy: entiy.id != 10})
 
 
-find_with(Session,
-  _all(["_id": lambda id: id*id < 300,
-        "_parent": _any(
-            [("Trial", _all(["_id": lt(300),
-                             "_parent": ("Experiment", _all(["project": "%E1%"]))),
-             ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
-             t1
+#find_with(Session,
+#  _all(["_id": lambda id: id*id < 300,
+#        "_parent": _any(
+#            [("Trial", _all(["_id": lt(300),
+#                             "_parent": ("Experiment", _all(["project": "%E1%"]))),
+#             ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
+#             t1
 
 #Object:
 #    name: Session
