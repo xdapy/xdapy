@@ -60,21 +60,25 @@ trials = m.super_find("Session", {"_parent": ("Trial", {"count": gt(2)})})
 
 print "T", trials
 
-exit()
 
 print "---"
 
-trials = m.find_with("Session", {"_id": lambda id: id*id < 300,
+trials = m.super_find("Session", {"_id": lambda id: id*id < 300,
     "_parent":
         {"_any":
         [
-        ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E1%"})}),
+        ("Trial", {
+            "_id": lt(300),
+            "_parent": ("Experiment", {"project": "E1"})
+            }),
         ("Trial", {"_id": lt(300), "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
         t1
         ]
         }
         ,
-    "_with": lambda entiy: entiy.id != 10})
+    "_with": lambda entiy: entiy.id != 10
+    }
+    )
 
 
 #find_with(Session,

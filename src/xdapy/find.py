@@ -1,3 +1,5 @@
+from xdapy.structures import EntityObject
+
 class SearchError(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -41,6 +43,9 @@ class SearchProxy(object):
             if isinstance(inner, list):
                 return [traverse(i, stack) for i in inner]
 
+            if isinstance(inner, EntityObject):
+                # we might have a single EntityObject here
+                return _entity(inner, {}, stack, self)
             return inner
 
         self.inner = traverse(self.inner, self.stack)
@@ -110,7 +115,9 @@ class _all(BooleanProxy):
         return all(i.search(item) for i in self.inner)
 
 class _with(SearchProxy):
-    pass
+    def is_valid(self, item):
+        return self.inner(item)
+
 
 class _param(SearchProxy):
     def test_param(self, param, test):
@@ -119,6 +126,9 @@ class _param(SearchProxy):
         return test(param)
 
     def is_valid(self, item):
+        if self.key == "_id":
+            return self.test_param(item.id, self.inner)
+
         return self.test_param(item.params[self.key], self.inner)
 
 
@@ -132,6 +142,10 @@ class _param(SearchProxy):
 
 
 class _entity(SearchProxy):
+    def is_valid(self, item):
+        return item.type == self.key and self.inner.is_valid(item)
+
+
     def __init__(self, key, value, stack, parent):
         super(_entity, self).__init__(value, stack, parent)
         self.key = key
@@ -143,7 +157,7 @@ class _entity(SearchProxy):
 
     @property
     def type(self):
-        return "entity:" + self.key
+        return "entity:" + str(self.key)
 
     def search(self, item=None):
         if len(self.stack) == 1:

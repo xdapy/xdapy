@@ -583,7 +583,9 @@ class Mapper(object):
 
     def super_find(self, entity, thefilter=None):
         from xdapy.find import SearchProxy
-        return SearchProxy((entity, thefilter)).find(self)
+        proxy = SearchProxy((entity, thefilter))
+        print proxy
+        return proxy.find(self)
         
             
     def connect_objects(self, parent, child, force=False):
