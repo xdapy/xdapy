@@ -51,13 +51,20 @@ class SearchProxy(object):
             self.inner = self.inner[1]
 
     def find(self, mapper):
-        pass
+        return self.inner.find(mapper)
 
     def search(self, item=None):
         if isinstance(self.inner, SearchProxy):
             return self.inner.search(item)
         else:
             raise SearchError("Unrecocnised inner type {0} for {1}".format(type(self.inner), type(self)))
+
+    def do_filter(self, items):
+        return self.inner.do_filter(items)
+
+    def is_valid(self, item):
+        print type(self)
+        return self.inner.is_valid(item)
 
     @property
     def parents(self):
@@ -79,27 +86,42 @@ class BooleanProxy(SearchProxy):
             raise "must be list"
 
 class _any(BooleanProxy):
+    def is_valid(self, item):
+        return any(i.is_valid(item) for i in self.inner)
+
     def search(self, item):
         super(_any, self).search(item)
-        
+
         params = filter(lambda p: isinstance(p, _param), self.inner)
         print params
 
         return any(i.search(item) for i in self.inner)
 
 class _all(BooleanProxy):
+    def is_valid(self, item):
+        return all(i.is_valid(item) for i in self.inner)
+
     def search(self, item):
         super(_all, self).search(item)
-        
+
         params = filter(lambda p: isinstance(p, _param), self.inner)
         print params
-        
+
         return all(i.search(item) for i in self.inner)
 
 class _with(SearchProxy):
     pass
 
 class _param(SearchProxy):
+    def test_param(self, param, test):
+        if isinstance(test, basestring):
+            return param == test
+        return test(param)
+
+    def is_valid(self, item):
+        return self.test_param(item.params[self.key], self.inner)
+
+
     def __init__(self, key, value, stack, parent):
         super(_param, self).__init__(value, stack, parent)
         self.key = key
@@ -114,6 +136,11 @@ class _entity(SearchProxy):
         super(_entity, self).__init__(value, stack, parent)
         self.key = key
 
+    def find(self, mapper):
+        items = mapper.find_all(self.key)
+        print items
+        return [item for item in items if self.is_valid(item)]
+
     @property
     def type(self):
         return "entity:" + self.key
@@ -125,7 +152,7 @@ class _entity(SearchProxy):
                 pass
         return self.inner.search(item)
 
-
 class _parent(SearchProxy):
-    pass
+    def is_valid(self, item):
+        return self.inner.is_valid(item.parent)
 
