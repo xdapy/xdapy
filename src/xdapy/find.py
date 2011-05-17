@@ -1,0 +1,131 @@
+class SearchError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
+class SearchProxy(object):
+    def __init__(self, inner, stack=None, parent=None):
+        self.inner = inner
+        self.stack = stack or []
+        self.parent = parent
+
+        def traverse(inner, stack):
+            if isinstance(inner, tuple):
+                if len(inner) != 2:
+                    raise "Too long or too short"
+
+                key = inner[0]
+                value = inner[1]
+#                res = traverse(inner[1])
+
+                stack = stack + [key]
+
+                if key == "_any":
+                    return _any(value, stack, self)
+                if key == "_all":
+                    return _all(value, stack, self)
+                if key == "_parent":
+                    return _parent(value, stack, self)
+                if key == "_with":
+                    return _with(value, stack, self)
+
+                # collect the params
+                # it is a parameter, if value is not a dict
+                if not isinstance(value, dict):
+                    return _param(key, value, stack, self)
+
+                return _entity(key, value, stack, self)
+            if isinstance(inner, dict):
+                return traverse(("_all", inner.items()), stack)
+            if isinstance(inner, list):
+                return [traverse(i, stack) for i in inner]
+
+            return inner
+
+        self.inner = traverse(self.inner, self.stack)
+        if isinstance(self.inner, tuple):
+            if len(inner) != 2:
+                raise "Too long or too short"
+            print self.inner[0]
+            self.inner = self.inner[1]
+
+    def find(self, mapper):
+        pass
+
+    def search(self, item=None):
+        if isinstance(self.inner, SearchProxy):
+            return self.inner.search(item)
+        else:
+            raise SearchError("Unrecocnised inner type {0} for {1}".format(type(self.inner), type(self)))
+
+    @property
+    def parents(self):
+        p = [self]
+        while p[0].parent:
+            p = [p[0].parent] + p
+        return [pp.inner for pp in p]
+
+    @property
+    def type(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return "\n" + (" " * len(self.parents) * 2) + self.type + "( " + repr( self.inner ) + " )" # + "{"+ str(self.stack) + str(id(self.parent)) + "<" + str(id(self)) + "} ) "
+
+class BooleanProxy(SearchProxy):
+    def search(self, item):
+        if not isinstance(self.inner, list):
+            raise "must be list"
+
+class _any(BooleanProxy):
+    def search(self, item):
+        super(_any, self).search(item)
+        
+        params = filter(lambda p: isinstance(p, _param), self.inner)
+        print params
+
+        return any(i.search(item) for i in self.inner)
+
+class _all(BooleanProxy):
+    def search(self, item):
+        super(_all, self).search(item)
+        
+        params = filter(lambda p: isinstance(p, _param), self.inner)
+        print params
+        
+        return all(i.search(item) for i in self.inner)
+
+class _with(SearchProxy):
+    pass
+
+class _param(SearchProxy):
+    def __init__(self, key, value, stack, parent):
+        super(_param, self).__init__(value, stack, parent)
+        self.key = key
+
+    @property
+    def type(self):
+        return "param:" + self.key
+
+
+class _entity(SearchProxy):
+    def __init__(self, key, value, stack, parent):
+        super(_entity, self).__init__(value, stack, parent)
+        self.key = key
+
+    @property
+    def type(self):
+        return "entity:" + self.key
+
+    def search(self, item=None):
+        if len(self.stack) == 1:
+            # collect all items
+            if isinstance(self.inner, _all):
+                pass
+        return self.inner.search(item)
+
+
+class _parent(SearchProxy):
+    pass
+
