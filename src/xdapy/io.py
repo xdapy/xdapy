@@ -212,7 +212,7 @@ class XmlIO(IO):
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
-        # We will save the entity now. Otherwise, we cannot add data
+        # We need to assiciate the entity with a session. Otherwise, we cannot add data.
 
         self.mapper.save(new_entity)
 

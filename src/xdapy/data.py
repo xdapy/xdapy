@@ -4,6 +4,7 @@ import collections
 import tempfile
 
 try:
+    # check, if the faster version of StringIO is available
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
@@ -16,35 +17,40 @@ from sqlalchemy.ext.declarative import synonym_for
 
 # So we really want to support only Postgresql?
 from sqlalchemy.dialects.postgresql import BYTEA
-        
+
 from xdapy import Base
 from xdapy.errors import Error, InsertionError, MissingSessionError, DataInconsistencyError
 
 
 DATA_CHUNK_SIZE = 5 * 1000 * 1000 # Byte
-DATA_COLUMN_LENGTH = DATA_CHUNK_SIZE
+DATA_COLUMN_LENGTH = DATA_CHUNK_SIZE # Must be greater or equal than DATA_CHUNK_SIZE
 
 class DataChunks(Base):
+    """Data are divided into smaller chunks of size `DATA_CHUNK_SIZE` to avoid
+    that everything is loaded all at once when accessing the data."""
+
     id = Column('id', Integer, autoincrement=True, primary_key=True)
     data_id = Column(Integer, ForeignKey('data.id'), nullable=False)
     index = Column("index", Integer)
-    
+
+    # hide the raw value in order to allow for a specific setter method
     _chunk = Column('data', BYTEA(DATA_COLUMN_LENGTH), nullable=False)
     @property
     def chunk(self):
         return self._chunk
-    
+
     @chunk.setter
     def chunk(self, chunk):
+        # we also set the _length here
         if not isinstance(chunk, basestring): # TODO what about real binary?
             raise ValueError("Data must be a string")
         self._chunk = chunk
         self._length = len(chunk)
-        
+
     chunk = synonym('_chunk', descriptor=chunk)
-    
+
     _length = Column('length', Integer)
-    
+
     @synonym_for('_length')
     @property
     def length(self):
@@ -59,11 +65,11 @@ class DataChunks(Base):
         self.chunk = chunk
 
     def __repr__(self):
-        return "<Datachunk #{0} for Data[{1}], length {2}>".format(self.index, self.data_id, self.length)
+        return "<DataChunk #{0} for Data[{1}], length {2}>".format(self.index, self.data_id, self.length)
 
 class Data(Base):
     '''
-    The class 'Data' is mapped on the table 'data'. The name assigned to Data 
+    The class `Data` is mapped on the table 'data'. The name assigned to Data 
     must be a string. Each Data is connected to at most one entity through the 
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
@@ -82,13 +88,13 @@ class Data(Base):
     __tablename__ = 'data'
     __table_args__ = (UniqueConstraint(entity_id, key),
                     {'mysql_engine':'InnoDB'})
-    
+
     @validates('key')
     def validate_name(self, key, parameter):
         if not isinstance(parameter, basestring):
             raise TypeError("Argument must be a string")
-        return parameter 
-   
+        return parameter
+
     def __repr__(self):
         return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.key, self.mimetype, self.entity_id)
 
@@ -106,10 +112,10 @@ class _DataProxy(object):
     @property
     def __data(self):
         """Returns the data relation object of the associated entity.
-        This method also raises a MissingSessionError, if no session is
+        This method also raises a `MissingSessionError`, if no session is
         associated with the entity.
         """
-        self.__session
+        self.__session # check that a session is available
         return self.assoc.owning._data
 
     @property
@@ -130,7 +136,7 @@ class _DataProxy(object):
         return self.key in self.__data
 
     def get_data(self):
-        """Returns the associated data for self.key."""
+        """Returns the associated data for `self.key`."""
         # raises a KeyError, if no data is associated
         data = self.__data[self.key]
         
@@ -235,7 +241,8 @@ class _DataProxy(object):
     def chunks(self):
         return self._chunk_query(DataChunks.id).count()
 
-    def is_consistent(self):
+    def check_consistency(self):
+        """Checks that data chunks are indexed in order without gaps."""
         check = 1
         for idx in self._chunk_query(DataChunks.index).order_by(DataChunks.index):
             if check != idx.index:
@@ -245,7 +252,12 @@ class _DataProxy(object):
 
 
 class _DataAssoc(collections.MutableMapping):
-    """Association dict for data."""
+    """Association dict for data.
+    
+    The dict acts a bit *weird* in the sense that `dict["unknown item"]` does not
+    raise a `KeyError`. In order to find out that an item exists, one must use
+    `"item" in dict`.
+    """
     def __init__(self, owning):
         self.owning = owning
 
@@ -262,7 +274,8 @@ class _DataAssoc(collections.MutableMapping):
     def __setitem__(self, key, value):
         if not isinstance(value, _DataProxy):
             raise ValueError("value needs to be instance of DataProxy")
-        """Note that this is only expected to work if value *really* has the same semantics."""
+        # """Note that this is only expected to work if value *really* has the same semantics."""
+
         # We use a tempfile as long as chunk based copying is not established
         with tempfile.TemporaryFile() as f:
             value.get(f)

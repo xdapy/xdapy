@@ -39,6 +39,8 @@ class SearchProxy(object):
 
                 return _entity(key, value, stack, self)
             if isinstance(inner, dict):
+                # a dict {p1: value1, p2: value2} transforms into
+                # _all([(p1, value1), (p2, value2)])
                 return traverse(("_all", inner.items()), stack)
             if isinstance(inner, list):
                 return [traverse(i, stack) for i in inner]

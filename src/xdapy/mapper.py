@@ -139,7 +139,7 @@ class Mapper(object):
                                          clauses.append(func.date_part('month', ParameterType.value) ==  ymd[1])
                                     if len(ymd) > 2:
                                          clauses.append(func.date_part('day', ParameterType.value) ==  ymd[2])
-                                    
+
                                     clause = (and_(*clauses))
                                     or_clause.append(clause)
                                 else:
@@ -603,6 +603,7 @@ class Mapper(object):
             
         TODO: Maybe consider to save objects automatically 
         TODO: Revise session closing
+        TODO: Why this method and not parent.children.append(child)?
         """
         with self.auto_session:
             if child in parent.all_parents() + [parent]:
@@ -654,7 +655,7 @@ class Mapper(object):
 
             for name, paramtype in klass.parameter_types.iteritems():
                 self.register_parameter(klass.__name__, name, paramtype)
-    
+
     def entity_by_name(self, name):
         klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
         if name in klasses:
@@ -663,9 +664,9 @@ class Mapper(object):
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]]
         if len(klasses_guessed) > 1:
-            raise ValueError("Too many entities for name \"{0}\".".format(name))
+            raise ValueError("""Too many entities for name "{0}".""".format(name))
 
-        raise ValueError("No entity found for name \"{0}\".".format(name))
+        raise ValueError("""No entity found for name "{0}".""".format(name))
 
 
 class _BooleanOperator(object):
