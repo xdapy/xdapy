@@ -15,7 +15,7 @@ class SearchProxy(object):
         def traverse(inner, stack):
             if isinstance(inner, tuple):
                 if len(inner) != 2:
-                    raise "Too long or too short"
+                    raise ValueError("Tuple {0} must only have two elements.".format(inner))
 
                 key = inner[0]
                 value = inner[1]
@@ -50,8 +50,8 @@ class SearchProxy(object):
 
         self.inner = traverse(self.inner, self.stack)
         if isinstance(self.inner, tuple):
-            if len(inner) != 2:
-                raise "Too long or too short"
+            if len(self.inner) != 2:
+                raise ValueError("Tuple {0} must only have two elements.".format(self.inner))
             print self.inner[0]
             self.inner = self.inner[1]
 
@@ -62,7 +62,7 @@ class SearchProxy(object):
         if isinstance(self.inner, SearchProxy):
             return self.inner.search(item)
         else:
-            raise SearchError("Unrecocnised inner type {0} for {1}".format(type(self.inner), type(self)))
+            raise SearchError("Unrecognised inner type {0} for {1}".format(type(self.inner), type(self)))
 
     def do_filter(self, items):
         return self.inner.do_filter(items)
@@ -91,6 +91,7 @@ class BooleanProxy(SearchProxy):
             raise "must be list"
 
 class _any(BooleanProxy):
+    """Returns True, if the search succeeds for one or more inner items."""
     def is_valid(self, item):
         return any(i.is_valid(item) for i in self.inner)
 
@@ -103,6 +104,7 @@ class _any(BooleanProxy):
         return any(i.search(item) for i in self.inner)
 
 class _all(BooleanProxy):
+    """Returns True, if the search succeeds for all inner items."""
     def is_valid(self, item):
         return all(i.is_valid(item) for i in self.inner)
 
@@ -115,6 +117,7 @@ class _all(BooleanProxy):
         return all(i.search(item) for i in self.inner)
 
 class _with(SearchProxy):
+    """Applies the inner value as function to an item."""
     def is_valid(self, item):
         return self.inner(item)
 
@@ -143,6 +146,7 @@ class _param(SearchProxy):
 
 class _entity(SearchProxy):
     def is_valid(self, item):
+        # FIXME: Does not work when item is not a string
         return item.type == self.key and self.inner.is_valid(item)
 
 
