@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""This module provides the code to access a database on an abstract level. 
+"""This module provides the code to access a database on an abstract level.
 
 Created on Jun 17, 2009
 """
@@ -14,8 +14,8 @@ from xdapy.errors import StringConversionError, FilterError
 from sqlalchemy.sql import or_, and_
 
 """
-TODO: Load: what happens if more attributes given as saved in database 
-TODO: Save: what happens if similar object with more or less but otherwise the same 
+TODO: Load: what happens if more attributes given as saved in database
+TODO: Save: what happens if similar object with more or less but otherwise the same
         attributes exists in the database
 TODO: Error if the commiting fails
 """
@@ -25,29 +25,29 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 class Mapper(object):
     """Handle database access and sessions"""
-              
+
     def __init__(self, connection):
         '''Constructor
-        
+
         Creates the engine for a specific database and a session factory
         '''
         self.connection = connection
         self.auto_session = connection.auto_session
         self.session = connection.session
         self.registered_objects = []
-    
+
     def create_tables(self, overwrite=False):
         """Create tables in database (Do not overwrite existing tables)."""
         if overwrite:
             Base.metadata.drop_all(self.connection.engine, checkfirst=True)
         Base.metadata.create_all(self.connection.engine)
-    
+
     def save(self, *args):
         """Save instances inherited from ObjectDict into database.
-        
+
         Attribute:
-        args -- One or more objects derived from datamanager.objects.ObjectDict 
-        
+        args -- One or more objects derived from datamanager.objects.ObjectDict
+
         Raises:
         TypeError -- If the type of an object's attribute is not supported.
         TypeError -- If the attribute is None
@@ -64,7 +64,7 @@ class Mapper(object):
         for arg in args:
             self.save(arg)
             self.save_all(arg.children)
-    
+
     def delete(self, *args):
         """Deletes the objects from the database."""
         with self.auto_session as session:
@@ -87,7 +87,7 @@ class Mapper(object):
 
     def is_in_session(self, entity):
         return entity in self.session
-    
+
     def param_filter(self, entity, filter, options=None):
         default_options = {
             "convert_string": False,
@@ -210,10 +210,10 @@ class Mapper(object):
 
     def find_first(self, entity, filter=None, options=None):
         return self.find(entity, filter, options).first()
-    
+
     def find_all(self, entity, filter=None, options=None):
         return self.find(entity, filter, options).all()
-    
+
     def find_roots(self, entity=None):
         if not entity:
             entity = Entity
@@ -229,10 +229,10 @@ class Mapper(object):
 
     def find_by_uuid(self, uuid):
         return self.find(Entity).filter(Entity._uuid==uuid).one()
-    
+
     def get_data_matrix(self, conditions, items, include=None):
         """Finds related items for the entity which satisfies condition
-        
+
         include -- list of entities relations which should be included
             "PARENT":           parent entities
             "CHILDREN":         child entities
@@ -249,7 +249,7 @@ class Mapper(object):
         entities = []
         for condition in conditions:
             entities += self.find_all(condition)
-        
+
         matrix = []
 
         for entity in entities:
@@ -264,7 +264,7 @@ class Mapper(object):
                     related.update(entity.connected)
                 if "CONTEXT_REVERSED" in include:
                     related.update(entity.back_referenced)
-            
+
             row = {}
             for rel in related:
                 if rel.__class__ in items:
@@ -356,7 +356,7 @@ class Mapper(object):
 
         def produce_function(tupleish):
             print "TTT", tupleish
-            
+
             if callable(tupleish[1]):
                 f = tupleish[1]
             else:
@@ -367,11 +367,11 @@ class Mapper(object):
             else:
                 fun = lambda entity: f(entity.param[tupleish[0]])
             return fun
-                
+
 
         def traverse(entityish):
             """Traverses the arguments depth-first and returns a lambda function."""
-        
+
             if isinstance(entityish, tuple):
                 if isinstance(entityish[1], dict):
                     # ("SomeEntity", {param: "" })
@@ -394,7 +394,7 @@ class Mapper(object):
                     la = lambda find: [f for f in find(entityish[0]) if all(ll(f) for ll in l)]
 
                     return la
-                
+
                 elif isinstance(entityish[1], list):
                     # ("_any", [("Ent", {param: "" })])
 
@@ -405,14 +405,14 @@ class Mapper(object):
                         print entityish[0]
 #                        print (entityish[0], item)
                     return traversed_list
-                
+
                 elif isinstance(entityish[1], tuple):
                     # ("SomeEntity", (param, ""))
 
                     traverse(entityish[1])
                     print entityish[0]
 #                    print entityish[1]
-                
+
                 else:
                     # (param, "")
 
@@ -433,7 +433,7 @@ class Mapper(object):
         relation_funcs = {}
         # these take:
         # the recur function (for lazy evaluation)
-        # the 
+        # the
         # the element they are compared with
         relation_funcs["_parent"] = lambda recur: lambda related: lambda elem: tr(related) and elem.parent in recur(related)
         relation_funcs["_child"] = lambda recur: lambda related: lambda elem: bool(set.intersection(set(recur(related)), set(elem.children)))
@@ -502,7 +502,7 @@ class Mapper(object):
 
                     if filter_key in relation_funcs:
                         relation_filter.append(eval_filter(filter_key, filter_func))
-                    
+
                     elif filter_key in boolean_funcs:
                         print "BOOLEAN", filter_key
                         pass
@@ -510,7 +510,7 @@ class Mapper(object):
                         # param_filter is everything which is neither relation_func nor boolean_func
                         param_filter[filter_key] = filter_func
 
-    
+
                 #print relation_filter
 
                 def filtered(elem):
@@ -538,7 +538,7 @@ class Mapper(object):
 
         res = find_w((entity, filter))
 
-        return res 
+        return res
 
 
         new_filter = {}
@@ -586,45 +586,45 @@ class Mapper(object):
         proxy = SearchProxy((entity, thefilter))
         print proxy
         return proxy.find(self)
-        
-            
+
+
     def connect_objects(self, parent, child, force=False):
         """Connect two related objects
-        
+
         Attribute:
         parent --  The parent object derived from datamanager.objects.ObjectDict or
-            the integer id describing this object. 
+            the integer id describing this object.
         child --  The child object derived from datamanager.objects.ObjectDict or
-            the integer id describing this object. 
-        
+            the integer id describing this object.
+
         Raises:
-        RequestObjectError -- If the objects to be connected are not properly 
+        RequestObjectError -- If the objects to be connected are not properly
             saved in the database
-            
-        TODO: Maybe consider to save objects automatically 
+
+        TODO: Maybe consider to save objects automatically
         TODO: Revise session closing
         TODO: Why this method and not parent.children.append(child)?
         """
         with self.auto_session:
             if child in parent.all_parents() + [parent]:
                 raise InsertionError('Can not insert child because of circularity.')
-            
+
             if child.parent and not force:
                 raise InsertionError('Child already has parent. Please set force=True.')
             child.parent = parent
-              
+
 
     @require('entity_name', str)
     @require('parameter_name', str)
     @require('parameter_type', str)
     def register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
-        
+
         Attribute:
-        entity_name --  The name describing the experimental object. 
+        entity_name --  The name describing the experimental object.
         parameter_name --  The name describing the parameter.
-        parameter_type -- The type the parameter is required to match 
-        
+        parameter_type -- The type the parameter is required to match
+
         Raises:
         TypeError -- If the parameters are not correctly specified
         Some SQL error -- If the same entry already exists
@@ -634,7 +634,7 @@ class Mapper(object):
             session.merge(parameter_option)
 
     def is_consistent(self, entity_name, parameter_defaults):
-        """Checks if an entity definition would be consistent with the current state 
+        """Checks if an entity definition would be consistent with the current state
         of the database."""
         with self.auto_session as session:
             db_defaults = (session.query(ParameterOption.parameter_name, ParameterOption.parameter_type)
@@ -643,7 +643,7 @@ class Mapper(object):
             db_defaults = dict(db_defaults)
 
             return parameter_defaults == db_defaults
-        
+
     def register(self, *klasses):
         """Registers the class and the class’s parameters."""
         for klass in klasses:

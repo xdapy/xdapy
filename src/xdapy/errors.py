@@ -6,7 +6,7 @@ Created on Jun 23, 2009
 
     Error:         Base class for exceptions in this module.
     AmbiguousObjectError: A list is returned instead of single object.
-   
+
 """
 # alphabetical order by last name, please
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
@@ -20,14 +20,14 @@ class Error(Exception):
         return repr(self.msg)
 
 class AmbiguousObjectError(Error):
-    """Raised when an operation attempts to load a list of objects when only a 
+    """Raised when an operation attempts to load a list of objects when only a
     single object is allowed.
     """
     pass
 
 class RequestObjectError(Error):
-    """Raised when an operation attempts to load an object that does not exist 
-    in the database. 
+    """Raised when an operation attempts to load an object that does not exist
+    in the database.
     """
     pass
 
@@ -36,7 +36,7 @@ class SelectionError(Error):
     pass
 
 class InsertionError(Error):
-    """Raised when the storage of an object in the database can not be completed. 
+    """Raised when the storage of an object in the database can not be completed.
     """
     pass
 

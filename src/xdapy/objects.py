@@ -10,7 +10,7 @@ from xdapy.structures import EntityObject
 
 class Experiment(EntityObject):
     """Concrete class for experiments"""
-    
+
     parameter_types = {
         'experimenter': 'string',
         'project': 'string'
@@ -18,23 +18,23 @@ class Experiment(EntityObject):
 
 class Observer(EntityObject):
     """Concrete class for observers"""
-    
+
     parameter_types = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
-     
+
 class Session(EntityObject):
     """Concrete class for sessions"""
-    
+
     parameter_types = {
         'date': 'date'
     }
 
 class Trial(EntityObject):
     """Concrete class for trials"""
-    
+
     parameter_types = {
         'rt': 'string',
         'valid': 'boolean',

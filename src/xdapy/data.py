@@ -69,8 +69,8 @@ class DataChunks(Base):
 
 class Data(Base):
     '''
-    The class `Data` is mapped on the table 'data'. The name assigned to Data 
-    must be a string. Each Data is connected to at most one entity through the 
+    The class `Data` is mapped on the table 'data'. The name assigned to Data
+    must be a string. Each Data is connected to at most one entity through the
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     '''
@@ -78,11 +78,11 @@ class Data(Base):
     entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)
     key = Column('key', String(40))
     mimetype = Column('mimetype', String(40))
-    
+
     @property
     def length(self):
         return self._length
-    
+
     _chunks = relationship(DataChunks, cascade="save-update, merge, delete")
 
     __tablename__ = 'data'
@@ -139,7 +139,7 @@ class _DataProxy(object):
         """Returns the associated data for `self.key`."""
         # raises a KeyError, if no data is associated
         data = self.__data[self.key]
-        
+
         assert data.id is not None, "data.id has not been set" # we check explicitly to avoid complications at a later point
         return data
 
@@ -185,7 +185,7 @@ class _DataProxy(object):
 
     def put_file(self, fileish):
         if not hasattr(fileish, 'read'):
-            # if there is no 'read' method, is is 
+            # if there is no 'read' method, is is
             # probably the wrong type
             raise ValueError("Unassignable Type")
 
@@ -194,7 +194,7 @@ class _DataProxy(object):
 
         buffer_size = DATA_CHUNK_SIZE
         idx = 0
-       
+
         chunk = fileish.read(buffer_size)
 
         while chunk:
@@ -253,7 +253,7 @@ class _DataProxy(object):
 
 class _DataAssoc(collections.MutableMapping):
     """Association dict for data.
-    
+
     The dict acts a bit *weird* in the sense that `dict["unknown item"]` does not
     raise a `KeyError`. In order to find out that an item exists, one must use
     `"item" in dict`.

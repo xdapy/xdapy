@@ -4,10 +4,10 @@ Created on Jul 9, 2009
 This module provides different Decorator functions:
 
     Type-checking decorators:
-        accepts()            Defines type constrains for all input variables in 
+        accepts()            Defines type constrains for all input variables in
                              single decorator call
         returns()            Defines type constrains for all return variables
-        require()            Defines type constrains for each input variables in 
+        require()            Defines type constrains for each input variables in
                              seperate decorator using a keyword
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
@@ -20,7 +20,7 @@ def accepts(*types):
     def check_accepts(f):
         def new_f(*args, **kwds):
             assert len(types) == len(args)
-            
+
             for (a, t) in zip(args, types):
                 assert isinstance(a, t), \
                        "arg %r does not match %s" % (a, t)
@@ -101,9 +101,9 @@ if __name__ == '__main__':
     print foo(2.0, 2.5)    # Prints 4.5.
     #print foo("asdf", 2.5) # Raises TypeError exception.
     #print foo(1, 2)        # Raises TypeError exception.
-    
+
     print func(1, 2.5)
     print func(1, 2)
     print foo("asdf", 2.5) # Raises TypeError exception.
     print foo(1, 2)        # Raises TypeError exception.
-    
+

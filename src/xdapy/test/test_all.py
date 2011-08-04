@@ -7,7 +7,7 @@ contain a brief description of exported classes and functions.
 
     ClassFoo: One line summary.
     functionBar(): One line summary.
-   
+
 """
 # alphabetical order by last name, please
 __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
@@ -24,14 +24,14 @@ class Experiment(EntityObject):
         'project': 'string',
         'experimenter': 'string'
     }
-    
+
 class Observer(EntityObject):
     parameter_types = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
-    
+
 class Session(EntityObject):
     parameter_types = {
         'date': 'date'
@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
         self.connection = Connection.test()
         self.mapper = Mapper(self.connection)
         self.mapper.create_tables(overwrite=True)
-        
+
         #register params
         self.mapper.register(Observer, Experiment, Session, Trial)
         #register_parameter('Observer', 'name', 'string')
@@ -65,21 +65,21 @@ class Test(unittest.TestCase):
         #self.p.register_parameter('Trial', 'rt', 'integer')
         #self.p.register_parameter('Trial', 'valid', 'integer')
         #self.p.register_parameter('Trial', 'response', 'string')
-        
+
         #create hierarchy
         self.e1 = Experiment(project='MyProject', experimenter="John Doe")
         self.e2 = Experiment(project='YourProject', experimenter="Jeanne Done")
-        
+
         self.o3 = Observer(name="Max Mustermann", handedness="right", age=26)
         self.o4 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
         self.o5 = Observer(name="Susi Sorgen", handedness='left', age=40)
-        
+
         self.s6 = Session(date='2009-08-20')
         self.s7 = Session(date='2009-09-21')
         self.s8 = Session(date='2009-09-22')
         self.s9 = Session(date='2009-09-23')
         self.s10 = Session(date='2009-09-24')
-        
+
         self.t11 = Trial(rt=int(randint(100, 3000)), valid=True, response='left')
         self.t12 = Trial(rt=randint(100, 3000), valid=True, response='right')
         self.t13 = Trial(rt=randint(100, 3000), valid=True, response='left')
@@ -94,12 +94,12 @@ class Test(unittest.TestCase):
         self.t22 = Trial(rt=randint(100, 3000), valid=False, response='right')
         self.t23 = Trial(rt=randint(100, 3000), valid=False, response='left')
         self.t24 = Trial(rt=randint(100, 3000), valid=False, response='right')
-        
+
         self.mapper.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6,
                     self.s7, self.s8, self.s9, self.s10, self.t11, self.t12,
                     self.t13, self.t14, self.t15, self.t16, self.t17, self.t18,
                     self.t19, self.t20, self.t21, self.t22, self.t23, self.t24)
-        
+
         self.e1.children.append(self.o3)
         self.e1.children.append(self.o4)
         self.e2.children.append(self.o4)
@@ -123,7 +123,7 @@ class Test(unittest.TestCase):
         self.s10.children.append(self.t22)
         self.s10.children.append(self.t23)
         self.s10.children.append(self.t24)
-        
+
         self.mapper.save(self.e1, self.e2, self.o3, self.o4, self.o5, self.s6,
                     self.s7, self.s8, self.s9, self.s10, self.t11, self.t12,
                     self.t13, self.t14, self.t15, self.t16, self.t17, self.t18,
@@ -132,7 +132,7 @@ class Test(unittest.TestCase):
     def tearDown(self):
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
-       
+
     def testReturn(self):
         self.assertListEqual(self.mapper.find_first(Observer(name="Susanne Sorgenfrei")).children, [self.s8, self.s9, self.s10])
         self.assertListEqual(self.mapper.find_first(Observer(name="Susi Sorgen")).children, [])

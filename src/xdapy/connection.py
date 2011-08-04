@@ -17,7 +17,7 @@ class AutoSession(object):
     """Provides an automatically commiting session."""
     def __init__(self, session):
         self.session = session
-        
+
     def __enter__(self):
         self.session.begin()
         # We are in autocommit mode. If we do not explicitly begin a session
@@ -26,11 +26,11 @@ class AutoSession(object):
         # Especially the last commit may get lost without an explicit flush
         # or a session.close
         return self.session
-    
+
     def __exit__(self, e_type, e_val, e_tb):
         if e_type:
             self.session.close()
-            
+
         if self.session.is_active:
             self.session.commit()
 
@@ -81,7 +81,7 @@ class Connection(object):
         """
         Reads the settings from the file ~/.xdapy/engine.ini or the path value.
 
-        Create file ~/.xdapy/engine.ini with the following content and replace  
+        Create file ~/.xdapy/engine.ini with the following content and replace
         your username, password, host and dbname:
 
         dialect = postgresql
@@ -91,7 +91,7 @@ class Connection(object):
         dbname = xdapy
         [test]
         dbname = xdapy_test
-        
+
         Public attributes:
         self.db ~ the database URL
         self.test_db ~ the database URL used for testing
@@ -108,12 +108,12 @@ class Connection(object):
                                      'password = mypassword\n'\
                                      'host = localhost\n'\
                                      'dbname = xdapy')
-        
+
         config = ConfigObj(filename)
 
         # do the very important check that we don’t lose our db while testing
         cls._check_config_file_sanity(config)
-        
+
         opts = cls._extract_options(config, profile)
 
         opts.update(kwargs)
@@ -161,11 +161,11 @@ class Connection(object):
     @property
     def session(self):
         return self.auto_session.session
-   
+
     @property
     def engine(self):
         if not self._engine:
             self._engine = create_engine(self.uri, **self._engine_opts)
         return self._engine
-    
-    
+
+
