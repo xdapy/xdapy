@@ -25,7 +25,7 @@ from xdapy.operators import gt, lt
 
 trials = m.find_with("Trial", {"_id": lambda id: id*id < 300,
     "_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "%Alex%"})}),
-    "_with": lambda entiy: entiy.id != 10})
+    "_with": lambda entity: entity.id != 10})
 
 print "T", trials
 
