@@ -36,7 +36,7 @@ from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 
 class Entity(Base):
-    '''
+    """
     The class 'Entity' is mapped on the table 'entities'. The name column
     contains unique information about the object type (e.g. 'Observer',
     'Experiment'). Each Entity is connected to a set of parameters through the
@@ -44,7 +44,7 @@ class Entity(Base):
     parameters attribute of the Entity class. Additionally entities can build a
     hierarchical structure (represented in a flat table!) via the children and
     parents attributes.
-    '''
+    """
     id = Column('id', Integer, primary_key=True)
     _type = Column('type', String(60))
     _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
@@ -134,14 +134,14 @@ class Entity(Base):
         return e_name
 
     def __init__(self, type):
-        '''Initialize an entity corresponding to an experimental object.
+        """Initialize an entity corresponding to an experimental object.
 
         Argument:
         name -- A one-word-description of the experimental object
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
-        '''
+        """
         raise Error("Entity.__init__ should not be called directly.")
 
     def _attributes(self):
@@ -274,7 +274,7 @@ class EntityObject(Entity):
         return "{cls}({params})".format(cls=self.type, params=params)
 
     def info(self):
-        '''Prints information about the entity.'''
+        """Prints information about the entity."""
         print str(self)
         parents = self.all_parents()
         print parents
@@ -323,12 +323,12 @@ def calculate_polymorphic_name(name, params):
 
 class Context(Base):
     # Context Association
-    '''
+    """
     The class 'Context' is mapped on the table 'data'. The name assigned to Data
     must be a string. Each Data is connected to at most one entity through the
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
-    '''
+    """
     entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
     connected_id = Column('connected_id', Integer, ForeignKey('entities.id'), primary_key=True)
 
@@ -362,13 +362,13 @@ class Context(Base):
 
 
 class ParameterOption(Base):
-    '''
+    """
     The class 'ParameterOption' is mapped on the table 'parameteroptions'. This
     table provides a lookup table for entity/parameter pairs and the type the
     parameter is required to have. Ideally this table is filled once after table
     creation. And only if at a later moment the need for a new parameter emerges,
     then this parameter can be added to the list of allowed parameters.
-    '''
+    """
     entity_name = Column('entity_name', String(60), primary_key=True)
     parameter_name = Column('parameter_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40))
@@ -398,7 +398,7 @@ class ParameterOption(Base):
         return p_type
 
     def __init__(self, entity_name, parameter_name, parameter_type):
-        '''Initialize an entity - parameter pair
+        """Initialize an entity - parameter pair
 
         Argument:
         entity_name -- A one-word-description of the experimental object
@@ -408,7 +408,7 @@ class ParameterOption(Base):
 
         Raises:
         TypeError -- Occurs if arguments aren't strings or type not in list.
-        '''
+        """
         self.entity_name = entity_name
         self.parameter_name = parameter_name
         self.parameter_type = parameter_type

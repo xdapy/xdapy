@@ -27,10 +27,10 @@ class Mapper(object):
     """Handle database access and sessions"""
 
     def __init__(self, connection):
-        '''Constructor
+        """Constructor
 
         Creates the engine for a specific database and a session factory
-        '''
+        """
         self.connection = connection
         self.auto_session = connection.auto_session
         self.session = connection.session

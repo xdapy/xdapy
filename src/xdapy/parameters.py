@@ -15,14 +15,14 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 
 class Parameter(Base):
-    '''
+    """
     The class 'Parameter' is mapped on the table 'parameters' and forms the
     superclass of all possible parameter types (e.g. for string, integer...).
     The name assigned to a Parameter must be a string.
     Each Parameter is connected to at least one entity through the
     adjacency list 'parameterlist'. The corresponding entities can be accessed via
     the entities attribute of the Parameter class.
-    '''
+    """
     id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
 
@@ -51,14 +51,14 @@ class Parameter(Base):
         return parameter
 
     def __init__(self, name):
-        '''Initialize a parameter with the given name.
+        """Initialize a parameter with the given name.
 
         Argument:
         name -- A one-word-description of the parameter
 
         Raises:
         TypeError -- Occurs if name is not a string
-        '''
+        """
         self.name = name
         print "Accessing Parameter.__init__"
 
@@ -67,9 +67,9 @@ class Parameter(Base):
 
     @property
     def value_string(self):
-        '''Return the value as a string.
+        """Return the value as a string.
         This function is preferred over str(self.value) for exporting values.
-        '''
+        """
         return unicode(self.value)
 
     @classmethod
@@ -79,11 +79,11 @@ class Parameter(Base):
         return klass(name, value)
 
 class StringParameter(Parameter):
-    '''
+    """
     The class 'StringParameter' is mapped on the table 'parameters_string' and
     is derived from 'Parameter'. The value assigned to a StringParameter must be
     a string.
-    '''
+    """
 
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', String(40))
@@ -114,7 +114,7 @@ class StringParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and string value.
+        """Initialize a parameter with the given name and string value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -122,7 +122,7 @@ class StringParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no a string.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -131,11 +131,11 @@ class StringParameter(Parameter):
 
 
 class IntegerParameter(Parameter):
-    '''
+    """
     The class 'IntegerParameter' is mapped on the table 'parameters_integer' and
     is derived from Parameter. The value assigned to an IntegerParameter must be
     an integer.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Integer)
 
@@ -161,7 +161,7 @@ class IntegerParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and integer value.
+        """Initialize a parameter with the given name and integer value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -169,7 +169,7 @@ class IntegerParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no an integer.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -178,11 +178,11 @@ class IntegerParameter(Parameter):
 
 
 class FloatParameter(Parameter):
-    '''
+    """
     The class 'FloatParameter' is mapped on the table 'parameters_float' and
     is derived from 'Parameter'. The value assigned to a FloatParameter must be
     a float.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Float)
 
@@ -208,7 +208,7 @@ class FloatParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and string value.
+        """Initialize a parameter with the given name and string value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -216,7 +216,7 @@ class FloatParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no float.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -225,11 +225,11 @@ class FloatParameter(Parameter):
 
 
 class DateParameter(Parameter):
-    '''
+    """
     The class 'FloatParameter' is mapped on the table 'parameters_date' and
     is derived from 'Parameter'. The value assigned to a DateParameter must be
     a datetime.date.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Date)
 
@@ -267,7 +267,7 @@ class DateParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and datetime.date.
+        """Initialize a parameter with the given name and datetime.date.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -275,7 +275,7 @@ class DateParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no a datetime.date.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -284,11 +284,11 @@ class DateParameter(Parameter):
 
 
 class TimeParameter(Parameter):
-    '''
+    """
     The class 'TimeParameter' is mapped on the table 'parameters_time' and
     is derived from 'Parameter'. The value assigned to a TimeParameter must be
     a datetime.time.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Time)
 
@@ -320,7 +320,7 @@ class TimeParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and datetime.time value.
+        """Initialize a parameter with the given name and datetime.time value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -328,7 +328,7 @@ class TimeParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is not datetime.time.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -337,11 +337,11 @@ class TimeParameter(Parameter):
 
 
 class DateTimeParameter(Parameter):
-    '''
+    """
     The class 'DateTimeParameter' is mapped on the table 'parameters_datetime' and
     is derived from 'Parameter'. The value assigned to a DateTimeParameter must be
     a datetime.datetime.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', DateTime)
 
@@ -373,7 +373,7 @@ class DateTimeParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and datetime.datetime value.
+        """Initialize a parameter with the given name and datetime.datetime value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -381,7 +381,7 @@ class DateTimeParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no datetime.datetime.
-        '''
+        """
         self.name = name
         self.value = value
 
@@ -390,11 +390,11 @@ class DateTimeParameter(Parameter):
 
 
 class BooleanParameter(Parameter):
-    '''
+    """
     The class 'BooleanParameter' is mapped on the table 'parameters_boolean' and
     is derived from 'Parameter'. The value assigned to a BooleanParameter must be
     a boolean.
-    '''
+    """
     id = Column('id', Integer, ForeignKey('parameters.id'), primary_key=True)
     value = Column('value', Boolean)
 
@@ -433,7 +433,7 @@ class BooleanParameter(Parameter):
         return parameter
 
     def __init__(self, name, value):
-        '''Initialize a parameter with the given name and boolean value.
+        """Initialize a parameter with the given name and boolean value.
 
         Argument:
         name -- A one-word-description of the parameter
@@ -441,7 +441,7 @@ class BooleanParameter(Parameter):
 
         Raises:
         TypeError -- Occurs if name is not a string or value is no boolean.
-        '''
+        """
         self.name = name
         self.value = value
 

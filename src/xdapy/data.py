@@ -68,12 +68,12 @@ class DataChunks(Base):
         return "<DataChunk #{0} for Data[{1}], length {2}>".format(self.index, self.data_id, self.length)
 
 class Data(Base):
-    '''
+    """
     The class `Data` is mapped on the table 'data'. The name assigned to Data
     must be a string. Each Data is connected to at most one entity through the
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
-    '''
+    """
     id = Column('id', Integer, autoincrement=True, primary_key=True)
     entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)
     key = Column('key', String(40))
