@@ -9,8 +9,6 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError
 
-from utils.decorators import lazyprop
-
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
@@ -152,11 +150,14 @@ class Connection(object):
         if main_profile['host'] == test_profile['host'] and main_profile['dbname'] == test_profile['dbname']:
             raise ConfigurationError("Please use a different test db.")
 
-    
-    @lazyprop
+    @property
     def auto_session(self):
-        return AutoSession(self.Session(bind=self.engine))
-    
+        try:
+            return getattr(self, "_auto_session")
+        except AttributeError:
+            self._auto_session = AutoSession(self.Session(bind=self.engine))
+            return self._auto_session
+
     @property
     def session(self):
         return self.auto_session.session

@@ -15,17 +15,6 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from functools import wraps
 
-def lazyprop(f):
-    """Sets a lazy property the value of which is generated only once"""
-    attr_name = '_lazy_' + f.__name__
-    @property
-    @wraps(f)
-    def wrapper(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, f(self))
-        return getattr(self, attr_name)
-    return wrapper
-
 def accepts(*types):
     """http://www.python.org/dev/peps/pep-0318/"""
     def check_accepts(f):
