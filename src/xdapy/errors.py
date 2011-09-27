@@ -12,59 +12,52 @@ Created on Jun 23, 2009
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
-class Error(Exception):
-    """Base class for exceptions in this module."""
-    def __init__(self, msg):
-        self.msg = msg
-    def __str__(self):
-        return repr(self.msg)
-
-class AmbiguousObjectError(Error):
+class AmbiguousObjectError(Exception):
     """Raised when an operation attempts to load a list of objects when only a
     single object is allowed.
     """
     pass
 
-class RequestObjectError(Error):
+class RequestObjectError(Exception):
     """Raised when an operation attempts to load an object that does not exist
     in the database.
     """
     pass
 
-class SelectionError(Error):
+class SelectionError(Exception):
     """Raised when the loading of an object from the database is erroneous."""
     pass
 
-class InsertionError(Error):
+class InsertionError(Exception):
     """Raised when the storage of an object in the database can not be completed.
     """
     pass
 
-class MissingSessionError(Error):
+class MissingSessionError(Exception):
     """Raised when an object is not in a session."""
     pass
 
-class StringConversionError(Error):
+class StringConversionError(Exception):
     """Raised when a value can’t be generated from string."""
     pass
 
-class EntityDefinitionError(Error):
+class EntityDefinitionError(Exception):
     """Raised when an Entity class has a non-conforming definition."""
     pass
 
-class DataInconsistencyError(Error):
+class DataInconsistencyError(Exception):
     """Raised whenever something is fatal with the data."""
     pass
 
-class InvalidXMLError(Error):
+class InvalidXMLError(Exception):
     """Raised when XML is malformed."""
     pass
 
-class ConfigurationError(Error):
+class ConfigurationError(Exception):
     """Raised when there is something wrong with the configuration."""
     pass
 
-class FilterError(Error):
+class FilterError(Exception):
     """Something is wrong with the filter."""
     pass
 

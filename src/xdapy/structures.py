@@ -31,7 +31,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from xdapy import Base
 from xdapy.parameters import ParameterMap, Parameter, parameter_ids
 from xdapy.data import Data, _DataAssoc
-from xdapy.errors import Error, EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
+from xdapy.errors import EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 
