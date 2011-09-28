@@ -8,7 +8,7 @@ from xdapy import Base
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
-from xdapy.parameters import Parameter, StringParameter, DateParameter, ParameterMap, strToType
+from xdapy.parameters import StringParameter, DateParameter, ParameterMap
 from xdapy.errors import StringConversionError, FilterError
 
 from sqlalchemy.sql import or_, and_
@@ -664,9 +664,9 @@ class Mapper(object):
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]]
         if len(klasses_guessed) > 1:
-            raise ValueError("""Too many entities for name "{0}".""".format(name))
+            raise ValueError("""More than one entity with name "{0}" registered.""".format(name))
 
-        raise ValueError("""No entity found for name "{0}".""".format(name))
+        raise ValueError("""No entity with name "{0}" registered.""".format(name))
 
 
 class _BooleanOperator(object):

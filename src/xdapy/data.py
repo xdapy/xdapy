@@ -19,7 +19,7 @@ from sqlalchemy.ext.declarative import synonym_for
 from sqlalchemy.dialects.postgresql import BYTEA
 
 from xdapy import Base
-from xdapy.errors import InsertionError, MissingSessionError, DataInconsistencyError
+from xdapy.errors import DataInconsistencyError
 
 
 DATA_CHUNK_SIZE = 5 * 1000 * 1000 # Byte

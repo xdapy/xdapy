@@ -196,7 +196,12 @@ class Meta(DeclarativeMeta):
             return
 
         def _saveParam(k, v):
-            ParameterType = ParameterMap[cls.parameter_types[k]]
+            try:
+                parameter_type = cls.parameter_types[k]
+            except KeyError:
+                raise KeyError("%s has no key '%s'." % (cls.__original_class_name__, k))
+
+            ParameterType = ParameterMap[parameter_type]
             return ParameterType(name=k, value=v)
 
         cls.params = association_proxy('_params', 'value', creator=_saveParam)
@@ -204,7 +209,7 @@ class Meta(DeclarativeMeta):
         # We set the polymorphic_identity to the name of the class
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
 
-        return super(Meta, cls).__init__(name, bases, attrs)
+        super(Meta, cls).__init__(name, bases, attrs)
 
 class _StrParams(collections.MutableMapping):
     """Association dict for stringified parameters."""

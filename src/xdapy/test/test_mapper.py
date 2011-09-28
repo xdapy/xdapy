@@ -6,6 +6,8 @@ from sqlalchemy.exceptions import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject, Context
+from xdapy.operators import gt, lt
+
 import unittest
 """
 TODO: Real test for create_tables
@@ -22,7 +24,7 @@ class Experiment(EntityObject):
         'project': 'string',
         'experimenter': 'string'
     }
-    
+
 class Observer(EntityObject):
     parameter_types = {
         'name': 'string',
@@ -38,21 +40,29 @@ class Trial(EntityObject):
         'response': 'string'
     }
 
+class Session(EntityObject):
+    parameter_types = {
+        'count': 'integer',
+        'date': 'date',
+        'category1': 'integer',
+        'category2': 'integer'
+    }
+
 
 class Setup(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
         self.m = Mapper(self.connection)
         self.m.create_tables(overwrite=True)
-        
-        self.m.register(Observer, Experiment, Trial)
-        
+
+        self.m.register(Observer, Experiment, Trial, Session)
+
     def tearDown(self):
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 
 class TestMapper(Setup):
-        
+
     def testCreateTables(self):
         self.m.create_tables(overwrite=True)
 
@@ -60,43 +70,43 @@ class TestMapper(Setup):
         valid_objects = ("""Observer(name="Max Mustermann", handedness="right", age=26)""",
                        """Experiment(project="MyProject", experimenter="John Doe")""",
                        """Experiment(project="MyProject")""")
-  
+
         invalid_objects = ("""Observer(name=9, handedness="right")""",
                        """Experiment(project=12)""",
                        """Experiment(project=1.2)""")
-       
+
         invalid_types = (None, 1, 1.2, 'string')
-        
+
         for obj in valid_objects:
             eval(obj, globals(), locals())
 
         for obj in invalid_objects:
             self.assertRaises(TypeError, lambda obj: eval(obj, globals(), locals()), obj)
-        
+
         for obj in invalid_types:
             from sqlalchemy.orm.exc import UnmappedInstanceError
             self.assertRaises(UnmappedInstanceError, self.m.save, obj)
-        
+
         exp = Experiment(project='MyProject', experimenter="John Doe")
         def assignment():
             exp.params['parameter'] = 'new'
         self.assertRaises(KeyError, assignment)
-        
+
         exp = Experiment(project='MyProject', experimenter="John Doe")
         def assignment2():
             exp.params['perimenter'] = 'new'
         self.assertRaises(KeyError, assignment2)
-    
+
         exp = Experiment(project='MyProject', experimenter="John Doe")
         self.m.save(exp)
         exp.data['somedata'].put("""[0, 1, 2, 3]""")
-        
+
         def assign_list():
             exp.data['somedata'].put([0, 1, 2, 3])
 
         self.assertRaises(ValueError, assign_list)
         self.m.save(exp)
-        
+
         e = Experiment(project='YourProject', experimenter="Johny Dony")
         o1 = Observer(name="Maxime Mustermann", handedness="right", age=26)
         o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
@@ -112,53 +122,53 @@ class TestMapper(Setup):
         self.m.delete(e)
         self.assertEqual(len(self.m.find_all(EntityObject)), 1)
 
-        
+
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
         self.m.save(obs)
         obs.data['moredata'].put("""(0, 3, 6, 8)""") # TODO: Deal with non-string data?
         obs.data['otherredata'].put("""(0, 3, 6, 8)""")
         self.m.save(obs)
-       
+
         obs = Observer(name="Max Mustermann")
         obs_by_object = self.m.find_first(obs)
-        
+
         obs_by_object = self.m.find_by_id(Observer, id=1)
-         
+
         #Error if object does not exist
         self.assertTrue(self.m.find_first(Observer(name='John Doe')) is None) # assertIsNone
         self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 5)
-        
+
         #Error if object exists multiple times # TODO
         self.m.save(Observer(name="Max Mustermann", handedness="left", age=29))
-        self.assertTrue(len(self.m.find_all(Observer(name="Max Mustermann"))) > 1)                  
+        self.assertTrue(len(self.m.find_all(Observer(name="Max Mustermann"))) > 1)
         self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 3)
- 
-                    
+
+
     def testConnectObjects(self):
         #Test add_child and get_children
         e = Experiment(project='MyProject', experimenter="John Doe")
         o = Observer(name="Max Mustermann", handedness="right", age=26)
         t = Trial(rt=125, valid=True, response='left')
         self.m.save(e)
-        
+
         self.m.save(o, t)
         o.children.append(t)
         self.assertEqual(e.children, [])
         self.assertEqual(o.children, [t])
         self.assertEqual(t.children, [])
-        
+
         e.children.append(o)
         self.assertEqual(e.children, [o])
         self.assertEqual(o.children, [t])
         self.assertEqual(t.children, [])
-          
+
         e2 = Experiment(project='yourProject', experimenter="John Doe")
         t2 = Trial(rt=189, valid=False, response='right')
         self.m.save(e2, t2)
         e2.children.append(o) # o gets new parent e2
         o.children.extend([t2, e2])
- 
+
         self.assertEqual(e.children, [])
         self.assertEqual(sorted(o.children), sorted([t, t2, e2])) # assertItemsEqual
 
@@ -204,8 +214,8 @@ class TestConnections(Setup):
         self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
 
     def test_connections_have_set_ids(self):
-        # need to check that connections have correct id and entity_id, 
-        # although the Experiment and Observer did not have an id 
+        # need to check that connections have correct id and entity_id,
+        # although the Experiment and Observer did not have an id
         # when the connection was established
         connections = self.m.find_all(Context)
 
@@ -259,28 +269,28 @@ class TestConnections(Setup):
         self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
         # check that connections have been added to session
         self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
-        
+
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")
 #        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
 #        o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
-#       
+#
 #        e2 = Experiment(project='YourProject', experimenter="John Doe")
 #        o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
-#        
+#
 #        self.m.save(e1, e2, o1, o2, o3)
-#        
+#
 #        #all objects are root
 #        self.assertEqual(self.m.get_data_matrix([], {'Observer':['age']}), [[26], [38], [40]])
 #        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
 #        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
-#        
+#
 #        #only e1 and e2 are root
 #        self.m.connect_objects(e1, o1)
 #        self.m.connect_objects(e1, o2)
 #        self.m.connect_objects(e2, o3)
 #        self.m.connect_objects(e2, o2)
-#        
+#
 #        #make sure the correct data is retrieved
 #        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
 #                                                [[26L], [38L]]))
@@ -290,7 +300,7 @@ class TestConnections(Setup):
 #                                                [[38, "Susanne Sorgenfrei"], [40, 'Susi Sorgen']]))
 #        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age', 'name']}),
 #                                                [[26, "Max Mustermann"], [38, "Susanne Sorgenfrei"]]))
-#        
+#
 #        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
 #                                                 {'Experiment':['project'], 'Observer':['name']}),
 #                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
@@ -299,49 +309,49 @@ class TestConnections(Setup):
 #                                                 {'Observer':['name'], 'Experiment':['project']}),
 #                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
 #                                                  ['YourProject', "Susi Sorgen"]]))
-        
+
 #
 #    def testRegisterParameter(self):
 #        valid_parameters = (('Observer', 'glasses', 'string'),
 #                          ('Experiment', 'reference', 'string'))
-#        
+#
 #        invalid_parameters = (('Observer', 'name', 25),
 #                          ('Observer', 54, 'integer'),
 #                          (24, 'project', 'string'))
-#        
+#
 #        for e, p, pt in valid_parameters:
 #            self.m.register_parameter(e, p, pt)
-#        
+#
 #        for e, p, pt in invalid_parameters:
 #            self.assertRaises(TypeError, self.m.register_parameter, e, p, pt)
-#        
+#
 #        self.assertRaises(IntegrityError, self.m.register_parameter,
 #                          'Experiment', 'reference', 'string')
 
 #===============================================================================
-#        
-# 
+#
+#
 # class InvalidObserverClass(ObjectTemplate):
 #    """Observer class to store information about an observer"""
 #    _parameters_ = {'name':'string', 'handedness':'string','age':'int'}
-#    
+#
 #    def __init__(self, name=None, handedness=None, age=None):
 #        self.name = name
 #        self.handedness=handedness
 #        self.age=age
-#        
+#
 # class TestProxyForObjectTemplates(unittest.TestCase):
-# 
+#
 #    def setUp(self):
 #        self.m = ProxyForObjectTemplates()
 #        self.m.create_tables()
-#        
+#
 #    def tearDown(self):
 #        pass
-# 
+#
 #    def testCreateTables(self):
 #        self.m.create_tables()
-# 
+#
 #    def testSaveObject(self):
 #        valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),
 #                       Experiment(project='MyProject',experimenter="John Doe"))
@@ -351,23 +361,23 @@ class TestConnections(Setup):
 #                       Observer(),
 #                       Experiment(project='MyProject'))#,
 #                       #'justastring')
-#        
+#
 #        for obj in valid_objects:
 #            self.m.save(obj)
 #        for obj in invalid_objects:
-#            self.assertRaises(TypeError, self.m.save, obj)    
+#            self.assertRaises(TypeError, self.m.save, obj)
 #        self.assertRaises(TypeError,self.m.save,
-#                          InvalidObserverClass(name="Max Mustermann", 
+#                          InvalidObserverClass(name="Max Mustermann",
 #                                               handedness="right", age=26))
-#            
+#
 #    def testLoadObject(self):
 #        #AmbiguousObjects
 #        self.m.save(Observer(name="Max Mustermann", handedness="right", age=26))
-#        self.m.load(Observer(name="Max Mustermann"))           
+#        self.m.load(Observer(name="Max Mustermann"))
 #        self.m.save(Observer(name="Max Mustermann", handedness="left", age=29))
-#        self.assertRaises(RequestObjectError,self.m.load,Observer(name="Max Mustermann"))                  
+#        self.assertRaises(RequestObjectError,self.m.load,Observer(name="Max Mustermann"))
 #        self.assertRaises(RequestObjectError,self.m.load,3)
-#                    
+#
 #    def testConnectObjects(self):
 #        #Test add_child and get_children
 #        e = Experiment(project='MyProject',experimenter="John Doe")
@@ -375,20 +385,89 @@ class TestConnections(Setup):
 #        self.m.save(e)
 #        self.m.save(o)
 #        self.m.add_child(e,o)
-#        
+#
 #        s = self.m.Session()
 #        exp_reloaded = self.m.viewhandler.get_entity(s,1)
 #        obs_reloaded = self.m.viewhandler.get_entity(s,2)
-#        
+#
 #        self.assertEqual(exp_reloaded.children, [obs_reloaded])
 #        self.assertEqual(exp_reloaded.parents,[])
 #        self.assertEqual(obs_reloaded.children, [])
 #        self.assertEqual(obs_reloaded.parents,[exp_reloaded])
-#        
+#
 #        exp_children = self.m.get_children(e)
 #        self.assertEqual(exp_children,[o])
 #===============================================================================
 
+class TestComplicatedQuery(Setup):
+    def setUp(self):
+        super(TestComplicatedQuery, self).setUp()
+
+        o1 = Observer(name="A")
+        o2 = Observer(name="B")
+
+        e1 = Experiment(project="E1", experimenter="X1")
+        e2 = Experiment(project="E2", experimenter="X1")
+        e3 = Experiment(project="E3")
+
+        t1 = Trial(rt=1)
+        self.t1 = t1
+        t2 = Trial(rt=2)
+        t3 = Trial(rt=3)
+        t4 = Trial(rt=4)
+
+        s1_1 = Session(count=1)
+        s1_2 = Session(count=2)
+        s2_1 = Session(count=3)
+        s2_2 = Session(count=4)
+        s3_1 = Session(count=5)
+        s4_1 = Session(count=6)
+
+        self.m.save(o1, o2, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
+
+        t1.parent = e1
+        t2.parent = e1
+        t3.parent = e2
+        t4.parent = e3
+
+        s1_1.parent = t1
+        s1_2.parent = t1
+        s2_1.parent = t2
+        s2_2.parent = t2
+        s3_1.parent = t3
+        s4_1.parent = t4
+
+        self.m.save(e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
+
+    def test_simple(self):
+        sessions = self.m.super_find("Session", {"_parent": ("Trial", {"rt": gt(2)})})
+        # there should be two sessions with Trial parent and Trial.rt > 2: s3_1 and s4_1
+        self.assertEqual(len(sessions), 2)
+        counts = set([s.params["count"] for s in sessions])
+        self.assertEqual(set([5, 6]), counts)
+
+    def test_complicated(self):
+        sessions = self.m.super_find("Session", {
+            "_id": lambda id: id*id < 300,
+            "_parent":
+                {"_any":
+                    [
+                        ("Trial", {
+                            "_id": lt(300),
+                            "_parent": ("Experiment", {"project": "E1"})
+                        }),
+                        ("Trial",
+                             {"_id": lt(300),
+                              "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
+                        self.t1
+                    ]
+                },
+            "_with": lambda entity: entity.id != 10
+            }
+        )
+        self.assertEqual(len(sessions), 3)
+
+
+
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
