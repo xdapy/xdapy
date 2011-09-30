@@ -416,12 +416,12 @@ class TestComplicatedQuery(Setup):
         t3 = Trial(rt=3)
         t4 = Trial(rt=4)
 
-        s1_1 = Session(count=1)
-        s1_2 = Session(count=2)
-        s2_1 = Session(count=3)
-        s2_2 = Session(count=4)
-        s3_1 = Session(count=5)
-        s4_1 = Session(count=6)
+        s1_1 = Session(count=1, category1=0)
+        s1_2 = Session(count=2, category1=1)
+        s2_1 = Session(count=3, category1=0)
+        s2_2 = Session(count=4, category1=1)
+        s3_1 = Session(count=5, category1=0)
+        s4_1 = Session(count=6, category1=1)
 
         self.m.save(o1, o2, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 
@@ -447,27 +447,43 @@ class TestComplicatedQuery(Setup):
         self.assertEqual(set([5, 6]), counts)
 
     def test_complicated(self):
-        sessions = self.m.super_find("Session", {
-            "_id": lambda id: id*id < 300,
-            "_parent":
-                {"_any":
-                    [
-                        ("Trial", {
-                            "_id": lt(300),
-                            "_parent": ("Experiment", {"project": "E1"})
-                        }),
-                        ("Trial",
-                             {"_id": lt(300),
-                              "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
-                        self.t1
-                    ]
-                },
-            "_with": lambda entity: entity.id != 10
-            }
-        )
+
+        # Session.params['count'] should be even
+        param_check = {"count": lambda count: count % 2 == 0}
+
+        sessions = self.m.super_find("Session", param_check)
         self.assertEqual(len(sessions), 3)
 
+        def trace(val):
+            print val
+            return True
 
+        with_check = {"_with": lambda entity: entity.params['count'] <= 3 and trace(entity.params) and entity.params['category1'] == 0}
+        sessions = self.m.super_find("Session", with_check)
+        self.assertEqual(len(sessions), 2)
+        counts = set([s.params["count"] for s in sessions])
+        self.assertEqual(set([1, 3]), counts)
+
+        parent_check = {
+            "_parent": {"_any":
+                [
+                    ("Trial", {
+                        "_parent": ("Experiment", {"project": "E1"})
+                    }),
+                    ("Trial", {
+                          "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
+                    self.t1
+                ]
+            }
+        }
+
+        sessions = self.m.super_find("Session", param_check)
+        self.assertEqual(len(sessions), 3)
+        print sessions
+
+        #sessions = self.m.super_find("Session", dict(
+        #    param_check.items() + with_check.items() + parent_check.items()))
+        #self.assertEqual(len(sessions), 3)
 
 if __name__ == "__main__":
     unittest.main()
