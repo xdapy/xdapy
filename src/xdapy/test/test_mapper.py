@@ -481,9 +481,9 @@ class TestComplicatedQuery(Setup):
         self.assertEqual(len(sessions), 3)
         print sessions
 
-        #sessions = self.m.super_find("Session", dict(
-        #    param_check.items() + with_check.items() + parent_check.items()))
-        #self.assertEqual(len(sessions), 3)
+        sessions = self.m.super_find("Session", dict(
+            param_check.items() + with_check.items() + parent_check.items()))
+        self.assertEqual(len(sessions), 0) # TODO Add better test
 
 if __name__ == "__main__":
     unittest.main()
