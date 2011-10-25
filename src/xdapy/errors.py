@@ -61,3 +61,7 @@ class FilterError(Exception):
     """Something is wrong with the filter."""
     pass
 
+
+class SearchError(Exception):
+    """Raised when a search is not well defined or malformed."""
+    pass

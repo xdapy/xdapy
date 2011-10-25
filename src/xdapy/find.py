@@ -1,10 +1,13 @@
-from xdapy.structures import EntityObject
+# -*- coding: utf-8 -*-
 
-class SearchError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-    def __str__(self):
-        return self.msg
+""" Provides a proxy to search complicated queries.
+
+"""
+
+__authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
+
+from xdapy.errors import SearchError
+from xdapy.structures import EntityObject
 
 class SearchProxy(object):
     def __init__(self, inner, stack=None, parent=None):
