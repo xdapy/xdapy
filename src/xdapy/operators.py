@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""Defines some operators for filter expressions."""
+""" Defines some operators for filter expressions.
+
+The expressions can be used in a query context to restrict the
+values of an entity’s parameter.
+
+> mapper.find_all(Observer, filter={"age": gt(20)})
+
+restricts the result to all Observers with `oberserver.params["age"] > 20`.
+
+"""
 
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
