@@ -263,7 +263,7 @@ class EntityObject(Entity):
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items"""
         for n, v in d.iteritems():
-            if v:
+            if v is not None:
                 self.params[n] = v
 
     def to_json(self, full=False):
