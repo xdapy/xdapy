@@ -27,7 +27,23 @@ trials = m.find_with("Trial", {"_id": lambda id: id*id < 300,
     "_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "%Alex%"})}),
     "_with": lambda entity: entity.id != 10})
 
-print "T", trials
+
+# super_find is more powerful but does not use SQLAlchemy
+trials2 = m.super_find("Trial", {"_id": lambda id: id*id < 300,
+    "_any": [{"_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "%Alex%"})})}, # %Alex% will not work
+             {"_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "Alexander"})})}
+    ],
+    "_with": lambda entity: entity.id != 10})
+
+for t in trials:
+    print t, t.parent.parent
+
+print "..."
+
+for t in trials2:
+    print t, t.parent.parent
+
+print "T", trials, trials2
 
 #m.find("Trial", {"child": [("Session", {'_id': "2"}), {"name": "Frank"}])
 
