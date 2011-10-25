@@ -10,6 +10,7 @@ from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
 from xdapy.parameters import StringParameter, DateParameter, ParameterMap
 from xdapy.errors import StringConversionError, FilterError
+from xdapy.find import SearchProxy
 
 from sqlalchemy.sql import or_, and_
 
@@ -345,10 +346,8 @@ class Mapper(object):
 
         return FindHelper((entity, filter)).search()
 
-    def super_find(self, entity, thefilter=None):
-        from xdapy.find import SearchProxy
-        proxy = SearchProxy((entity, thefilter))
-        print proxy
+    def super_find(self, entity, the_filter=None):
+        proxy = SearchProxy((entity, the_filter))
         return proxy.find(self)
 
     def connect_objects(self, parent, child, force=False):
