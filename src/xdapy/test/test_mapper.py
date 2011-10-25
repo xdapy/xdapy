@@ -454,11 +454,8 @@ class TestComplicatedQuery(Setup):
         sessions = self.m.super_find("Session", param_check)
         self.assertEqual(len(sessions), 3)
 
-        def trace(val):
-            print val
-            return True
-
-        with_check = {"_with": lambda entity: entity.params['count'] <= 3 and trace(entity.params) and entity.params['category1'] == 0}
+        # Two sessions should have a count <= 3 and category1 == 0
+        with_check = {"_with": lambda entity: entity.params['count'] <= 3 and entity.params['category1'] == 0}
         sessions = self.m.super_find("Session", with_check)
         self.assertEqual(len(sessions), 2)
         counts = set([s.params["count"] for s in sessions])
@@ -471,19 +468,18 @@ class TestComplicatedQuery(Setup):
                         "_parent": ("Experiment", {"project": "E1"})
                     }),
                     ("Trial", {
-                          "_parent": ("Experiment", {"project": "%E2%", "experimenter": "%X1%"})}),
+                          "_parent": ("Experiment", {"project": "E2", "experimenter": "X1"})}),
                     self.t1
                 ]
             }
         }
 
-        sessions = self.m.super_find("Session", param_check)
-        self.assertEqual(len(sessions), 3)
-        print sessions
+        sessions = self.m.super_find("Session", parent_check)
+        self.assertEqual(len(sessions), 5)
 
         sessions = self.m.super_find("Session", dict(
             param_check.items() + with_check.items() + parent_check.items()))
-        self.assertEqual(len(sessions), 0) # TODO Add better test
+        self.assertEqual(len(sessions), 0) # TODO Prepare a better test and example
 
 if __name__ == "__main__":
     unittest.main()
