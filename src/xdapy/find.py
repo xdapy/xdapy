@@ -10,6 +10,22 @@ from xdapy.errors import SearchError
 from xdapy.structures import EntityObject
 
 class SearchProxy(object):
+    """ Builds a representation of a search tree.
+
+    The object given in `inner` is traversed deeper and deeper and
+    certain structures are replaced by corresponding `SearchProxy`
+    classes.
+
+    ("_any": sub_structure) -> _any(sub_structure)
+    similarly for "_all", "_with", "_parent"...
+
+    (param_name: value) -> _param(param_name, value)
+    (entity_name: dict) -> _entity(entity_name, dict)
+
+    {k1: v1, k2: v2} -> ("_all": [(k1, v1), (k2, v2)])
+
+    [it1, it2, it3] -> [it1, it2, it3]
+    """
     def __init__(self, inner, stack=None, parent=None):
         self.inner = inner
         self.stack = stack or []
