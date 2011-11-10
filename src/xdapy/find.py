@@ -79,12 +79,6 @@ class SearchProxy(object):
     def find(self, mapper):
         return self.inner.find(mapper)
 
-    def search(self, item=None):
-        if isinstance(self.inner, SearchProxy):
-            return self.inner.search(item)
-        else:
-            raise SearchError("Unrecognised inner type {0} for {1}".format(type(self.inner), type(self)))
-
     def do_filter(self, items):
         return self.inner.do_filter(items)
 
@@ -117,26 +111,10 @@ class _any(BooleanProxy):
     def is_valid(self, item):
         return any(i.is_valid(item) for i in self.inner)
 
-    def search(self, item):
-        super(_any, self).search(item)
-
-        params = filter(lambda p: isinstance(p, _param), self.inner)
-        print params
-
-        return any(i.search(item) for i in self.inner)
-
 class _all(BooleanProxy):
     """Returns True, if the search succeeds for all inner items."""
     def is_valid(self, item):
         return all(i.is_valid(item) for i in self.inner)
-
-    def search(self, item):
-        super(_all, self).search(item)
-
-        params = filter(lambda p: isinstance(p, _param), self.inner)
-        print params
-
-        return all(i.search(item) for i in self.inner)
 
 class _with(SearchProxy):
     """Applies the inner value as function to an item."""
@@ -177,13 +155,6 @@ class _entity(SearchProxy):
         items = mapper.find_all(self.key)
         print items
         return [item for item in items if self.is_valid(item)]
-
-    def search(self, item=None):
-        if len(self.stack) == 1:
-            # collect all items
-            if isinstance(self.inner, _all):
-                pass
-        return self.inner.search(item)
 
     @property
     def _type_repr(self):
