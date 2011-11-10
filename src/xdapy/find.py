@@ -79,9 +79,6 @@ class SearchProxy(object):
     def find(self, mapper):
         return self.inner.find(mapper)
 
-    def do_filter(self, items):
-        return self.inner.do_filter(items)
-
     def is_valid(self, item):
         print type(self)
         return self.inner.is_valid(item)
