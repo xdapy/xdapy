@@ -92,24 +92,25 @@ class SearchProxy(object):
         print type(self)
         return self.inner.is_valid(item)
 
-    @property
-    def parents(self):
+    def all_parents(self):
+        """ Traverses all parents
+        """
         p = [self]
         while p[0].parent:
             p = [p[0].parent] + p
         return [pp.inner for pp in p]
 
     @property
-    def type(self):
+    def _type_repr(self):
         return self.__class__.__name__
 
     def __repr__(self):
-        return "\n" + (" " * len(self.parents) * 2) + self.type + "( " + repr( self.inner ) + " )" # + "{"+ str(self.stack) + str(id(self.parent)) + "<" + str(id(self)) + "} ) "
+        return "\n" + (" " * len(self.all_parents()) * 2) + self._type_repr + "( " + repr( self.inner ) + " )"
 
 class BooleanProxy(SearchProxy):
     def search(self, item):
         if not isinstance(self.inner, list):
-            raise "must be list"
+            raise ValueError("Boolean search can only work on a list.")
 
 class _any(BooleanProxy):
     """Returns True, if the search succeeds for one or more inner items."""
@@ -142,12 +143,10 @@ class _with(SearchProxy):
     def is_valid(self, item):
         return self.inner(item)
 
-
 class _param(SearchProxy):
-    def test_param(self, param, test):
-        if isinstance(test, basestring):
-            return param == test
-        return test(param)
+    def __init__(self, key, value, stack, parent):
+        super(_param, self).__init__(value, stack, parent)
+        self.key = key
 
     def is_valid(self, item):
         if self.key == "_id":
@@ -155,34 +154,29 @@ class _param(SearchProxy):
 
         return self.test_param(item.params[self.key], self.inner)
 
-
-    def __init__(self, key, value, stack, parent):
-        super(_param, self).__init__(value, stack, parent)
-        self.key = key
+    def test_param(self, param, test):
+        if isinstance(test, basestring):
+            return param == test
+        return test(param)
 
     @property
-    def type(self):
+    def _type_repr(self):
         return "param:" + self.key
 
 
 class _entity(SearchProxy):
-    def is_valid(self, item):
-        # FIXME: Does not work when item is not a string
-        return item.type == self.key and self.inner.is_valid(item)
-
-
     def __init__(self, key, value, stack, parent):
         super(_entity, self).__init__(value, stack, parent)
         self.key = key
+
+    def is_valid(self, item):
+        # FIXME: Does not work when item is not a string
+        return item.type == self.key and self.inner.is_valid(item)
 
     def find(self, mapper):
         items = mapper.find_all(self.key)
         print items
         return [item for item in items if self.is_valid(item)]
-
-    @property
-    def type(self):
-        return "entity:" + str(self.key)
 
     def search(self, item=None):
         if len(self.stack) == 1:
@@ -190,6 +184,10 @@ class _entity(SearchProxy):
             if isinstance(self.inner, _all):
                 pass
         return self.inner.search(item)
+
+    @property
+    def _type_repr(self):
+        return "entity:" + str(self.key)
 
 class _parent(SearchProxy):
     def is_valid(self, item):
