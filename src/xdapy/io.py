@@ -184,7 +184,7 @@ class XmlIO(IO):
 
     def parse_entity(self, entity, ref_ids):
         type = entity.attrib["type"]
-        
+
         uuid = entity.attrib.get("uuid") # _uuid defaults to None
         new_entity = self.entity_by_name(type, _uuid=uuid)
 
@@ -212,7 +212,7 @@ class XmlIO(IO):
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
-        # We will save the entity now. Otherwise, we cannot add data
+        # We need to assiciate the entity with a session. Otherwise, we cannot add data.
 
         self.mapper.save(new_entity)
 
@@ -267,11 +267,11 @@ class XmlIO(IO):
         types = ET.Element("types")
         entities = ET.Element("entities")
         relations = ET.Element("relations")
-        
+
         used_objects = set()
         for elem in self.mapper.find_roots():
             entities.append(self.write_entity(elem, used_objects))
-        
+
         for object in used_objects:
             types.append(self.write_types(object))
 
@@ -323,6 +323,6 @@ class XmlIO(IO):
             data.text = recode[encoding].encode(value.get_string())
             data.attrib["encoding"] = encoding
             entity.append(data)
-            
+
         return entity
 

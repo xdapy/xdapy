@@ -4,7 +4,7 @@ Created on Jun 17, 2009
 """
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """TODO: Load image into testSetData"""
-   
+
 from sqlalchemy.orm.session import Session
 
 from xdapy import Connection, Mapper
@@ -16,28 +16,30 @@ import unittest
 class Experiment(EntityObject):
     parameter_types = {
         'project': 'string',
-        'experimenter': 'string'
+        'experimenter': 'string',
+        'int_value': 'integer'
     }
 
 
-class TestObjectDict(unittest.TestCase): 
+class TestObjectDict(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
         self.m = Mapper(self.connection)
         self.m.create_tables(overwrite=True)
         self.m.register(Experiment)
-        
+
     def tearDown(self):
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
- 
+
     def testConstructor(self):
         """Test constructor"""
-        exp = Experiment(project="P", experimenter="E")
+        exp = Experiment(project="P", experimenter="E", int_value=0)
         self.assertEqual(exp.params['project'], "P")
         self.assertEqual(exp.params['experimenter'], "E")
+        self.assertEqual(exp.params['int_value'], 0)
         self.assertEqual(exp.data, {})
-    
+
     def testParamInit(self):
         """Test parameter initalisation"""
         exp = Experiment()
@@ -52,7 +54,7 @@ class TestObjectDict(unittest.TestCase):
         exp = Experiment()
         exp.params['project'] = "P"
         exp.params['experimenter'] = "E"
-        
+
         obj_session = Session.object_session(exp)
         self.assertTrue(obj_session is None)
 
@@ -63,7 +65,7 @@ class TestObjectDict(unittest.TestCase):
         self.assertFalse(self.m.session.is_modified(exp))
         self.assertFalse(exp in self.m.session.dirty)
 
-        
+
     def testSetItem(self):
         """Test parameter setting"""
         exp = Experiment()
@@ -71,7 +73,7 @@ class TestObjectDict(unittest.TestCase):
         exp.params['experimenter'] = "E"
 
         self.m.save(exp)
-        
+
         exp.params['project'] = "PP"
 
         # exp is not actually modified itself (only the param is)
@@ -98,12 +100,12 @@ class TestObjectDict(unittest.TestCase):
         exp.data['default'].put("2")
         exp.data['input'].put("1")
         self.assertEqual(exp.data['default'].get_string(), "2")
-        
+
         #Sideeffects of assignments
         self.m.save(exp)
         self.assertRaises(TypeError, exp.data, [])
         exp.data['newkey'].put('newvalue')
-        
+
         # adding to data saves automatically
         self.assertFalse(exp in self.m.session.dirty)
 
@@ -125,7 +127,7 @@ class TestObjectDict(unittest.TestCase):
 
         self.assertRaises(KeyError, access_data, "4")
         self.assertRaises(KeyError, access_data, "4")
-        
+
         self.assertRaises(KeyError, exp.data['0'].delete)
         exp.data['1'].delete()
         exp.data['2'].delete()
@@ -171,6 +173,6 @@ class TestObjectDict(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()    
+    unittest.main()
 
 
