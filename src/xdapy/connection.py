@@ -14,7 +14,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 class AutoSession(object):
-    """Provides an automatically commiting session."""
+    """Provides an automatically committing session."""
     def __init__(self, session):
         self.session = session
 
@@ -22,7 +22,7 @@ class AutoSession(object):
         self.session.begin()
         # We are in autocommit mode. If we do not explicitly begin a session
         # we must flush afterwards because we cannot be sure WHEN the session
-        # is really commited.
+        # is really committed.
         # Especially the last commit may get lost without an explicit flush
         # or a session.close
         return self.session

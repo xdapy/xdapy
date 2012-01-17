@@ -18,7 +18,7 @@ from sqlalchemy.sql import or_, and_
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same
         attributes exists in the database
-TODO: Error if the commiting fails
+TODO: Error if the committing fails
 """
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
