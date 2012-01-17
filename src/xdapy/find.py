@@ -149,6 +149,7 @@ class _entity(SearchProxy):
         return item.type == self.key and self.inner.is_valid(item)
 
     def find(self, mapper):
+        # TODO: This retrieves everything. Should do some filtering before, if possible.
         items = mapper.find_all(self.key)
         print items
         return [item for item in items if self.is_valid(item)]

@@ -2,6 +2,7 @@ from xdapy import Mapper, Connection
 from xdapy.structures import EntityObject
 
 connection = Connection.default()
+
 m = Mapper(connection)
 
 from theobjects import Experiment, Observer, Trial, Session

@@ -279,6 +279,9 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
+        """
+        find_with provides an advanced filtering mode for higher structured queries.
+        """
         # alias reference for inner classes
         _mapper = self
 
@@ -347,6 +350,10 @@ class Mapper(object):
         return FindHelper((entity, filter)).search()
 
     def super_find(self, entity, the_filter=None):
+        """
+        super_find is able to search for structured data, including sub-queries
+        where either one or all sub-items are being checked for a certain property.
+        """
         proxy = SearchProxy((entity, the_filter))
         return proxy.find(self)
 
