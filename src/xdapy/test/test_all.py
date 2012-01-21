@@ -50,8 +50,8 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.connection = Connection.test()
+        self.connection.create_tables(overwrite=True)
         self.mapper = Mapper(self.connection)
-        self.mapper.create_tables(overwrite=True)
 
         #register params
         self.mapper.register(Observer, Experiment, Session, Trial)

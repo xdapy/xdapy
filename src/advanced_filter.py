@@ -2,8 +2,8 @@ from xdapy import Mapper, Connection
 from xdapy.structures import EntityObject
 
 connection = Connection.test()
+connection.create_tables(overwrite=True)
 m = Mapper(connection)
-m.create_tables(overwrite=True)
 
 from theobjects import Experiment, Observer, Trial, Session
 

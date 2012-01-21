@@ -52,8 +52,8 @@ class Session(EntityObject):
 class Setup(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
+        self.connection.create_tables(overwrite=True)
         self.m = Mapper(self.connection)
-        self.m.create_tables(overwrite=True)
 
         self.m.register(Observer, Experiment, Trial, Session)
 
@@ -64,7 +64,7 @@ class Setup(unittest.TestCase):
 class TestMapper(Setup):
 
     def testCreateTables(self):
-        self.m.create_tables(overwrite=True)
+        self.connection.create_tables(overwrite=True)
 
     def testSave(self):
         valid_objects = ("""Observer(name="Max Mustermann", handedness="right", age=26)""",
@@ -343,14 +343,14 @@ class TestConnections(Setup):
 # class TestProxyForObjectTemplates(unittest.TestCase):
 #
 #    def setUp(self):
+#        self.connection.create_tables()
 #        self.m = ProxyForObjectTemplates()
-#        self.m.create_tables()
 #
 #    def tearDown(self):
 #        pass
 #
 #    def testCreateTables(self):
-#        self.m.create_tables()
+#        self.connection.create_tables()
 #
 #    def testSaveObject(self):
 #        valid_objects=(Observer(name="Max Mustermann", handedness="right", age=26),

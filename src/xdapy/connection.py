@@ -6,6 +6,8 @@
 from os import path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
+
+from xdapy import Base
 from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError
 
@@ -170,4 +172,8 @@ class Connection(object):
             self._engine = create_engine(self.uri, **self._engine_opts)
         return self._engine
 
-
+    def create_tables(self, overwrite=False):
+        """Create tables in database (Do not overwrite existing tables)."""
+        if overwrite:
+            Base.metadata.drop_all(self.engine, checkfirst=True)
+        Base.metadata.create_all(self.engine)

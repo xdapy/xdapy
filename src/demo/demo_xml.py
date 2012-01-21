@@ -10,10 +10,11 @@ from xdapy import Connection, Mapper
 
 connection = Connection.test() # use standard profile
 #connection = Connection(dbname="xdapy")
-m = Mapper(connection)
 
 # drop the old database structure
-m.create_tables(overwrite=True)
+connection.create_tables(overwrite=True)
+
+m = Mapper(connection)
 
 objects = []
 

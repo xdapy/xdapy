@@ -3,8 +3,8 @@
 from xdapy import Connection, Mapper
 
 connection = Connection.profile("test") # use standard profile
+connection.create_tables(overwrite=True)
 m = Mapper(connection)
-m.create_tables(overwrite=True)
 
 from xdapy.objects import Experiment, Observer, Trial, Session
 

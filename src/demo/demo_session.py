@@ -4,10 +4,10 @@ from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
 
 connection = Connection.profile("test", echo=True) # use standard profile
-m = Mapper(connection)
-
 # drop the old database structure
-m.create_tables(overwrite=True)
+connection.create_tables(overwrite=True)
+
+m = Mapper(connection)
 
 # from xdapy.objects import Experiment, ...
 

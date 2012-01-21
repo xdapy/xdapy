@@ -4,7 +4,7 @@
 
 Created on Jun 17, 2009
 """
-from xdapy import Base
+
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
@@ -36,12 +36,6 @@ class Mapper(object):
         self.auto_session = connection.auto_session
         self.session = connection.session
         self.registered_objects = []
-
-    def create_tables(self, overwrite=False):
-        """Create tables in database (Do not overwrite existing tables)."""
-        if overwrite:
-            Base.metadata.drop_all(self.connection.engine, checkfirst=True)
-        Base.metadata.create_all(self.connection.engine)
 
     def save(self, *args):
         """Save instances inherited from ObjectDict into database.

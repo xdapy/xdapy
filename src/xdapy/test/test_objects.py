@@ -24,8 +24,8 @@ class Experiment(EntityObject):
 class TestObjectDict(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
+        self.connection.create_tables(overwrite=True)
         self.m = Mapper(self.connection)
-        self.m.create_tables(overwrite=True)
         self.m.register(Experiment)
 
     def tearDown(self):

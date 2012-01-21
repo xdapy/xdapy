@@ -93,8 +93,8 @@ class TestXml(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
+        self.connection.create_tables(overwrite=True)
         self.mapper = Mapper(self.connection)
-        self.mapper.create_tables(overwrite=True)
         self.mapper.register(*objects)
 
     def tearDown(self):

@@ -5,8 +5,9 @@ class E(EntityObject):
     parameter_types = {}
 
 connection = Connection.profile("test")#, echo=True) # use standard profile
+connection.create_tables()#overwrite=True)
+
 m = Mapper(connection)
-m.create_tables()#overwrite=True)
 
 m.register(E)
 
