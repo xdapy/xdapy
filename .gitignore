@@ -19,5 +19,7 @@
 *.swp
 *.out
 
+# build files
 .sass-cache
+/build
 
