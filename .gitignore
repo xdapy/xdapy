@@ -9,6 +9,9 @@
 .metadata
 .pydevproject
 
+# idea
+.idea
+
 # other generic files to ignore
 *~
 *.lock
