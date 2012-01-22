@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.0'
+__version_info__ = (0, 9, 0)
+__version__ = '.'.join(map(str, __version_info__))
+__short_version__ = '.'.join(map(str, __version_info__[0:1]))
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 __copyright__ = '(c) 2009 Hannah Dold'
