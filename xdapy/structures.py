@@ -88,8 +88,7 @@ class Entity(Base):
 
 
     __tablename__ = 'entities'
-    __table_args__ = {'mysql_engine':'InnoDB'}
-    __mapper_args__ = {'polymorphic_on':_type}
+    __mapper_args__ = {'polymorphic_on': _type}
 
     _params = relationship(Parameter,
         collection_class=column_mapped_collection(Parameter.name), # FIXME ???
@@ -357,7 +356,6 @@ class Context(Base):
         return self.connected
 
     __tablename__ = 'contexts'
-    __table_args__ = {'mysql_engine':'InnoDB'}
 
     def __repr__(self):
         return "Context(entity_id={id!s}, connected_id={cid!s}, connection_type={type})".format(id=self.entity_id, cid=self.connected_id, type=self.connection_type)
@@ -379,8 +377,7 @@ class ParameterOption(Base):
     parameter_type = Column('parameter_type', String(40))
 
     __tablename__ = 'parameteroptions'
-    __table_args__ = (UniqueConstraint(parameter_name, entity_name),
-                      {'mysql_engine':'InnoDB'})
+    __table_args__ = (UniqueConstraint(parameter_name, entity_name),)
 
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):

@@ -57,8 +57,7 @@ class DataChunks(Base):
         return self._length
 
     __tablename__ = 'data_chunks'
-    __table_args__ = (UniqueConstraint(data_id, index),
-                    {'mysql_engine':'InnoDB'})
+    __table_args__ = (UniqueConstraint(data_id, index), )
 
     def __init__(self, index, chunk):
         self.index = index
@@ -86,8 +85,7 @@ class Data(Base):
     _chunks = relationship(DataChunks, cascade="save-update, merge, delete")
 
     __tablename__ = 'data'
-    __table_args__ = (UniqueConstraint(entity_id, key),
-                    {'mysql_engine':'InnoDB'})
+    __table_args__ = (UniqueConstraint(entity_id, key),)
 
     @validates('key')
     def validate_name(self, key, parameter):

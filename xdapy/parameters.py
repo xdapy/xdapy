@@ -36,8 +36,7 @@ class Parameter(Base):
             return Parameter
 
     __tablename__ = 'parameters'
-    __table_args__ = (UniqueConstraint(entity_id, name),
-                        {'mysql_engine':'InnoDB'})
+    __table_args__ = (UniqueConstraint(entity_id, name),)
     __mapper_args__ = {'polymorphic_on':type, 'polymorphic_identity':'parameter'}
 
     @validates('name')
