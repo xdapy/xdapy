@@ -265,7 +265,7 @@ class XmlIO(IO):
     def write(self):
         root = ET.Element("xdapy")
         types = ET.Element("types")
-        entities = ET.Element("entities")
+        entities = ET.Element("objects")
         relations = ET.Element("relations")
 
         used_objects = set()
