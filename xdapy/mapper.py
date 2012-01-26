@@ -58,7 +58,7 @@ class Mapper(object):
     def save_all(self, *args):
         for arg in args:
             self.save(arg)
-            self.save_all(arg.children)
+            self.save_all(*arg.children)
 
     def delete(self, *args):
         """Deletes the objects from the database."""

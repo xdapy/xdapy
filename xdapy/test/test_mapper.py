@@ -122,6 +122,22 @@ class TestMapper(Setup):
         self.m.delete(e)
         self.assertEqual(len(self.m.find_all(EntityObject)), 1)
 
+    def testSaveAll(self):
+        obs = Observer(name="Max Mustermann", handedness="right", age=26)
+        self.m.save_all(obs)
+
+        self.assertTrue(self.m.find_first(Observer).params["name"] == "Max Mustermann")
+
+        e = Experiment(project='YourProject', experimenter="Johny Dony")
+        t1 = Trial(rt=189, valid=True, response='right')
+        t2 = Trial(rt=189, valid=False, response='right')
+        t1.parent = e
+        t2.parent = e
+
+        self.m.save_all(e)
+
+        self.assertTrue(len(self.m.find_all(Trial)) == 2)
+
 
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
