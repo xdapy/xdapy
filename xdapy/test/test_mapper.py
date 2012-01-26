@@ -2,7 +2,7 @@
 
 Created on Jun 17, 2009
 """
-from sqlalchemy.exceptions import CircularDependencyError
+from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject, Context
