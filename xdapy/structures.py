@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 
-"""Contains all classes that possess equivalents as tables in the database.
+"""\
+Contains the classes which are used to store the EntityObject meta data.
 
-Created on Jun 17, 2009
-This module contains so called views - classes that are directly mapped onto the
-database through a object-relational-mapper (ORM).
+**TODO** Figure out what to do with global variable base
+**TODO** Make Data truncation an error
 """
-"""
-TODO: Figure out what to do with global variable base
-TODO: Make Data truncation an error
-"""
+
+__docformat__ = "restructuredtext"
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 import uuid as py_uuid
 import collections
+import itertools
 
 from sqlalchemy import Column, ForeignKey, String, Integer
 from sqlalchemy.schema import UniqueConstraint
@@ -37,7 +36,7 @@ from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 class Entity(Base):
     """
-    The class 'Entity' is mapped on the table 'entities'. The name column
+    The class `Entity` is mapped on the table 'entities'. The name column
     contains unique information about the object type (e.g. 'Observer',
     'Experiment'). Each Entity is connected to a set of parameters through the
     adjacency list parameterlist. Those parameters can be accessed via the
@@ -45,30 +44,55 @@ class Entity(Base):
     hierarchical structure (represented in a flat table!) via the children and
     parents attributes.
     """
+    #: The database-backed id column.
     id = Column('id', Integer, primary_key=True)
+
+    #: The database-backed type column.
+    #:
+    #: This not only stores the class name of the `Entity` but also
+    #: a hash uniquely identifying the stored parameters.
     _type = Column('type', String(60))
+
+    #: The database-backed uuid column.
     _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
 
     @synonym_for("_uuid")
     @property
     def uuid(self):
+        """
+        Getter property for the database-backed `_uuid` field.
+
+        Returns
+        -------
+        uuid: string
+            The auto-generated UUID of the `Entity`.
+        """
         return self._uuid
 
     @property
     def type(self):
+        """
+        Getter property for the database-backed `_type` field, leaving out the type hash.
+
+        Returns
+        -------
+        type: string
+            The type of the `Entity`.
+        """
         return self._type.split('_')[0]
 
     # has one parent
-    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'))
+    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'),
+            doc="The database-backed parent_id field.")
     children = relationship("Entity", backref=backref("parent", remote_side=[id]),
             doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
 
     def belongs_to(self, parent):
-        """Can be used as an alternative for self.parent = parent."""
+        """ Can be used as an alternative for self.parent = parent."""
         self.parent = parent
 
     def all_parents(self):
-        """Returns a list of all parent entities
+        """ Returns a list of all parent and grand-parent entities.
         """
         node = self
         parents = []
@@ -80,19 +104,22 @@ class Entity(Base):
         return parents
 
     def all_children(self):
+        """ Returns a list of all children and siblings.
+        """
         children = set()
         children.update(self.children)
         for child in self.children:
             children.update(child.all_children())
         return children
 
+    __tablename__ = 'entities' #: The db table name.
 
-    __tablename__ = 'entities'
+    #: Subclasses of `Entity` should differ in their `_type` column.
     __mapper_args__ = {'polymorphic_on': _type}
 
     _params = relationship(Parameter,
-        collection_class=column_mapped_collection(Parameter.name), # FIXME ???
-        cascade="save-update, merge, delete")
+            collection_class=column_mapped_collection(Parameter.name), # FIXME ???
+            cascade="save-update, merge, delete")
 
     # one to many Entity->Data
     _data = relationship(Data,
@@ -101,12 +128,36 @@ class Entity(Base):
 
     @property
     def data(self):
+        """ Accessor property for associated data. Wraps a `xdapy.data._DataAssoc` instance.
+
+        Examples
+        --------
+        >>> obj = SomeObject()
+        >>> mapper.save(obj)  # object must be in session before data may be used
+        >>> obj.data
+        {}
+        >>> obj.data["data_key"].put("random string")
+        >>> obj.data["data_key"]
+        DataProxy(mimetype=None, chunks=1, size=13)
+        >>> obj.data["data_key"].get_string()
+        "random string"
+        >>> obj.data.keys()
+        [u"data_key"]
+        """
         if not hasattr(self, "__data_assoc"):
             self.__data_assoc = _DataAssoc(self)
         return self.__data_assoc
 
     def connect(self, connection_type, connection_object):
-        """Connect this entity with connection_object via the connection_type."""
+        """ Connect this entity with `connection_object` via the `connection_type`.
+
+        Parameters
+        ----------
+        connection_type: string
+            The type of the connection.
+        connection_object: EntityObject
+            The object to connect to.
+        """
         self_session = Session.object_session(self)
         if self_session:
             # check, if we are already connected with connection_object
@@ -120,10 +171,14 @@ class Entity(Base):
 
     @property
     def connected(self):
+        """ Lists all connected objects.
+        """
         return [c.connected for c in self.connections]
 
     @property
     def back_referenced(self):
+        """ Returns all objects which have connected to this object.
+        """
         return [c.back_referenced for c in self.back_references]
 
     @validates('_type')
@@ -133,15 +188,13 @@ class Entity(Base):
         return e_name
 
     def __init__(self, type):
-        """Initialize an entity corresponding to an experimental object.
+        """This method should never be called directly.
 
-        Argument:
-        name -- A one-word-description of the experimental object
-
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no an integer.
+        Raises
+        ------
+        Exception
         """
-        raise Error("Entity.__init__ should not be called directly.")
+        raise Exception("Entity.__init__ should not be called directly.")
 
     def _attributes(self):
         return {'type': self.type, 'id': self.id, 'uuid': self.uuid}
@@ -162,8 +215,9 @@ class Entity(Base):
     def __repr__(self):
         return "<Entity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
 
-
     def _session(self):
+        """ Returns the session which this object belongs to.
+        """
         session = Session.object_session(self)
         if session is None:
             raise MissingSessionError("Entity has no associated session.")
@@ -240,6 +294,7 @@ class _StrParams(collections.MutableMapping):
 
 class EntityObject(Entity):
     """EntityObject is the base class for all entity object definitions."""
+    #: We specify our special metaclass `xdapy.structures.Meta`.
     __metaclass__ = Meta
 
     def __init__(self, _uuid=None, **kwargs):
@@ -272,7 +327,6 @@ class EntityObject(Entity):
         return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.type, id=self.id, uuid=self.uuid)
 
     def __str__(self):
-        import itertools
         items  = itertools.chain([('id', self.id)], self.params.iteritems())
         params = ", ".join(["{0!s}={1!r}".format(key, val) for key, val in items])
         return "{cls}({params})".format(cls=self.type, params=params)
@@ -283,7 +337,6 @@ class EntityObject(Entity):
         parents = self.all_parents()
         print parents
         print "has", len(self.children), "children and", len(self.all_children()), "siblings"
-
 
     def print_tree(self):
         """Prints a graphical representation of the entity and its parents and grand-parents."""
@@ -303,14 +356,17 @@ class EntityObject(Entity):
 
 
 def create_entity(name, parameters):
-    """Creates a dynamic subclass of EntityObject.
+    """Creates a dynamic subclass of `EntityObject` which makes it possible
+    to create new `EntityObject` instances ‘on the fly’.
 
-    MyEntity = create_entity("MyEntity", {"name": "string"})
+    The function call (and assignment)::
 
-    is equivalent to
+        MyEntity = create_entity("MyEntity", {"name": "string"})
 
-    class MyEntity(EntityObject):
-        parameter_types = {"name": "string"}
+    is equivalent to::
+
+        class MyEntity(EntityObject):
+            parameter_types = {"name": "string"}
 
     """
     return type(name, (EntityObject,), {'parameter_types': parameters})
@@ -326,9 +382,8 @@ def calculate_polymorphic_name(name, params):
 
 
 class Context(Base):
-    # Context Association
     """
-    The class 'Context' is mapped on the table 'data'. The name assigned to Data
+    The class `Context` is mapped on the table 'data'. The name assigned to Data
     must be a string. Each Data is connected to at most one entity through the
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
@@ -366,12 +421,40 @@ class Context(Base):
 
 class ParameterOption(Base):
     """
-    The class 'ParameterOption' is mapped on the table 'parameteroptions'. This
+    The class `ParameterOptio` is mapped on the table 'parameteroptions'. This
     table provides a lookup table for entity/parameter pairs and the type the
     parameter is required to have. Ideally this table is filled once after table
     creation. And only if at a later moment the need for a new parameter emerges,
     then this parameter can be added to the list of allowed parameters.
+
+    Initialize an entity - parameter pair
+
+    Parameters
+    ----------
+    entity_name
+        A one-word-description of the experimental object
+    parameter_name
+        A one-word-description of the parameter
+    parameter_value
+        The polymorphic type of the parameter (e.g. 'integer', 'string')
+
+    Raises
+    ------
+    TypeError
+        Occurs if arguments aren't strings or type not in list.
     """
+
+    def __init__(self, entity_name, parameter_name, parameter_type):
+        self.entity_name = entity_name
+        self.parameter_name = parameter_name
+        self.parameter_type = parameter_type
+
+    def __repr__(self):
+        return "<ParameterOption('%s','%s', '%s')>" % (self.entity_name,
+                                                       self.parameter_name,
+                                                       self.parameter_type)
+
+
     entity_name = Column('entity_name', String(60), primary_key=True)
     parameter_name = Column('parameter_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40))
@@ -398,28 +481,6 @@ class ParameterOption(Base):
                              "following strings: " +
                              ", ".join(parameter_ids)))
         return p_type
-
-    def __init__(self, entity_name, parameter_name, parameter_type):
-        """Initialize an entity - parameter pair
-
-        Argument:
-        entity_name -- A one-word-description of the experimental object
-        parameter_name -- A one-word-description of the parameter
-        parameter_value -- The polymorphic type of the parameter
-            (e.g. 'integer', 'string')
-
-        Raises:
-        TypeError -- Occurs if arguments aren't strings or type not in list.
-        """
-        self.entity_name = entity_name
-        self.parameter_name = parameter_name
-        self.parameter_type = parameter_type
-
-    def __repr__(self):
-        return "<ParameterOption('%s','%s', '%s')>" % (self.entity_name,
-                                                       self.parameter_name,
-                                                       self.parameter_type)
-
 
 if __name__ == "__main__":
     pass

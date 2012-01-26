@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
-""" Provides a proxy to search complicated queries.
+"""\
+Provides a proxy to search complicated queries.
 
 """
+
+__docformat__ = "restructuredtext"
 
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 

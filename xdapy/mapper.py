@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""This module provides the code to access a database on an abstract level.
+"""\
+This module provides the code to access a database on an abstract level.
 
 Created on Jun 17, 2009
 """
+
+__docformat__ = "restructuredtext"
+
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
@@ -21,31 +27,56 @@ TODO: Save: what happens if similar object with more or less but otherwise the s
 TODO: Error if the committing fails
 """
 
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
-
 class Mapper(object):
-    """Handle database access and sessions"""
+    """ Handles database access and sessions
+
+    Parameters
+    ----------
+    connection
+        A connection object to the database.
+
+    Attributes
+    ----------
+    connection
+        The database connection
+
+    registered_objects
+        The objects this mapper cares about
+    """
 
     def __init__(self, connection):
-        """Constructor
-
-        Creates the engine for a specific database and a session factory
-        """
         self.connection = connection
-        self.auto_session = connection.auto_session
-        self.session = connection.session
         self.registered_objects = []
 
+    @property
+    def auto_session(self):
+        """
+        Convenience wrapper for `xdapy.connection.Connection.auto_session`.
+        """
+        return self.connection.auto_session
+
+    @property
+    def session(self):
+        """
+        Convenience wrapper for `xdapy.connection.Connection.session`.
+        """
+        return self.connection.session
+
     def save(self, *args):
-        """Save instances inherited from ObjectDict into database.
+        """
+        Save instances inheriting from `EntityObject` into database.
 
-        Attribute:
-        args -- One or more objects derived from datamanager.objects.ObjectDict
+        Attributes
+        ----------
+        args
+            One or more objects derived from `xdapy.structures.EntityObject`.
 
-        Raises:
-        TypeError -- If the type of an object's attribute is not supported.
-        TypeError -- If the attribute is None
+        Raises
+        ------
+        TypeError
+            If the type of an object's attribute is not supported.
+        TypeError
+            If the attribute is None
         """
         with self.auto_session as session:
             try:
@@ -56,6 +87,21 @@ class Mapper(object):
                 raise
 
     def save_all(self, *args):
+        """
+        Save instances inheriting from `EntityObject` into database as well as their children.
+
+        Attributes
+        ----------
+        args
+            One or more objects derived from `xdapy.structures.EntityObject`.
+
+        Raises
+        ------
+        TypeError
+            If the type of an object's attribute is not supported.
+        TypeError
+            If the attribute is None
+        """
         for arg in args:
             self.save(arg)
             self.save_all(*arg.children)
@@ -226,14 +272,17 @@ class Mapper(object):
         return self.find(Entity).filter(Entity._uuid==uuid).one()
 
     def get_data_matrix(self, conditions, items, include=None):
-        """Finds related items for the entity which satisfies condition
+        """ Finds related items for the entity which satisfies condition
 
-        include -- list of entities relations which should be included
-            "PARENT":           parent entities
-            "CHILDREN":         child entities
-            "CONTEXT":          context entities
-            "CONTEXT_REVERSED": reversed context entities
-            "ALL":              all related entities
+        Parameters
+        ----------
+        include : list
+            list of entities relations which should be included
+                - "PARENT":           parent entities
+                - "CHILDREN":         child entities
+                - "CONTEXT":          context entities
+                - "CONTEXT_REVERSED": reversed context entities
+                - "ALL":              all related entities
         """
         if include is None:
             include = ["ALL"]
@@ -273,8 +322,7 @@ class Mapper(object):
         return matrix
 
     def find_with(self, entity, filter=None):
-        """
-        find_with provides an advanced filtering mode for higher structured queries.
+        """ find_with provides an advanced filtering mode for higher structured queries.
         """
         # alias reference for inner classes
         _mapper = self
@@ -352,16 +400,19 @@ class Mapper(object):
         return proxy.find(self)
 
     def connect_objects(self, parent, child, force=False):
-        """Connect two related objects
+        """ Connect two related objects
 
-        Attribute:
-        parent --  The parent object derived from datamanager.objects.ObjectDict or
-            the integer id describing this object.
-        child --  The child object derived from datamanager.objects.ObjectDict or
+        Parameters
+        ----------
+        parent : The parent object derived from datamanager.objects.ObjectDict or
             the integer id describing this object.
 
-        Raises:
-        RequestObjectError -- If the objects to be connected are not properly
+        child : The child object derived from datamanager.objects.ObjectDict or
+            the integer id describing this object.
+
+        Raises
+        ------
+        RequestObjectError : If the objects to be connected are not properly
             saved in the database
 
         TODO: Maybe consider to save objects automatically

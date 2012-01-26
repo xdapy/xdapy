@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
-# Provide a centralised typed key–value store.
+
+"""\
+Provide a centralised typed key–value store.
+"""
+
+__docformat__ = "restructuredtext"
+
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from datetime import date, time, datetime
 from sqlalchemy import Sequence, Column, ForeignKey, \
@@ -10,26 +18,28 @@ from sqlalchemy.schema import UniqueConstraint
 from xdapy import Base
 from xdapy.errors import StringConversionError
 
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
-
 
 class Parameter(Base):
     """
     The class 'Parameter' is mapped on the table 'parameters' and forms the
     superclass of all possible parameter types (e.g. for string, integer...).
     The name assigned to a Parameter must be a string.
-    Each Parameter is connected to at least one entity through the
-    adjacency list 'parameterlist'. The corresponding entities can be accessed via
-    the entities attribute of the Parameter class.
     """
-    id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, primary_key=True)
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    id = Column('id', Integer, Sequence('parameter_id_seq'), autoincrement=True, primary_key=True,
+            doc="The auto-incrementing id column which all parameters share.")
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False,
+            doc="Foreign key reference to the entity.id.")
 
-    name = Column('name', String(40), index=True)
-    type = Column('type', String(20), nullable=False)
+    name = Column('name', String(40), index=True,
+            doc="The name of the parameter.")
+    type = Column('type', String(20), nullable=False,
+            doc="The type of the parameter.")
 
     def typed_class(self):
+        """
+
+        TODO: This class is unused. Is it needed?
+        """
         try:
             return ParameterMap[self.type]
         except KeyError:
@@ -51,16 +61,13 @@ class Parameter(Base):
         return parameter
 
     def __init__(self, name):
-        """Initialize a parameter with the given name.
+        """This method should never be called directly.
 
-        Argument:
-        name -- A one-word-description of the parameter
-
-        Raises:
-        TypeError -- Occurs if name is not a string
+        Raises
+        ------
+        Exception
         """
-        self.name = name
-        print "Accessing Parameter.__init__"
+        raise Exception("Parameter.__init__ should not be called directly.")
 
     def __repr__(self):
         return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
@@ -116,12 +123,16 @@ class StringParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and string value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The string associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: string
+            The string associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no a string.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no a string.
         """
         self.name = name
         self.value = value
@@ -163,12 +174,16 @@ class IntegerParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and integer value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The integer associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: int
+            The integer associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no an integer.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no an integer.
         """
         self.name = name
         self.value = value
@@ -210,12 +225,16 @@ class FloatParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and string value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The float associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: float
+            The float associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no float.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no float.
         """
         self.name = name
         self.value = value
@@ -269,12 +288,16 @@ class DateParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and datetime.date.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The datetime.date associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: date
+            The datetime.date associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no a datetime.date.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no a datetime.date.
         """
         self.name = name
         self.value = value
@@ -322,12 +345,16 @@ class TimeParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and datetime.time value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The datetime.time object associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: time
+             The datetime.time object associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is not datetime.time.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is not datetime.time.
         """
         self.name = name
         self.value = value
@@ -375,12 +402,16 @@ class DateTimeParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and datetime.datetime value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The datetime.datetime object associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: datetime
+            The datetime.datetime object associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no datetime.datetime.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no datetime.datetime.
         """
         self.name = name
         self.value = value
@@ -435,12 +466,16 @@ class BooleanParameter(Parameter):
     def __init__(self, name, value):
         """Initialize a parameter with the given name and boolean value.
 
-        Argument:
-        name -- A one-word-description of the parameter
-        value -- The boolean object associated with the name
+        Parameters
+        ----------
+        name: string
+            A one-word-description of the parameter
+        value: bool
+            The boolean object associated with the name
 
-        Raises:
-        TypeError -- Occurs if name is not a string or value is no boolean.
+        Raises
+        ------
+        TypeError: Occurs if name is not a string or value is no boolean.
         """
         self.name = name
         self.value = value
