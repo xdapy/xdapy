@@ -3,15 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to xdapy's documentation!
-=================================
+xdapy
+=====
+Python framework for object storage
+-----------------------------------
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-
+    Introduction <intro>
+    Installation <install>
+    Usage <usage>
+    Database Tables <tables>
+    Python API <api/index>
 
 Indices and tables
 ==================
