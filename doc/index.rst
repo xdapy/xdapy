@@ -18,6 +18,7 @@ Contents:
     Usage <usage>
     Database Tables <tables>
     Python API <api/index>
+    I/O formats <io_formats>
 
 Indices and tables
 ==================

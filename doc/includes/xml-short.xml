@@ -1,0 +1,16 @@
+<xdapy>
+    <types>
+        <entity type="Observer">
+            <parameter name="age" type="integer" />
+            <parameter name="handedness" type="string" />
+            <parameter name="name" type="string" />
+        </entity>
+    </types>
+    <objects>
+        <entity id="1" type="Observer" uuid="e4a7918b-8317-427d-800e-1a221df38db2">
+            <parameter name="age" value="200" />
+        </entity>
+    </objects>
+    <relations />
+</xdapy>
+
