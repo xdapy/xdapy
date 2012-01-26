@@ -5,7 +5,7 @@ Created on Jun 17, 2009
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject, Context
+from xdapy.structures import EntityObject, Context, create_entity
 from xdapy.operators import gt, lt
 
 import unittest
@@ -143,6 +143,54 @@ class TestMapper(Setup):
         self.m.save(Observer(name="Max Mustermann", handedness="left", age=29))
         self.assertTrue(len(self.m.find_all(Observer(name="Max Mustermann"))) > 1)
         self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 3)
+
+    def testEntityByName(self):
+        self.assertEqual(Observer, self.m.entity_by_name(Observer))
+        self.assertEqual(Observer, self.m.entity_by_name("Observer"))
+        self.assertEqual(Observer, self.m.entity_by_name("Observer_e1c05e3bba82a039dd8d410aaf50f815"))
+
+        self.assertNotEqual(Observer, self.m.entity_by_name(Experiment))
+
+        self.assertRaises(ValueError, self.m.entity_by_name, "Observer_")
+        self.assertRaises(ValueError, self.m.entity_by_name, "Obs")
+        self.assertRaises(ValueError, self.m.entity_by_name, "")
+        self.assertRaises(TypeError, self.m.entity_by_name, str)
+
+        # defining a new Observer type
+        Observer_new = create_entity("Observer", {})
+
+        # approx. equivalent to but does not shadow the original Observer
+        #    class Observer(EntityObject):
+        #        parameter_types = {}
+        #    Observer_new = Observer
+        #    del Observer
+
+        self.m.register(Observer_new)
+
+        # now more than one Observer has been defined
+        # first check that the hashes are in order
+        self.assertEqual(Observer.__name__, "Observer_e1c05e3bba82a039dd8d410aaf50f815")
+        self.assertEqual(Observer_new.__name__, "Observer_99914b932bd37a50b983c5e7c90ae93b")
+
+        # check, that "Observer" is not sufficient any more
+        self.assertRaises(ValueError, self.m.entity_by_name, "Observer")
+
+        # with the complete hash, it still works
+        self.assertEqual(Observer, self.m.entity_by_name("Observer_e1c05e3bba82a039dd8d410aaf50f815"))
+        self.assertEqual(Observer_new, self.m.entity_by_name("Observer_99914b932bd37a50b983c5e7c90ae93b"))
+
+        self.assertEqual(Observer, self.m.entity_by_name(Observer))
+        self.assertEqual(Observer_new, self.m.entity_by_name(Observer_new))
+
+
+    def testCreate(self):
+        obs = self.m.create("Observer")
+        self.assertTrue(obs.id is None)
+        obs = self.m.create("Observer", name="Noname")
+        self.assertTrue(obs.id is None)
+        self.assertEqual(obs.params["name"], "Noname")
+        obs = self.m.create_and_save("Observer")
+        self.assertEqual(obs.id, 1)
 
 
     def testConnectObjects(self):

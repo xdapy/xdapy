@@ -420,10 +420,22 @@ class Mapper(object):
                 self.register_parameter(klass.__name__, name, paramtype)
 
     def entity_by_name(self, name):
+        """ Returns the mapped entity class with the supplied name
+        or the entity class itself.
+
+        Parameters
+        ----------
+        name: string or subclass of EntityObject
+            The name of the entity object to find.
+        """
+        # maybe name was a class already, then we're done
+        if name in self.registered_objects:
+            return name
+
         klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
         if name in klasses:
             return klasses[name]
-        klasses_guessed = [cls for cls in klasses if cls.startswith(name)]
+        klasses_guessed = [cls for cls in klasses if cls.startswith(name + "_") or cls == name]
         if len(klasses_guessed) == 1:
             return klasses[klasses_guessed[0]]
         if len(klasses_guessed) > 1:
