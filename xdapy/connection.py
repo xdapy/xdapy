@@ -52,7 +52,7 @@ class Connection(object):
             if not dialect:
                 dialect = "postgresql"
             if not host:
-                host = "localhost"
+                host = ""
             if not user:
                 user = ""
             if not password:
