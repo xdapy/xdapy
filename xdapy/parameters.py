@@ -41,7 +41,7 @@ class Parameter(Base):
         TODO: This class is unused. Is it needed?
         """
         try:
-            return ParameterMap[self.type]
+            return parameter_for_type(self.type)
         except KeyError:
             return Parameter
 
@@ -79,11 +79,11 @@ class Parameter(Base):
         """
         return unicode(self.value)
 
-    @classmethod
-    def create(cls, name, value):
+    @staticmethod
+    def create(name, value):
         """Creates a new parameter instance with the correct type."""
-        klass = acceptingClass(value)
-        return klass(name, value)
+        cls = find_accepting_class(value)
+        return cls(name, value)
 
 class StringParameter(Parameter):
     """
@@ -483,7 +483,8 @@ class BooleanParameter(Parameter):
     def __repr__(self):
         return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
-parameter_classes = [
+#: The classes/tables which store the parameters.
+_parameter_classes = [
             DateTimeParameter,
             DateParameter,
             TimeParameter,
@@ -493,24 +494,33 @@ parameter_classes = [
             StringParameter
     ]
 
-parameter_ids = list(pc.__mapper_args__['polymorphic_identity'] for pc in parameter_classes)
+#: The polymorphic ids of the parameters.
+parameter_ids = list(pc.__mapper_args__['polymorphic_identity'] for pc in _parameter_classes)
 
-ParameterMap = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in parameter_classes)
+_parameter_map = dict((pc.__mapper_args__['polymorphic_identity'], pc) for pc in _parameter_classes)
 
-def strToType(s, typename):
-    # TODO: Maybe put the None check inside the from_string methods
-    if s is None:
-        raise ValueError("Attempted to set None on a parameter.")
-    return ParameterMap[typename].from_string(s)
+def parameter_for_type(typename):
+    """ Returns the parameter class for the given `typename`.
 
-def acceptingClass(value):
-    for pc in parameter_classes:
+    Parameters
+    ----------
+    typename: string
+        The polymorphic identity of the `Parameter` class.
+    """
+    return _parameter_map[typename]
+
+def find_accepting_class(value):
+    """ Goes through all classes and the first class which accepts the given `value`.
+
+    Parameters
+    ----------
+    value: object
+        Some object to check.
+    """
+    for pc in _parameter_classes:
         if pc.accepts(value):
             return pc
     raise ValueError("Value not accepted by any class")
-
-def classFromType():
-    """Returns the parameter class to the type name."""
 
 if __name__ == '__main__':
     pass

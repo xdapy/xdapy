@@ -14,7 +14,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
 from xdapy.structures import ParameterOption, Entity, EntityObject
-from xdapy.parameters import StringParameter, DateParameter, ParameterMap
+from xdapy.parameters import StringParameter, DateParameter, parameter_for_type
 from xdapy.errors import StringConversionError, FilterError
 from xdapy.find import SearchProxy
 
@@ -152,43 +152,43 @@ class Mapper(object):
 
                 or_clause = []
                 # Ask for the type of the parameter according to the entity
-                ParameterType = ParameterMap[entity.parameter_types[key]]
+                parameter_class = parameter_for_type(entity.parameter_types[key])
                 for val in value:
                     if callable(val):
                         # we’ve been given a function
-                        or_clause.append(val(ParameterType.value))
-                    elif ParameterType == StringParameter:
+                        or_clause.append(val(parameter_class.value))
+                    elif parameter_class == StringParameter:
                         # test string using ‘like’
                         if not options["strict"]:
                             val = "%" + val + "%"
 
-                        or_clause.append(ParameterType.value.like(val))
+                        or_clause.append(parameter_class.value.like(val))
                     else:
                         if options["convert_string"]:
                             try:
-                                val = ParameterType.from_string(val)
+                                val = parameter_class.from_string(val)
                             except StringConversionError:
-                                if ParameterType == DateParameter:
+                                if parameter_class == DateParameter:
                                     # get year month day
                                     ymd = val.split('-')
 
                                     clauses = []
                                     from sqlalchemy.sql.expression import func
                                     if len(ymd) > 0:
-                                         clauses.append(func.date_part('year', ParameterType.value) ==  ymd[0])
+                                         clauses.append(func.date_part('year', parameter_class.value) ==  ymd[0])
                                     if len(ymd) > 1:
-                                         clauses.append(func.date_part('month', ParameterType.value) ==  ymd[1])
+                                         clauses.append(func.date_part('month', parameter_class.value) ==  ymd[1])
                                     if len(ymd) > 2:
-                                         clauses.append(func.date_part('day', ParameterType.value) ==  ymd[2])
+                                         clauses.append(func.date_part('day', parameter_class.value) ==  ymd[2])
 
                                     clause = (and_(*clauses))
                                     or_clause.append(clause)
                                 else:
                                     raise
                         else:
-                            or_clause.append(ParameterType.value == val)
+                            or_clause.append(parameter_class.value == val)
                 # FIXME
-                return entity._params.of_type(ParameterType).any(or_(*or_clause))
+                return entity._params.of_type(parameter_class).any(or_(*or_clause))
 
             def makeAttr(key, value):
                 if not callable(value):

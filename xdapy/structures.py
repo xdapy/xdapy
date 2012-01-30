@@ -28,7 +28,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
 from sqlalchemy.dialects.postgresql import UUID
 
 from xdapy import Base
-from xdapy.parameters import ParameterMap, Parameter, parameter_ids
+from xdapy.parameters import Parameter, parameter_ids, parameter_for_type
 from xdapy.data import Data, _DataAssoc
 from xdapy.errors import EntityDefinitionError, InsertionError, MissingSessionError, DataInconsistencyError
 from xdapy.utils.algorithms import gen_uuid, hash_dict
@@ -223,9 +223,6 @@ class Entity(Base):
             raise MissingSessionError("Entity has no associated session.")
         return session
 
-
-from xdapy.parameters import strToType
-
 class Meta(DeclarativeMeta):
     @staticmethod
     def _calculate_polymorphic_name(name, bases, attrs):
@@ -254,8 +251,9 @@ class Meta(DeclarativeMeta):
             except KeyError:
                 raise KeyError("%s has no key '%s'." % (cls.__original_class_name__, k))
 
-            ParameterType = ParameterMap[parameter_type]
-            return ParameterType(name=k, value=v)
+            # get the correct parameter class
+            parameter_class = parameter_for_type(parameter_type)
+            return parameter_class(name=k, value=v)
 
         cls.params = association_proxy('_params', 'value', creator=_saveParam)
 
@@ -275,8 +273,14 @@ class _StrParams(collections.MutableMapping):
 
     def __setitem__(self, key, val):
         # TODO: Make more consistent
-        parameter_type = self.owning.parameter_types[key]
-        typed_val = strToType(val, parameter_type)
+        parameter_name = self.owning.parameter_types[key]
+        parameter_class = parameter_for_type(parameter_name)
+
+        # TODO: Maybe put the None check inside the from_string methods
+        if val is None:
+            raise ValueError("Attempted to set None on a parameter.")
+
+        typed_val = parameter_class.from_string(val)
         self.owning.params[key] = typed_val
 
     def __repr__(self):
