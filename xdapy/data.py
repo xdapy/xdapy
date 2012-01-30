@@ -289,12 +289,17 @@ class _DataProxy(object):
         self.__session.flush()
 
     def _chunk_query(self, *entities, **kwargs):
+        """ Returns a query which is restricted to data chunks with the
+        `data_id` of this `_DataProxy`.
+
+        `*entities` and `**kwargs` are passed verbatim the the SQLAlchemy `Session.query()` method.
+        """
         # Version which uses caching of data_id
-#        if not hasattr(self, "data_id") or self.data_id is None:
-#            try:
-#                self.data_id = self.__session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
-#            except NoResultFound:
-#                raise SelectionError("Could not find a result. Maybe there is no data associated with this key.")
+        # if not hasattr(self, "data_id") or self.data_id is None:
+        #   try:
+        #       self.data_id = self.__session().query(Data.id).filter(Data.entity_id==self.assoc.owning.id).filter(Data.key==self.key).one().id
+        #   except NoResultFound:
+        #       raise SelectionError("Could not find a result. Maybe there is no data associated with this key.")
         data_id = self.get_data().id # this probably does the same as above code and raises a KeyError
 
         return self.__session.query(*entities, **kwargs).filter(DataChunks.data_id==data_id)
