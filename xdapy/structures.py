@@ -377,7 +377,7 @@ class ParameterOption(Base):
     parameter_type = Column('parameter_type', String(40))
 
     __tablename__ = 'parameteroptions'
-    __table_args__ = (UniqueConstraint(parameter_name, entity_name),)
+    __table_args__ = (UniqueConstraint(parameter_name, entity_name), {})
 
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):
