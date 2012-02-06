@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 """\
 **xdapy**
+
+Main module
+
+
+.. note::
+    When the `xdapy` module is imported, an instance of `sqlalchemy.ext.declarative.declarative_base`
+    is automatically created and used as `xdapy.Base`.
 """
 
 __docformat__ = "restructuredtext"
@@ -22,3 +29,4 @@ from connection import Connection
 from mapper import Mapper
 
 __all__ = [Base, Connection, Mapper]
+
