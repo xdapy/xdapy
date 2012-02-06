@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""Provides exceptions used in this module.
+"""\
+Provides exceptions used in this module.
 
 Created on Jun 23, 2009
 
@@ -8,7 +9,9 @@ Created on Jun 23, 2009
     AmbiguousObjectError: A list is returned instead of single object.
 
 """
-# alphabetical order by last name, please
+
+__docformat__ = "restructuredtext"
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
@@ -65,3 +68,4 @@ class FilterError(Exception):
 class SearchError(Exception):
     """Raised when a search is not well defined or malformed."""
     pass
+

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
-"""This module wrapes the input and output functionality."""
+"""\
+This module wrapes the input and output functionality.
+"""
 
+__docformat__ = "restructuredtext"
 
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 

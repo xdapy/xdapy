@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""This module provides contains basic settings.
+"""\
+The `Connection` module is used to establish a connection to the database and
+takes care of creating the database tables.
 """
+
+__docformat__ = "restructuredtext"
+
+__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
+               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
+
 
 from os import path
 from sqlalchemy import create_engine
@@ -12,15 +20,21 @@ from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError
 
 
-__authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
-               '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
-
 class AutoSession(object):
-    """Provides an automatically committing session."""
+    """Provides an automatically committing session.
+
+    Parameters
+    ----------
+    session: Session
+        The `Session` object which is wrapped by this `AutoSession`.
+    """
     def __init__(self, session):
         self.session = session
 
     def __enter__(self):
+        """
+        Calls `self.session.begin()` and returns the session object.
+        """
         self.session.begin()
         # We are in autocommit mode. If we do not explicitly begin a session
         # we must flush afterwards because we cannot be sure WHEN the session
@@ -30,6 +44,9 @@ class AutoSession(object):
         return self.session
 
     def __exit__(self, e_type, e_val, e_tb):
+        """
+        Checks for success and commits the session.
+        """
         if e_type:
             self.session.close()
 
@@ -37,14 +54,44 @@ class AutoSession(object):
             self.session.commit()
 
 class Connection(object):
+    """Initialises a Connection object which holds all parameters to create engines and sessions.
+
+    Additional options for the `sessionmaker` or `create_engine` functions may be passed as a dict
+    in `session_opts` and `engine_opts`.
+
+    Parameters
+    ----------
+    host: string, optional
+        The host where the database lives. (Defaults to ``"localhost"``.)
+    dialect: string, optional
+        The SQL dialect to use. (Defaults to ``"postgresql"``, which is also the only supported option.)
+    user: string, optional
+        The database user. (Defaults to ``""``.)
+    password: string, optional
+        The database password. (Defaults to ``""``.)
+    dbname: string
+        The name of the database to use.
+    uri: string, optional
+        A URI representation of the database connection of the form `{dialect}://{user}:{password}@{host}/{dbname}`.
+        If this field is given, all other fields may be left out.
+    echo: bool, optional
+        Print all SQL queries to stdout. (Defaults to ``False``.)
+    session_opts: dict, optional
+        Key–value options to pass to the `sessionmaker()` function.
+    engine_opts: dict, optional
+        Key–value options to pass to the `create_engine()` function.
+
+    Attributes
+    ----------
+    uri
+        The constructed database URI.
+    Session
+        The SQLAlchemy session.
+
+    """
+
     def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
                        uri=None, echo=False, session_opts=None, engine_opts=None):
-        """Initialises a Connection object which holds all parameters to create engines and sessions.
-
-        Additional options for the sessionmaker or create_engine may be passed as a dict
-        in session_opts and engine_opts.
-        """
-
         if uri:
             if host or dialect or user or password:
                 raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
@@ -81,22 +128,28 @@ class Connection(object):
     @classmethod
     def profile(cls, profile, filename=None, **kwargs):
         """
-        Reads the settings from the file ~/.xdapy/engine.ini or the path value.
+        Reads the settings from the file ``~/.xdapy/engine.ini`` or the path value.
 
-        Create file ~/.xdapy/engine.ini with the following content and replace
-        your username, password, host and dbname:
+        Create file ``~/.xdapy/engine.ini`` with the following content and replace
+        your username, password, host and dbname::
 
-        dialect = postgresql
-        user = hannah
-        password = ""
-        host = localhost
-        dbname = xdapy
-        [test]
-        dbname = xdapy_test
+            dialect = postgresql
+            user = hannah
+            password = ""
+            host = localhost
+            dbname = xdapy
+            [test]
+            dbname = xdapy_test
 
-        Public attributes:
-        self.db ~ the database URL
-        self.test_db ~ the database URL used for testing
+
+        Parameters
+        ----------
+        profile: string, optional
+            The profile to load. (Defaults to ``None``.)
+        filename: string, optional
+            The file to load the setting from. (Defaults to `DEFAULT_CONFIG_PATH`.)
+        **kwargs
+            All other arguments will be passed to `Connection.__init__`.
         """
         if not filename:
             filename = cls.DEFAULT_CONFIG_PATH
@@ -123,12 +176,18 @@ class Connection(object):
 
     @classmethod
     def test(cls, **kwargs):
-        """Creates a connection with the test profile."""
+        """Creates a connection with the test profile.
+
+        Shortcut for ``Connection(profile=Connection.TEST_PROFILE, **kwargs)``.
+        """
         return cls.profile(profile=cls.TEST_PROFILE, **kwargs)
 
     @classmethod
     def default(cls, **kwargs):
-        """Creates a connection with the default profile."""
+        """Creates a connection with the default profile.
+
+        Shortcut for ``Connection(profile=None, **kwargs)``.
+        """
         return cls.profile(profile=None, **kwargs)
 
     @staticmethod
@@ -156,6 +215,18 @@ class Connection(object):
 
     @property
     def auto_session(self):
+        """
+        For use in a ``with`` context. Opens a `Session` and automatically
+        commits when the ``with`` context exits. (Unless an exception was raised.)
+
+        Usage::
+
+            with connection.auto_session as session:
+                session.add(some_obj)
+                if not condition:
+                    raise Exception
+
+        """
         try:
             return getattr(self, "_auto_session")
         except AttributeError:
@@ -164,6 +235,9 @@ class Connection(object):
 
     @property
     def session(self):
+        """
+        Returns the session object.
+        """
         return self.auto_session.session
 
     @property
@@ -173,7 +247,15 @@ class Connection(object):
         return self._engine
 
     def create_tables(self, overwrite=False):
-        """Create tables in database (Do not overwrite existing tables)."""
+        """
+        Creates the xdapy table structure in database.
+
+        Parameters
+        ----------
+        overwrite: bool, optional
+            Drop all tables before creating the structure. (Defaults to ``False``.)
+        """
+
         if overwrite:
             Base.metadata.drop_all(self.engine, checkfirst=True)
         Base.metadata.create_all(self.engine)

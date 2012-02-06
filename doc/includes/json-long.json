@@ -1,0 +1,116 @@
+{
+    "objects": [
+        {
+            "id": 1, 
+            "parameters": [
+                {
+                    "age": 200
+                }
+            ], 
+            "type": "Observer", 
+            "uuid": "e4a7918b-8317-427d-800e-1a221df38db2"
+        }, 
+        {
+            "children": [
+                {
+                    "children": [
+                        {
+                            "id": 4, 
+                            "parameters": [
+                                {
+                                    "valid": false
+                                }
+                            ], 
+                            "type": "Trial", 
+                            "uuid": "c26ebe68-c6d2-4a9a-bb73-2d783737b992"
+                        }, 
+                        {
+                            "id": 5, 
+                            "parameters": [
+                                {
+                                    "valid": true
+                                }
+                            ], 
+                            "type": "Trial", 
+                            "uuid": "57019f27-8f43-445a-b41e-bfebe644f9d8"
+                        }
+                    ], 
+                    "id": 3, 
+                    "type": "Session", 
+                    "uuid": "115bc5fe-da2c-458a-85d9-c8786762801f"
+                }
+            ], 
+            "id": 2, 
+            "type": "Experiment", 
+            "uuid": "663076b4-f35d-40f2-8cc9-b06b2fb27e48"
+        }
+    ], 
+    "relations": [
+        {
+            "from": "id:2", 
+            "name": "observed by", 
+            "relation": "context", 
+            "to": "id:1"
+        }
+    ], 
+    "types": [
+        {
+            "parameters": [
+                {
+                    "name": "rt", 
+                    "type": "string"
+                }, 
+                {
+                    "name": "valid", 
+                    "type": "boolean"
+                }, 
+                {
+                    "name": "response", 
+                    "type": "string"
+                }
+            ], 
+            "type": "Trial"
+        }, 
+        {
+            "parameters": [
+                {
+                    "name": "project", 
+                    "type": "string"
+                }, 
+                {
+                    "name": "experimenter", 
+                    "type": "string"
+                }
+            ], 
+            "type": "Experiment"
+        }, 
+        {
+            "parameters": [
+                {
+                    "name": "date", 
+                    "type": "date"
+                }
+            ], 
+            "type": "Session"
+        }, 
+        {
+            "parameters": [
+                {
+                    "name": "age", 
+                    "type": "integer"
+                }, 
+                {
+                    "name": "handedness", 
+                    "type": "string"
+                }, 
+                {
+                    "name": "name", 
+                    "type": "string"
+                }
+            ], 
+            "type": "Observer"
+        }
+    ]
+}
+
+

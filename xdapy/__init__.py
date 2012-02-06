@@ -1,6 +1,21 @@
 # -*- coding: utf-8 -*-
+"""\
+**xdapy**
 
-__version__ = '0.0'
+Main module
+
+
+.. note::
+    When the `xdapy` module is imported, an instance of `sqlalchemy.ext.declarative.declarative_base`
+    is automatically created and used as `xdapy.Base`.
+"""
+
+__docformat__ = "restructuredtext"
+
+__version_info__ = (0, 9, 0)
+__version__ = '.'.join(map(str, __version_info__))
+__short_version__ = '.'.join(map(str, __version_info__[0:1]))
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 __copyright__ = '(c) 2009 Hannah Dold'
@@ -14,3 +29,4 @@ from connection import Connection
 from mapper import Mapper
 
 __all__ = [Base, Connection, Mapper]
+

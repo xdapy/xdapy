@@ -2,7 +2,7 @@
 
 from xdapy import Connection, Mapper
 
-from xdapy.parameters import ParameterMap
+from xdapy.parameters import parameter_for_type
 
 import unittest
 
@@ -30,7 +30,7 @@ class TestParameter(unittest.TestCase):
 
         for type, vals in values.iteritems():
             for val in vals:
-                param_class = ParameterMap[type]
+                param_class = parameter_for_type(type)
                 param_val = param_class("test", val)
                 assert val == param_class.from_string(param_val.value_string)
 

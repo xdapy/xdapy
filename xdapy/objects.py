@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Contains some default classes for entity objects.
+
+"""\
+Contains some default classes for entity objects.
 """
+
+__docformat__ = "restructuredtext"
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
