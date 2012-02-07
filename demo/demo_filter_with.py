@@ -5,7 +5,7 @@ connection = Connection.default()
 
 m = Mapper(connection)
 
-from theobjects import Experiment, Observer, Trial, Session
+from objects import Experiment, Observer, Trial, Session
 
 m.register(Experiment, Observer, Trial, Session)
 

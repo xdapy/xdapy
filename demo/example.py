@@ -6,7 +6,7 @@ connection = Connection.profile("test") # use standard profile
 connection.create_tables(overwrite=True)
 m = Mapper(connection)
 
-from xdapy.objects import Experiment, Observer, Trial, Session
+from objects import Experiment, Observer, Trial, Session
 
 m.register(Observer)
 m.register(Experiment)
@@ -93,7 +93,7 @@ m.save(e1)
 
 o = {}
 
-from xdapy.objects import EntityObject
+from xdapy.structures import EntityObject
 print EntityObject.__subclasses__()
 
 o["otherObj"] = type("otherObj", (EntityObject,), {'parameter_types': {'myParam': 'string'}})
