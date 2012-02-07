@@ -6,7 +6,7 @@ connection = Connection.profile("test") # use standard profile
 connection.create_tables(overwrite=True)
 m = Mapper(connection)
 
-from xdapy.objects import Experiment, Observer, Trial, Session
+from objects import Experiment, Observer, Trial, Session
 
 m.register(Observer)
 m.register(Experiment)
