@@ -12,7 +12,7 @@ connection_2.create_tables(overwrite=True)
 m = Mapper(connection)
 m_2 = Mapper(connection_2)
 
-# from xdapy.objects import Experiment, ...
+# from objects import Experiment, ...
 
 class Experiment(EntityObject):
     """Concrete class for experiments"""    
