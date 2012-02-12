@@ -10,6 +10,20 @@ import copy, uuid, hashlib
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
+def check_superfluous_keys(adict, valid_keys):
+    """ Returns the set difference between the keys
+    of a dict and the objects of a list.
+
+    >>> d = {"a": 1, "b": 2, "c": 3}
+    >>> check_superfluous_keys(d, ['a', 'b', 'c'])
+    set([])
+    >>> check_superfluous_keys(d, ['a', 'b'])
+    set(['c'])
+    >>> check_superfluous_keys(d, ['a', 'b', 'c', 'd'])
+    set([])
+    """
+    return set(adict.keys()) - set(valid_keys)
+
 def levenshtein(s1, s2):
     """Find the Levenshtein distance between two strings.
      
@@ -74,5 +88,6 @@ def filter_none(a_dict):
     """Filters all elements from the dict with value is None."""
     return dict((k, v) for k, v in a_dict if v)
 
-
-
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
