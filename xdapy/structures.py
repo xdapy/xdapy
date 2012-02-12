@@ -373,6 +373,9 @@ def create_entity(name, parameters):
             parameter_types = {"name": "string"}
 
     """
+    # need to make sure, we get a str and not a unicode obj
+    if isinstance(name, unicode):
+        name = str(name)
     return type(name, (EntityObject,), {'parameter_types': parameters})
 
 def calculate_polymorphic_name(name, params):
@@ -468,7 +471,7 @@ class ParameterOption(Base):
 
     @validates('parameter_name')
     def validate_parameter_name(self, key, p_name):
-        if not isinstance(p_name, str):
+        if not isinstance(p_name, basestring):
             raise TypeError("Argument 'parameter_name' must be a string")
         return p_name
 
@@ -480,7 +483,7 @@ class ParameterOption(Base):
 
     @validates('parameter_type')
     def validate_parameter_type(self, key, p_type):
-        if not isinstance(p_type, str) or p_type not in parameter_ids:
+        if not isinstance(p_type, basestring) or p_type not in parameter_ids:
             raise TypeError(("Argument 'parameter_type' must one of the " +
                              "following strings: " +
                              ", ".join(parameter_ids)))
