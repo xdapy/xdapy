@@ -5,6 +5,7 @@ import unittest
 
 from xdapy import Connection, Mapper
 from xdapy.io import JsonIO
+from xdapy.errors import InvalidInputError
 
 class TestJson(unittest.TestCase):
     def setUp(self):
@@ -36,7 +37,7 @@ class TestJson(unittest.TestCase):
           }"""
 
         jio = JsonIO(self.mapper)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidInputError):
             objs = jio.read_string(json)
 
     def test_simple_import(self):
@@ -117,6 +118,7 @@ class TestJson(unittest.TestCase):
             "types": [{ "type": "A", "parameters": { "s": "string" } }],
             "objects": [
                 { "type": "A",
+                  "id": 1,
                   "parameters": { "s": "parent1" }
                 },
                 { "type": "A",
@@ -129,13 +131,25 @@ class TestJson(unittest.TestCase):
                       "parameters": { "s": "child22" }
                     },
                   ]
+                },
+                { "type": "A",
+                  "id": 2,
+                  "parameters": { "s": "child11" }
+                }
+
+            ],
+            "relations": [
+                {
+                    "relation": "child",
+                    "from": "id:2",
+                    "to": "id:1"
                 }
             ]
         }
 
         jio = JsonIO(self.mapper, add_new_types=True)
         objs = jio.read_json(json)
-        self.assertEqual(len(objs), 4)
+        self.assertEqual(len(objs), 5)
         roots = self.mapper.find_roots()
         self.assertSetEqual(set([roots[0].params["s"], roots[1].params["s"]]), set(["parent1", "parent2"]))
 

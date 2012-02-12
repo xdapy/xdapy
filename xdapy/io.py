@@ -17,7 +17,8 @@ class UnregisteredTypesError:
 from xml.etree import ElementTree as ET
 
 from xdapy.structures import Context, Data, calculate_polymorphic_name
-from xdapy.errors import AmbiguousObjectError, InvalidXMLError
+from xdapy.errors import AmbiguousObjectError, InvalidInputError
+from xdapy.utils.algorithms import check_superfluous_keys
 
 
 class BinaryEncoder(object):
@@ -122,20 +123,32 @@ class JsonIO(IO):
         for type in self._iter_types(types):
             if not self.mapper.is_registered(type["type"], type["parameters"]):
                 if not self.add_new_types:
-                    raise ValueError("Type not present in mapper.")
+                    raise InvalidInputError("Type {0} not present in mapper.".format(type))
                 else:
-                    logger.info("Adding type %s.", type["type"])
+                    logger.info("Adding type %r.", type["type"])
                     self.mapper.register_type(type["type"], type["parameters"])
 
     def _iter_types(self, types):
+        valid_keys = ["type", "parameters"]
+
         for t in types:
+            unknown_keys = check_superfluous_keys(t, valid_keys)
+            if unknown_keys:
+                raise InvalidInputError("Unknown keys in type definition: {0}.".format(unknown_keys))
+
             yield {
                 "type": t.get("type"),
                 "parameters": t.get("parameters") or {} # defaults to emtpy dict
             }
 
     def _iter_objects(self, objects):
+        valid_keys = ["id", "uuid", "type", "parameters", "children"]
+
         for obj in objects:
+            unknown_keys = check_superfluous_keys(obj, valid_keys)
+            if unknown_keys:
+                raise InvalidInputError("Unknown keys in object: {0}.".format(unknown_keys))
+
             yield {
                 "id": obj.get("id"),
                 "uuid": obj.get("uuid"),
@@ -160,7 +173,7 @@ class JsonIO(IO):
                     entity_obj.str_params[k] = v
                 except KeyError as err:
                     if self.ignore_unknown_attributes:
-                        logger.warn("Unknown key for %s: %s", obj["type"], err)
+                        logger.warn("Unknown key for {0}: {1}.".format(obj["type"], err))
                     else:
                         raise
 
@@ -197,13 +210,13 @@ class JsonIO(IO):
             if rel_type == "child":
                 # rel_from is child of rel_to
                 if mapping[rel_from].parent:
-                    raise ValueError("Multiple parents defined for %s" % mapping[rel_from])
+                    raise InvalidInputError("Multiple parents defined for object {0} ({1}).".format(mapping[rel_from], rel_from))
                 mapping[rel_from].parent = mapping[rel_to]
 
             elif rel_type == "context":
                 mapping[rel_from].connect(rel_name, mapping[rel_to])
             else:
-                raise ValueError("Unknown relation")
+                raise InvalidInputError("Unknown relation type: {0}.".format(rel_type))
 
 
 
@@ -219,7 +232,7 @@ class XmlIO(IO):
 
     def filter(self, root):
         if root.tag != "xdapy":
-            raise InvalidXMLError("Tag {0} does not belong here".format(root.tag))
+            raise InvalidInputError("Tag {0} does not belong here".format(root.tag))
 
         for e in root:
             if e.tag == "types":
@@ -247,7 +260,7 @@ class XmlIO(IO):
         not_found = []
         for entity in e:
             if not entity.tag == "entity":
-                raise InvalidXMLError("Tag {0} does not belong here".format(entity.tag))
+                raise InvalidInputError("Tag {0} does not belong here".format(entity.tag))
             try:
                 type, params, key = self.parse_entity_type(entity)
 
@@ -313,20 +326,20 @@ class XmlIO(IO):
             if parent_id in ref_ids:
                 new_entity.parent = ref_ids[parent_id]
             else:
-                raise InvalidXMLError("Parent {0} undefined for entity {1}".format(parent_id, new_entity))
+                raise InvalidInputError("Parent {0} undefined for entity {1}".format(parent_id, new_entity))
 
         if "id" in entity.attrib:
             # add id attribute to ref_ids
             id = "id:" + entity.attrib["id"]
             if id in ref_ids:
-                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
+                raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
         if "uuid" in entity.attrib:
             # add id attribute to ref_ids
             id = "uuid:" + entity.attrib["uuid"]
             if id in ref_ids:
-                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
+                raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
         # We need to associate the entity with a session. Otherwise, we cannot add data.
@@ -341,7 +354,7 @@ class XmlIO(IO):
             if sub.tag == "entity":
                 child = self.parse_entity(sub, ref_ids)
                 if child.parent and child.parent is not new_entity:
-                    raise InvalidXMLError("Trying to mix nesting with explicit parent specification for {0}".format(child))
+                    raise InvalidInputError("Trying to mix nesting with explicit parent specification for {0}".format(child))
 
                 new_entity.children.append(child)
             if sub.tag == "data":
@@ -355,7 +368,7 @@ class XmlIO(IO):
         if "value" in parameter.attrib:
             value = parameter.attrib["value"]
             if parameter.text and parameter.text.strip():
-                raise InvalidXMLError("Value and text given for parameter {0}".format(parameter))
+                raise InvalidInputError("Value and text given for parameter {0}".format(parameter))
         else:
             value = parameter.text
             if value is not None:
