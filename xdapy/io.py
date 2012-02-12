@@ -140,7 +140,8 @@ class JsonIO(IO):
                 "id": obj.get("id"),
                 "uuid": obj.get("uuid"),
                 "type": obj.get("type"),
-                "params": obj.get("parameters") or {}
+                "params": obj.get("parameters") or {},
+                "children": obj.get("children") or []
             }
 
     def _iter_relations(self, relations):
@@ -169,6 +170,19 @@ class JsonIO(IO):
             if obj["uuid"]:
                 mapping["uuid:" + obj["uuid"]] = entity_obj
             self.mapper.save(entity_obj)
+
+            # handle potential children
+            if obj["children"]:
+                child_objs, child_mappings = self.add_objects(obj["children"])
+                for child in child_objs:
+                    child.parent = entity_obj
+
+                # be on the save side and save once more
+                self.mapper.save(entity_obj)
+
+                db_objects += child_objs
+                mapping.update(child_mappings)
+
             db_objects.append(entity_obj)
 
         return db_objects, mapping
@@ -182,6 +196,8 @@ class JsonIO(IO):
 
             if rel_type == "child":
                 # rel_from is child of rel_to
+                if mapping[rel_from].parent:
+                    raise ValueError("Multiple parents defined for %s" % mapping[rel_from])
                 mapping[rel_from].parent = mapping[rel_to]
 
             elif rel_type == "context":

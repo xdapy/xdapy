@@ -111,3 +111,31 @@ class TestJson(unittest.TestCase):
         self.assertEqual(len(objs), 3)
         self.assertEqual(objs[0].params["s"], "string")
         self.assertEqual(objs[0].params["d"], datetime.datetime(2012, 2, 10, 20, 0, 0))
+
+    def test_children(self):
+        json = {
+            "types": [{ "type": "A", "parameters": { "s": "string" } }],
+            "objects": [
+                { "type": "A",
+                  "parameters": { "s": "parent1" }
+                },
+                { "type": "A",
+                  "parameters": { "s": "parent2" },
+                  "children": [
+                    { "type": "A",
+                      "parameters": { "s": "child21" }
+                    },
+                    { "type": "A",
+                      "parameters": { "s": "child22" }
+                    },
+                  ]
+                }
+            ]
+        }
+
+        jio = JsonIO(self.mapper, add_new_types=True)
+        objs = jio.read_json(json)
+        self.assertEqual(len(objs), 4)
+        roots = self.mapper.find_roots()
+        self.assertSetEqual(set([roots[0].params["s"], roots[1].params["s"]]), set(["parent1", "parent2"]))
+
