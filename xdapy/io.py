@@ -104,9 +104,9 @@ class JsonIO(IO):
         return self.read_json(json_data)
 
     def read_json(self, json_data):
-        types = json_data["types"]
-        objects = json_data["objects"]
-        relations = json_data["relations"]
+        types = json_data.get("types") or []
+        objects = json_data.get("objects") or []
+        relations = json_data.get("relations") or []
 
         self.add_types(types)
 
