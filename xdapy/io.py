@@ -65,14 +65,8 @@ def gen_rnd_key():
 
 
 class IO(object):
-    pass
-
-class JsonIO(IO):
-    pass
-
-class XmlIO(IO):
-    def __init__(self, mapper, known_objects=None):
-        """If known_objects is None (or left empty), it defaults to mapper.registered_objects.
+    def __init__(self, mapper, known_objects=None, add_new_types=False):
+        """ If known_objects is None (or left empty), it defaults to mapper.registered_objects.
         This is most likely the right thing and supplying other objects might lead to inconsistencies.
 
         An empty dict means there are no known_objects.
@@ -80,6 +74,10 @@ class XmlIO(IO):
         For debugging reasons, it could be useful, though."""
 
         self.mapper = mapper
+        self.add_new_types = add_new_types
+
+        #: Ignore KeyErrors?
+        self.ignore_unknown_attributes = False
 
         if known_objects is not None:
             self._known_objects = {}
@@ -94,6 +92,106 @@ class XmlIO(IO):
             return dict((obj.__name__, obj) for obj in self.mapper.registered_objects)
         return self._known_objects
 
+import json
+
+class JsonIO(IO):
+    def read_string(self, jsonstr):
+        json_data = json.loads(jsonstr)
+        return self.read_json(json_data)
+
+    def read_file(self, fileobj):
+        json_data = json.load(fileobj)
+        return self.read_json(json_data)
+
+    def read_json(self, json_data):
+        types = json_data["types"]
+        objects = json_data["objects"]
+        relations = json_data["relations"]
+
+        self.add_types(types)
+
+        db_objects, mapping = self.add_objects(objects)
+        self.add_relations(relations, mapping)
+
+        for obj in db_objects:
+            self.mapper.save(obj)
+
+        return db_objects
+
+    def add_types(self, types):
+        for type in self._iter_types(types):
+            if not self.mapper.is_registered(type["type"], type["parameters"]):
+                if not self.add_new_types:
+                    raise ValueError("Type not present in mapper.")
+                else:
+                    logger.info("Adding type %s.", type["type"])
+                    self.mapper.register_type(type["type"], type["parameters"])
+
+    def _iter_types(self, types):
+        for t in types:
+            yield {
+                "type": t.get("type"),
+                "parameters": t.get("parameters") or {} # defaults to emtpy dict
+            }
+
+    def _iter_objects(self, objects):
+        for obj in objects:
+            yield {
+                "id": obj.get("id"),
+                "uuid": obj.get("uuid"),
+                "type": obj.get("type"),
+                "params": obj.get("parameters") or {}
+            }
+
+    def _iter_relations(self, relations):
+        for rel in relations:
+            yield rel
+
+    def add_objects(self, objects):
+        mapping = {}
+        db_objects = []
+
+        for obj in self._iter_objects(objects):
+            entity_obj = self.mapper.create(obj["type"], _uuid=obj["uuid"])
+
+            for k, v in obj["params"].iteritems():
+                try:
+                    entity_obj.str_params[k] = v
+                except KeyError as err:
+                    if self.ignore_unknown_attributes:
+                        logger.warn("Unknown key for %s: %s", obj["type"], err)
+                    else:
+                        raise
+
+            if obj["id"]:
+                mapping["id:" + str(obj["id"])] = entity_obj
+
+            if obj["uuid"]:
+                mapping["uuid:" + obj["uuid"]] = entity_obj
+            self.mapper.save(entity_obj)
+            db_objects.append(entity_obj)
+
+        return db_objects, mapping
+
+    def add_relations(self, relations, mapping):
+        for rel in relations:
+            rel_type = rel.get("relation")
+            rel_name = rel.get("name")
+            rel_from = rel.get("from")
+            rel_to = rel.get("to")
+
+            if rel_type == "child":
+                # rel_from is child of rel_to
+                mapping[rel_from].parent = mapping[rel_to]
+
+            elif rel_type == "context":
+                mapping[rel_from].connect(rel_name, mapping[rel_to])
+            else:
+                raise ValueError("Unknown relation")
+
+
+
+class XmlIO(IO):
     def read(self, xml):
         root = ET.fromstring(xml)
         return self.filter(root)
@@ -215,7 +313,7 @@ class XmlIO(IO):
                 raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
-        # We need to assiciate the entity with a session. Otherwise, we cannot add data.
+        # We need to associate the entity with a session. Otherwise, we cannot add data.
 
         self.mapper.save(new_entity)
 
