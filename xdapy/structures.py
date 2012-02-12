@@ -264,11 +264,15 @@ class Meta(DeclarativeMeta):
 
 class _StrParams(collections.MutableMapping):
     """Association dict for stringified parameters."""
-    def __init__(self, owning):
+    def __init__(self, owning, json_format=False):
         self.owning = owning
+        self.json_format = json_format
 
     def __getitem__(self, key):
-        val = self.owning._params[key].value_string
+        if self.json_format:
+            val = self.owning._params[key].value_json
+        else:
+            val = self.owning._params[key].value_string
         return val
 
     def __setitem__(self, key, val):
@@ -284,7 +288,10 @@ class _StrParams(collections.MutableMapping):
         self.owning.params[key] = typed_val
 
     def __repr__(self):
-        dictrepr = dict((k, v.value_string) for k, v in self.owning._params.iteritems()).__repr__()
+        if self.json_format:
+            dictrepr = dict((k, v.value_json) for k, v in self.owning._params.iteritems()).__repr__()
+        else:
+            dictrepr = dict((k, v.value_string) for k, v in self.owning._params.iteritems()).__repr__()
         return dictrepr
 
     def __len__(self):
@@ -310,6 +317,14 @@ class EntityObject(Entity):
         self._uuid = _uuid and str(py_uuid.UUID(_uuid))
 
         self._set_items_from_arguments(kwargs)
+
+    @property
+    def json_params(self):
+        """ Return the parameters in a JSON compatible format.
+        """
+        if not hasattr(self, '_json_params'):
+            self._json_params = _StrParams(self, json_format=True)
+        return self._json_params
 
     @property
     def str_params(self):
