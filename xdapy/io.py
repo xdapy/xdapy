@@ -119,14 +119,64 @@ class JsonIO(IO):
 
         return db_objects
 
-    def add_types(self, types):
-        for type in self._iter_types(types):
-            if not self.mapper.is_registered(type["type"], type["parameters"]):
-                if not self.add_new_types:
-                    raise InvalidInputError("Type {0} not present in mapper.".format(type))
-                else:
-                    logger.info("Adding type %r.", type["type"])
-                    self.mapper.register_type(type["type"], type["parameters"])
+    def write_string(self, objs):
+        json_data = self.write_json(objs)
+        json_string = json.dumps(json_data)
+        return json_string
+
+    def write_file(self, objs, fileobj):
+        json_data = self.write_json(objs)
+        return json.dump(json_data, fileobj)
+
+    def write_json(self, objs):
+        types = [{"type": t.__original_class_name__, "parameters": t.parameter_types} for t in self.mapper.registered_objects]
+
+        relations = []
+        visited_objs = set()
+        unvisited_objs = set(objs)
+
+        while unvisited_objs:
+
+            obj = unvisited_objs.pop()
+            if obj in visited_objs:
+                continue
+
+            if obj.parent:
+                relation = {
+                    "relation": "child",
+                    "from": "uuid:" + obj.uuid,
+                    "to": "uuid:" + obj.parent.uuid
+                }
+                relations.append(relation)
+                unvisited_objs.add(obj.parent)
+
+            for child in obj.children:
+                unvisited_objs.add(child)
+
+            for connection in obj.connections:
+                relation = {
+                    "relation": "context",
+                    "name": connection.connection_type,
+                    "from": "uuid:" + obj.uuid,
+                    "to": "uuid:" + connection.connected.uuid
+                }
+                relations.append(relation)
+                unvisited_objs.add(connection.connected)
+
+            visited_objs.add(obj)
+
+        objects = [{
+            "type": obj.type,
+            "parameters": dict(obj.json_params)
+
+        } for obj in visited_objs]
+
+        return {
+            "types": types,
+            "objects": objects,
+            "relations": relations
+        }
+
 
     def _iter_types(self, types):
         valid_keys = ["type", "parameters"]
@@ -160,6 +210,16 @@ class JsonIO(IO):
     def _iter_relations(self, relations):
         for rel in relations:
             yield rel
+
+
+    def add_types(self, types):
+        for type in self._iter_types(types):
+            if not self.mapper.is_registered(type["type"], type["parameters"]):
+                if not self.add_new_types:
+                    raise InvalidInputError("Type {0} not present in mapper.".format(type))
+                else:
+                    logger.info("Adding type %r.", type["type"])
+                    self.mapper.register_type(type["type"], type["parameters"])
 
     def add_objects(self, objects):
         mapping = {}
