@@ -257,6 +257,8 @@ class DateParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, date):
+            return value
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
@@ -320,6 +322,8 @@ class TimeParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, time):
+            return value
         try:
             return datetime.strptime(value, "%H:%M:%S").time()
         except ValueError:
@@ -377,6 +381,8 @@ class DateTimeParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, datetime):
+            return value
         try:
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
