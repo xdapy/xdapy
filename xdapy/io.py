@@ -270,6 +270,12 @@ class JsonIO(IO):
             rel_from = rel.get("from")
             rel_to = rel.get("to")
 
+            if rel_type == "parent":
+                # rel_from is parent of rel_to
+                if mapping[rel_to].parent:
+                    raise InvalidInputError("Multiple parents defined for object {0} ({1}).".format(mapping[rel_to], rel_to))
+                mapping[rel_to].parent = mapping[rel_from]
+
             if rel_type == "child":
                 # rel_from is child of rel_to
                 if mapping[rel_from].parent:
