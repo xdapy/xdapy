@@ -14,6 +14,9 @@ class UnregisteredTypesError:
         self.types = types
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 from xml.etree import ElementTree as ET
 
 from xdapy.structures import Context, Data, calculate_polymorphic_name
