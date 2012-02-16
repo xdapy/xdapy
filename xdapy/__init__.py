@@ -28,5 +28,8 @@ Base = declarative_base()
 from connection import Connection
 from mapper import Mapper
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 __all__ = [Base, Connection, Mapper]
 
