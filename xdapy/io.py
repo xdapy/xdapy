@@ -121,12 +121,12 @@ class JsonIO(IO):
 
     def write_string(self, objs):
         json_data = self.write_json(objs)
-        json_string = json.dumps(json_data)
+        json_string = json.dumps(json_data, indent=2)
         return json_string
 
     def write_file(self, objs, fileobj):
         json_data = self.write_json(objs)
-        return json.dump(json_data, fileobj)
+        return json.dump(json_data, fileobj, indent=2)
 
     def write_json(self, objs):
         types = [{"type": t.__original_class_name__, "parameters": t.parameter_types} for t in self.mapper.registered_objects]
