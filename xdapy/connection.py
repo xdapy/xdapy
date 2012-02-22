@@ -119,6 +119,8 @@ class Connection(object):
         self._engine_opts["echo"] = echo
 
         self.Session = scoped_session(sessionmaker(autocommit=True, **session_opts))
+        
+        self._session = None
         self._engine = None
 
 
@@ -227,18 +229,16 @@ class Connection(object):
                     raise Exception
 
         """
-        try:
-            return getattr(self, "_auto_session")
-        except AttributeError:
-            self._auto_session = AutoSession(self.Session(bind=self.engine))
-            return self._auto_session
+        return AutoSession(self.session)
 
     @property
     def session(self):
         """
         Returns the session object.
         """
-        return self.auto_session.session
+        if not self._session:
+            self._session = self.Session(bind=self.engine)
+        return self._session
 
     @property
     def engine(self):
