@@ -2,8 +2,9 @@
 from xdapy import Connection, Mapper
 from xdapy.io import JsonIO
 
-connection = Connection.profile("test") # use standard profile
-connection.create_tables(overwrite=True)
+connection = Connection.profile("demo") # use standard profile
+connection.create_tables()
+#connection.engine.echo = True
 m = Mapper(connection)
 
 # We create a new JSON importer.

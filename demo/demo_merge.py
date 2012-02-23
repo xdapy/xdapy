@@ -3,11 +3,11 @@
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
 
-connection = Connection.profile("test") # use standard profile
+connection = Connection.profile("demo") # use standard profile
 connection_2 = Connection.default() # use standard profile
 # drop the old database structure
-connection.create_tables(overwrite=True)
-connection_2.create_tables(overwrite=True)
+connection.create_tables()
+connection_2.create_tables()
 
 m = Mapper(connection)
 m_2 = Mapper(connection_2)
