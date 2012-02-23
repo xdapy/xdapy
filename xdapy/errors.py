@@ -67,3 +67,8 @@ class SearchError(Exception):
 class InvalidInputError(Exception):
     """ Raised when the import data is malformed. """
     pass
+
+class DatabaseError(Exception):
+    """ Raised when the database does not allow to connect.
+    """
+    pass

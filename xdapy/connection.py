@@ -17,7 +17,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 from xdapy import Base
 from xdapy.utils.configobj import ConfigObj
-from xdapy.errors import ConfigurationError
+from xdapy.errors import ConfigurationError, DatabaseError
 
 
 class AutoSession(object):
@@ -119,7 +119,7 @@ class Connection(object):
         self._engine_opts["echo"] = echo
 
         self.Session = scoped_session(sessionmaker(autocommit=True, **session_opts))
-        
+
         self._session = None
         self._engine = None
 
@@ -198,7 +198,7 @@ class Connection(object):
         opts.update(config_obj)
         if profile:
             if config_obj.get(profile) is None:
-                raise Exception("The profile '%s' is not specified in your configuration."%(profile))
+                raise Exception("The profile '%s' is not specified in your configuration." % profile)
             # merge the profile options to base
             opts.update(config_obj.get(profile))
 
@@ -246,16 +246,28 @@ class Connection(object):
             self._engine = create_engine(self.uri, **self._engine_opts)
         return self._engine
 
-    def create_tables(self, overwrite=False):
+    def _table_names(self):
+        return self.engine.table_names()
+
+    def create_tables(self, check_empty=False):
         """
         Creates the xdapy table structure in database.
 
         Parameters
         ----------
-        overwrite: bool, optional
-            Drop all tables before creating the structure. (Defaults to ``False``.)
-        """
+        check_empty: bool, optional
+            If true, this method raises an `DatabaseError` if the database is not empty.
 
-        if overwrite:
-            Base.metadata.drop_all(self.engine, checkfirst=True)
-        Base.metadata.create_all(self.engine)
+        """
+        if check_empty:
+            table_names = self._table_names()
+            if table_names:
+                raise DatabaseError("Test database '{0}' not empty. Found {1} table(s).".format(self.engine, len(table_names)))
+
+        Base.metadata.create_all(bind=self.engine, checkfirst=True)
+
+    def drop_tables(self):
+        """
+        Drops all xdapy tables.
+        """
+        Base.metadata.drop_all(bind=self.engine)
