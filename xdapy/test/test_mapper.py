@@ -52,20 +52,17 @@ class Session(EntityObject):
 class Setup(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables(check_empty=True)
         self.m = Mapper(self.connection)
 
         self.m.register(Observer, Experiment, Trial, Session)
 
     def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 
 class TestMapper(Setup):
-
-    def testCreateTables(self):
-        self.connection.create_tables(overwrite=True)
-
     def testSave(self):
         valid_objects = ("""Observer(name="Max Mustermann", handedness="right", age=26)""",
                        """Experiment(project="MyProject", experimenter="John Doe")""",
@@ -407,11 +404,11 @@ class TestConnections(Setup):
 # class TestProxyForObjectTemplates(unittest.TestCase):
 #
 #    def setUp(self):
-#        self.connection.create_tables()
+#        self.connection.create_tables(check_empty=True)
 #        self.m = ProxyForObjectTemplates()
 #
 #    def tearDown(self):
-#        pass
+#        self.connection.drop_tables()
 #
 #    def testCreateTables(self):
 #        self.connection.create_tables()

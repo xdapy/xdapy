@@ -60,7 +60,7 @@ trial3_2 = Trial()
 trial3_2.parent = sess3
 
 db = Connection.test()
-db.create_tables(overwrite=True)
+db.create_tables(check_empty=True)
 m = Mapper(db)
 m.register(Observer, Experiment, Trial)
 m.save(exp_monorail, exp_neptune)
@@ -101,5 +101,4 @@ from xdapy.io import XmlIO
 xmlio = XmlIO(m, EntityObject.__subclasses__())
 print xmlio.write()
 
-
-
+db.drop_tables()

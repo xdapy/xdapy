@@ -93,12 +93,14 @@ class TestXml(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables(check_empty=True)
+
         self.mapper = Mapper(self.connection)
         self.mapper.register(*objects)
 
     def tearDown(self):
         # need to dispose manually to avoid too many connections error
+        self.connection.drop_tables()
         self.connection.engine.dispose()
     
     def testXml(self):

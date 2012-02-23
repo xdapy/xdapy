@@ -24,11 +24,12 @@ class Experiment(EntityObject):
 class TestObjectDict(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables(check_empty=True)
         self.m = Mapper(self.connection)
         self.m.register(Experiment)
 
     def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 

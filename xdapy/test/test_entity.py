@@ -57,12 +57,13 @@ class TestSavedTypes(unittest.TestCase):
         self.MyTestEntity = MyTestEntity
 
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables(check_empty=True)
         self.m = Mapper(self.connection)
         
         self.m.register(self.MyTestEntity)
         
     def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 
