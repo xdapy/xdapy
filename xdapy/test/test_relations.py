@@ -60,7 +60,7 @@ trial3_2 = Trial()
 trial3_2.parent = sess3
 
 db = Connection.test()
-db.create_tables(check_empty=True)
+db.create_tables()
 m = Mapper(db)
 m.register(Observer, Experiment, Trial)
 m.save(exp_monorail, exp_neptune)

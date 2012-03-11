@@ -57,7 +57,7 @@ class TestSavedTypes(unittest.TestCase):
         self.MyTestEntity = MyTestEntity
 
         self.connection = Connection.test()
-        self.connection.create_tables(check_empty=True)
+        self.connection.create_tables()
         self.m = Mapper(self.connection)
         
         self.m.register(self.MyTestEntity)

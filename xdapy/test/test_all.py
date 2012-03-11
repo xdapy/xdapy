@@ -50,7 +50,7 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(check_empty=True)
+        self.connection.create_tables()
         self.mapper = Mapper(self.connection)
 
         #register params

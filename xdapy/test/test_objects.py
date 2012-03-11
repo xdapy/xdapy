@@ -24,7 +24,7 @@ class Experiment(EntityObject):
 class TestObjectDict(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(check_empty=True)
+        self.connection.create_tables()
         self.m = Mapper(self.connection)
         self.m.register(Experiment)
 

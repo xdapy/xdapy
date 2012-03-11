@@ -11,7 +11,7 @@ class TestJson(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        self.connection.create_tables(check_empty=True)
+        self.connection.create_tables()
         self.mapper = Mapper(self.connection)
 
     def tearDown(self):

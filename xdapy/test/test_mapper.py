@@ -52,7 +52,7 @@ class Session(EntityObject):
 class Setup(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(check_empty=True)
+        self.connection.create_tables()
         self.m = Mapper(self.connection)
 
         self.m.register(Observer, Experiment, Trial, Session)
@@ -404,7 +404,7 @@ class TestConnections(Setup):
 # class TestProxyForObjectTemplates(unittest.TestCase):
 #
 #    def setUp(self):
-#        self.connection.create_tables(check_empty=True)
+#        self.connection.create_tables()
 #        self.m = ProxyForObjectTemplates()
 #
 #    def tearDown(self):
