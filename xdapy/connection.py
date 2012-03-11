@@ -76,6 +76,8 @@ class Connection(object):
         If this field is given, all other fields may be left out.
     echo: bool, optional
         Print all SQL queries to stdout. (Defaults to ``False``.)
+    check_empty: bool
+        If true, this the method `create_tables` raises an `DatabaseError` if the database is not empty.
     session_opts: dict, optional
         Key–value options to pass to the `sessionmaker()` function.
     engine_opts: dict, optional
@@ -91,7 +93,7 @@ class Connection(object):
     """
 
     def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
-                       uri=None, echo=False, session_opts=None, engine_opts=None):
+                       uri=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
         if uri:
             if host or dialect or user or password:
                 raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
@@ -114,6 +116,8 @@ class Connection(object):
 
         if engine_opts is None:
             engine_opts = {}
+
+        self.check_empty = check_empty
 
         self._engine_opts = engine_opts
         self._engine_opts["echo"] = echo
@@ -142,6 +146,9 @@ class Connection(object):
             dbname = xdapy
             [test]
             dbname = xdapy_test
+            check_empty = true
+            [demo]
+            dbname = xdapy_demo
 
 
         Parameters
@@ -203,8 +210,10 @@ class Connection(object):
             opts.update(config_obj.get(profile))
 
         # keep only valid options
-        valid_opts = ['dialect', 'user', 'password', 'host', 'dbname']
+        valid_opts = ['dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
+
         opts = dict((k,v) for k,v in opts.iteritems() if k in valid_opts)
+
         return opts
 
     @classmethod
@@ -249,7 +258,7 @@ class Connection(object):
     def _table_names(self):
         return self.engine.table_names()
 
-    def create_tables(self, check_empty=False):
+    def create_tables(self, check_empty=None):
         """
         Creates the xdapy table structure in database.
 
@@ -259,6 +268,9 @@ class Connection(object):
             If true, this method raises an `DatabaseError` if the database is not empty.
 
         """
+        if check_empty is None:
+            check_empty = self.check_empty
+
         if check_empty:
             table_names = self._table_names()
             if table_names:
