@@ -12,46 +12,14 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 
 from os import path
+from contextlib import contextmanager
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 from xdapy import Base
 from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError, DatabaseError
-
-
-class AutoSession(object):
-    """Provides an automatically committing session.
-
-    Parameters
-    ----------
-    session: Session
-        The `Session` object which is wrapped by this `AutoSession`.
-    """
-    def __init__(self, session):
-        self.session = session
-
-    def __enter__(self):
-        """
-        Calls `self.session.begin()` and returns the session object.
-        """
-        self.session.begin()
-        # We are in autocommit mode. If we do not explicitly begin a session
-        # we must flush afterwards because we cannot be sure WHEN the session
-        # is really committed.
-        # Especially the last commit may get lost without an explicit flush
-        # or a session.close
-        return self.session
-
-    def __exit__(self, e_type, e_val, e_tb):
-        """
-        Checks for success and commits the session.
-        """
-        if e_type:
-            self.session.close()
-
-        if self.session.is_active:
-            self.session.commit()
 
 class Connection(object):
     """Initialises a Connection object which holds all parameters to create engines and sessions.
@@ -225,6 +193,7 @@ class Connection(object):
             raise ConfigurationError("Please use a different test db.")
 
     @property
+    @contextmanager
     def auto_session(self):
         """
         For use in a ``with`` context. Opens a `Session` and automatically
@@ -238,7 +207,22 @@ class Connection(object):
                     raise Exception
 
         """
-        return AutoSession(self.session)
+        try:
+            self.session.begin()
+            # We are in autocommit mode. If we do not explicitly begin a session
+            # we must flush afterwards because we cannot be sure WHEN the session
+            # is really committed.
+            # Especially the last commit may get lost without an explicit flush
+            # or a session.close
+
+            yield self.session
+        except Exception:
+            # Oops. Something went wrong. We won’t commit.
+            self.session.close()
+            raise
+
+        if self.session.is_active:
+            self.session.commit()
 
     @property
     def session(self):
