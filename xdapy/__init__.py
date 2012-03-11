@@ -28,8 +28,17 @@ Base = declarative_base()
 from connection import Connection
 from mapper import Mapper
 
+# use a NullHandler to avoid the ‘No handlers could be found for logger xdapy’ warning.
 import logging
-logging.basicConfig(level=logging.DEBUG)
+try:
+    NullHandler = logging.NullHandler
+except AttributeError:
+    # NullHandler does not exist before 2.7
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+# add the NullHandler to all xdapy loggers
+logging.getLogger(__name__).addHandler(NullHandler())
 
 __all__ = [Base, Connection, Mapper]
 
