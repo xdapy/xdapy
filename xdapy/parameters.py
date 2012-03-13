@@ -79,6 +79,14 @@ class Parameter(Base):
         """
         return unicode(self.value)
 
+    @property
+    def value_json(self):
+        """Return the value as a JSON-compatible value.
+        This function may be overriden if there is a better fitting representation
+        for JSON.
+        """
+        return self.value_string
+
     @staticmethod
     def create(name, value):
         """Creates a new parameter instance with the correct type."""
@@ -160,6 +168,10 @@ class IntegerParameter(Parameter):
         except ValueError:
             raise StringConversionError("Could not convert value '{0}' to integer.".format(value))
 
+    @property
+    def value_json(self):
+        return self.value
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -211,6 +223,10 @@ class FloatParameter(Parameter):
         except ValueError:
             raise StringConversionError("Could not convert value '}' to float.".format(value))
 
+    @property
+    def value_json(self):
+        return self.value
+
     @classmethod
     def accepts(cls, value):
         """returns true if we accept the value"""
@@ -257,6 +273,8 @@ class DateParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, date):
+            return value
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
@@ -320,6 +338,8 @@ class TimeParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, time):
+            return value
         try:
             return datetime.strptime(value, "%H:%M:%S").time()
         except ValueError:
@@ -377,6 +397,8 @@ class DateTimeParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
+        if isinstance(value, datetime):
+            return value
         try:
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
@@ -451,6 +473,10 @@ class BooleanParameter(Parameter):
     @property
     def value_string(self):
         return "TRUE" if self.value is True else "FALSE"
+
+    @property
+    def value_json(self):
+        return self.value
 
     @classmethod
     def accepts(cls, value):

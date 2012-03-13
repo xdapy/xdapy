@@ -46,11 +46,11 @@ class Trial(EntityObject):
     }
 
 
-class Test(unittest.TestCase):
+class TestAll(unittest.TestCase):
 
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables()
         self.mapper = Mapper(self.connection)
 
         #register params
@@ -130,6 +130,7 @@ class Test(unittest.TestCase):
                     self.t19, self.t20, self.t21, self.t22, self.t23, self.t24)
 
     def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 

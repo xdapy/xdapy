@@ -14,10 +14,14 @@ class UnregisteredTypesError:
         self.types = types
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 from xml.etree import ElementTree as ET
 
 from xdapy.structures import Context, Data, calculate_polymorphic_name
-from xdapy.errors import AmbiguousObjectError, InvalidXMLError
+from xdapy.errors import AmbiguousObjectError, InvalidInputError
+from xdapy.utils.algorithms import check_superfluous_keys
 
 
 class BinaryEncoder(object):
@@ -65,14 +69,8 @@ def gen_rnd_key():
 
 
 class IO(object):
-    pass
-
-class JsonIO(IO):
-    pass
-
-class XmlIO(IO):
-    def __init__(self, mapper, known_objects=None):
-        """If known_objects is None (or left empty), it defaults to mapper.registered_objects.
+    def __init__(self, mapper, known_objects=None, add_new_types=False):
+        """ If known_objects is None (or left empty), it defaults to mapper.registered_objects.
         This is most likely the right thing and supplying other objects might lead to inconsistencies.
 
         An empty dict means there are no known_objects.
@@ -80,6 +78,10 @@ class XmlIO(IO):
         For debugging reasons, it could be useful, though."""
 
         self.mapper = mapper
+        self.add_new_types = add_new_types
+
+        #: If true, we’ll ignore KeyErrors?
+        self.ignore_unknown_attributes = False
 
         if known_objects is not None:
             self._known_objects = {}
@@ -94,6 +96,204 @@ class XmlIO(IO):
             return dict((obj.__name__, obj) for obj in self.mapper.registered_objects)
         return self._known_objects
 
+import json
+
+class JsonIO(IO):
+    def read_string(self, jsonstr):
+        json_data = json.loads(jsonstr)
+        return self.read_json(json_data)
+
+    def read_file(self, fileobj):
+        json_data = json.load(fileobj)
+        return self.read_json(json_data)
+
+    def read_json(self, json_data):
+        types = json_data.get("types") or []
+        objects = json_data.get("objects") or []
+        relations = json_data.get("relations") or []
+
+        # begin a new transaction
+        with self.mapper.auto_session as session:
+            self.add_types(types)
+
+            db_objects, mapping = self.add_objects(objects)
+            self.add_relations(relations, mapping)
+
+            for obj in db_objects:
+                self.mapper.save(obj)
+
+            return db_objects
+
+    def write_string(self, objs):
+        json_data = self.write_json(objs)
+        json_string = json.dumps(json_data, indent=2)
+        return json_string
+
+    def write_file(self, objs, fileobj):
+        json_data = self.write_json(objs)
+        return json.dump(json_data, fileobj, indent=2)
+
+    def write_json(self, objs):
+        types = [{"type": t.__original_class_name__, "parameters": t.parameter_types} for t in self.mapper.registered_objects]
+
+        relations = []
+        visited_objs = set()
+        unvisited_objs = set(objs)
+
+        while unvisited_objs:
+
+            obj = unvisited_objs.pop()
+            if obj in visited_objs:
+                continue
+
+            if obj.parent:
+                relation = {
+                    "relation": "child",
+                    "from": "uuid:" + obj.uuid,
+                    "to": "uuid:" + obj.parent.uuid
+                }
+                relations.append(relation)
+                unvisited_objs.add(obj.parent)
+
+            for child in obj.children:
+                unvisited_objs.add(child)
+
+            for connection in obj.connections:
+                relation = {
+                    "relation": "context",
+                    "name": connection.connection_type,
+                    "from": "uuid:" + obj.uuid,
+                    "to": "uuid:" + connection.connected.uuid
+                }
+                relations.append(relation)
+                unvisited_objs.add(connection.connected)
+
+            visited_objs.add(obj)
+
+        objects = []
+        for obj in visited_objs:
+            json_obj = {
+                "type": obj.type,
+                "parameters": dict(obj.json_params)
+            }
+            objects.append(json_obj)
+
+        return {
+            "types": types,
+            "objects": objects,
+            "relations": relations
+        }
+
+
+    def _iter_types(self, types):
+        valid_keys = ["type", "parameters"]
+
+        for t in types:
+            unknown_keys = check_superfluous_keys(t, valid_keys)
+            if unknown_keys:
+                raise InvalidInputError("Unknown keys in type definition: {0}.".format(unknown_keys))
+
+            yield {
+                "type": t.get("type"),
+                "parameters": t.get("parameters") or {} # defaults to emtpy dict
+            }
+
+    def _iter_objects(self, objects):
+        valid_keys = ["id", "uuid", "type", "parameters", "children"]
+
+        for obj in objects:
+            unknown_keys = check_superfluous_keys(obj, valid_keys)
+            if unknown_keys:
+                raise InvalidInputError("Unknown keys in object: {0}.".format(unknown_keys))
+
+            yield {
+                "id": obj.get("id"),
+                "uuid": obj.get("uuid"),
+                "type": obj.get("type"),
+                "params": obj.get("parameters") or {},
+                "children": obj.get("children") or []
+            }
+
+    def _iter_relations(self, relations):
+        for rel in relations:
+            yield rel
+
+
+    def add_types(self, types):
+        for type in self._iter_types(types):
+            if not self.mapper.is_registered(type["type"], type["parameters"]):
+                if not self.add_new_types:
+                    raise InvalidInputError("Type {0} not present in mapper.".format(type))
+                else:
+                    logger.info("Adding type %r.", type["type"])
+                    self.mapper.register_type(type["type"], type["parameters"])
+
+    def add_objects(self, objects):
+        mapping = {}
+        db_objects = []
+
+        for obj in self._iter_objects(objects):
+            entity_obj = self.mapper.create(obj["type"], _uuid=obj["uuid"])
+
+            for k, v in obj["params"].iteritems():
+                try:
+                    entity_obj.str_params[k] = v
+                except KeyError as err:
+                    if self.ignore_unknown_attributes:
+                        logger.warn("Unknown key for {0}: {1}.".format(obj["type"], err))
+                    else:
+                        raise
+
+            if obj["id"]:
+                mapping["id:" + str(obj["id"])] = entity_obj
+
+            if obj["uuid"]:
+                mapping["uuid:" + obj["uuid"]] = entity_obj
+            self.mapper.save(entity_obj)
+
+            # handle potential children
+            if obj["children"]:
+                child_objs, child_mappings = self.add_objects(obj["children"])
+                for child in child_objs:
+                    child.parent = entity_obj
+
+                # be on the save side and save once more
+                self.mapper.save(entity_obj)
+
+                db_objects += child_objs
+                mapping.update(child_mappings)
+
+            db_objects.append(entity_obj)
+
+        return db_objects, mapping
+
+    def add_relations(self, relations, mapping):
+        for rel in relations:
+            rel_type = rel.get("relation")
+            rel_name = rel.get("name")
+            rel_from = rel.get("from")
+            rel_to = rel.get("to")
+
+            if rel_type == "parent":
+                # rel_from is parent of rel_to
+                if mapping[rel_to].parent:
+                    raise InvalidInputError("Multiple parents defined for object {0} ({1}).".format(mapping[rel_to], rel_to))
+                mapping[rel_to].parent = mapping[rel_from]
+
+            if rel_type == "child":
+                # rel_from is child of rel_to
+                if mapping[rel_from].parent:
+                    raise InvalidInputError("Multiple parents defined for object {0} ({1}).".format(mapping[rel_from], rel_from))
+                mapping[rel_from].parent = mapping[rel_to]
+
+            elif rel_type == "context":
+                mapping[rel_from].connect(rel_name, mapping[rel_to])
+            else:
+                raise InvalidInputError("Unknown relation type: {0}.".format(rel_type))
+
+
+
+class XmlIO(IO):
     def read(self, xml):
         root = ET.fromstring(xml)
         return self.filter(root)
@@ -105,7 +305,7 @@ class XmlIO(IO):
 
     def filter(self, root):
         if root.tag != "xdapy":
-            raise InvalidXMLError("Tag {0} does not belong here".format(root.tag))
+            raise InvalidInputError("Tag {0} does not belong here".format(root.tag))
 
         for e in root:
             if e.tag == "types":
@@ -133,7 +333,7 @@ class XmlIO(IO):
         not_found = []
         for entity in e:
             if not entity.tag == "entity":
-                raise InvalidXMLError("Tag {0} does not belong here".format(entity.tag))
+                raise InvalidInputError("Tag {0} does not belong here".format(entity.tag))
             try:
                 type, params, key = self.parse_entity_type(entity)
 
@@ -199,23 +399,23 @@ class XmlIO(IO):
             if parent_id in ref_ids:
                 new_entity.parent = ref_ids[parent_id]
             else:
-                raise InvalidXMLError("Parent {0} undefined for entity {1}".format(parent_id, new_entity))
+                raise InvalidInputError("Parent {0} undefined for entity {1}".format(parent_id, new_entity))
 
         if "id" in entity.attrib:
             # add id attribute to ref_ids
             id = "id:" + entity.attrib["id"]
             if id in ref_ids:
-                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
+                raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
         if "uuid" in entity.attrib:
             # add id attribute to ref_ids
             id = "uuid:" + entity.attrib["uuid"]
             if id in ref_ids:
-                raise InvalidXMLError("Ambiguous declaration of {0}".format(id))
+                raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
-        # We need to assiciate the entity with a session. Otherwise, we cannot add data.
+        # We need to associate the entity with a session. Otherwise, we cannot add data.
 
         self.mapper.save(new_entity)
 
@@ -227,7 +427,7 @@ class XmlIO(IO):
             if sub.tag == "entity":
                 child = self.parse_entity(sub, ref_ids)
                 if child.parent and child.parent is not new_entity:
-                    raise InvalidXMLError("Trying to mix nesting with explicit parent specification for {0}".format(child))
+                    raise InvalidInputError("Trying to mix nesting with explicit parent specification for {0}".format(child))
 
                 new_entity.children.append(child)
             if sub.tag == "data":
@@ -241,7 +441,7 @@ class XmlIO(IO):
         if "value" in parameter.attrib:
             value = parameter.attrib["value"]
             if parameter.text and parameter.text.strip():
-                raise InvalidXMLError("Value and text given for parameter {0}".format(parameter))
+                raise InvalidInputError("Value and text given for parameter {0}".format(parameter))
         else:
             value = parameter.text
             if value is not None:

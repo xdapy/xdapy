@@ -52,20 +52,17 @@ class Session(EntityObject):
 class Setup(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables()
         self.m = Mapper(self.connection)
 
         self.m.register(Observer, Experiment, Trial, Session)
 
     def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
 
 class TestMapper(Setup):
-
-    def testCreateTables(self):
-        self.connection.create_tables(overwrite=True)
-
     def testSave(self):
         valid_objects = ("""Observer(name="Max Mustermann", handedness="right", age=26)""",
                        """Experiment(project="MyProject", experimenter="John Doe")""",
@@ -258,6 +255,24 @@ class TestMapper(Setup):
 
         self.assertRaises(CircularDependencyError, add_circular_2)
 
+    def test_failing_auto_session_reverts_transaction(self):
+        class DummyException(Exception):
+            pass
+
+        e1 = Experiment()
+        self.m.save(e1)
+        e1.params["experimenter"] = "Some experimenter"
+
+        try:
+            with self.m.auto_session as sess:
+                e1.params["project"] = "e1"
+                self.m.save(e1)
+                raise DummyException
+        except DummyException:
+            pass
+
+        self.assertEqual("Some experimenter", e1.params["experimenter"])
+        self.assertRaises(KeyError, lambda: e1.params["project"])
 
 class TestConnections(Setup):
     def setUp(self):
@@ -411,7 +426,7 @@ class TestConnections(Setup):
 #        self.m = ProxyForObjectTemplates()
 #
 #    def tearDown(self):
-#        pass
+#        self.connection.drop_tables()
 #
 #    def testCreateTables(self):
 #        self.connection.create_tables()

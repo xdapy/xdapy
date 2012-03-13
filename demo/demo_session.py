@@ -3,9 +3,9 @@
 from xdapy import Connection, Mapper
 from xdapy.structures import EntityObject
 
-connection = Connection.profile("test", echo=True) # use standard profile
+connection = Connection.profile("demo", echo=True) # use standard profile
 # drop the old database structure
-connection.create_tables(overwrite=True)
+connection.create_tables()
 
 m = Mapper(connection)
 

@@ -13,7 +13,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, Entity, EntityObject
+from xdapy.structures import ParameterOption, Entity, EntityObject, calculate_polymorphic_name, create_entity
 from xdapy.parameters import StringParameter, DateParameter, parameter_for_type
 from xdapy.errors import StringConversionError, FilterError
 from xdapy.find import SearchProxy
@@ -429,8 +429,8 @@ class Mapper(object):
 
 
     @require('entity_name', str)
-    @require('parameter_name', str)
-    @require('parameter_type', str)
+    @require('parameter_name', basestring)
+    @require('parameter_type', basestring)
     def register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
 
@@ -469,6 +469,15 @@ class Mapper(object):
 
             for name, paramtype in klass.parameter_types.iteritems():
                 self.register_parameter(klass.__name__, name, paramtype)
+
+    def is_registered(self, name, parameters):
+        polymorphic_name = calculate_polymorphic_name(name, parameters)
+        return polymorphic_name in self.registered_objects
+
+    def register_type(self, name, parameters):
+        new_type = create_entity(name, parameters)
+        self.register(new_type)
+        return new_type
 
     def entity_by_name(self, name):
         """ Returns the mapped entity class with the supplied name

@@ -10,10 +10,11 @@ class TestParameter(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables()
         mapper = Mapper(self.connection)
 
-    def tearDown(self):         
+    def tearDown(self):
+        self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
     

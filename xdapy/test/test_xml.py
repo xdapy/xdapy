@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
-from xdapy.errors import AmbiguousObjectError, InvalidXMLError
+from xdapy.errors import AmbiguousObjectError, InvalidInputError
 from xdapy.io import XmlIO, UnregisteredTypesError
 from xdapy.structures import EntityObject
 from xdapy.utils.decorators import autoappend
@@ -23,7 +23,7 @@ class Observer(EntityObject):
         'age': 'integer',
         'handedness': 'string'
     }
-     
+
 @autoappend(objects)
 class Session(EntityObject):
     parameter_types = {
@@ -93,12 +93,14 @@ class TestXml(unittest.TestCase):
     def setUp(self):
         """Create test database in memory"""
         self.connection = Connection.test()
-        self.connection.create_tables(overwrite=True)
+        self.connection.create_tables()
+
         self.mapper = Mapper(self.connection)
         self.mapper.register(*objects)
 
     def tearDown(self):
         # need to dispose manually to avoid too many connections error
+        self.connection.drop_tables()
         self.connection.engine.dispose()
     
     def testXml(self):
@@ -179,7 +181,7 @@ class TestXml(unittest.TestCase):
             </entty>
         </types></xdapy>"""
         xmlio = XmlIO(self.mapper)
-        self.assertRaises(InvalidXMLError, xmlio.read, test_xml)
+        self.assertRaises(InvalidInputError, xmlio.read, test_xml)
 
 if __name__ == '__main__':
     unittest.main()

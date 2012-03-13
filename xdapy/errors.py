@@ -52,10 +52,6 @@ class DataInconsistencyError(Exception):
     """Raised whenever something is fatal with the data."""
     pass
 
-class InvalidXMLError(Exception):
-    """Raised when XML is malformed."""
-    pass
-
 class ConfigurationError(Exception):
     """Raised when there is something wrong with the configuration."""
     pass
@@ -64,8 +60,15 @@ class FilterError(Exception):
     """Something is wrong with the filter."""
     pass
 
-
 class SearchError(Exception):
     """Raised when a search is not well defined or malformed."""
     pass
 
+class InvalidInputError(Exception):
+    """ Raised when the import data is malformed. """
+    pass
+
+class DatabaseError(Exception):
+    """ Raised when the database does not allow to connect.
+    """
+    pass

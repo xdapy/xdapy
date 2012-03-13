@@ -2,8 +2,8 @@
 
 from xdapy import Connection, Mapper
 
-connection = Connection.profile("test") # use standard profile
-connection.create_tables(overwrite=True)
+connection = Connection.profile("demo") # use standard profile
+connection.create_tables()
 m = Mapper(connection)
 
 from objects import Experiment, Observer, Trial, Session

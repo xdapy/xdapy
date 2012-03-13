@@ -4,7 +4,7 @@ from xdapy.structures import EntityObject
 class E(EntityObject):
     parameter_types = {}
 
-connection = Connection.profile("test")#, echo=True) # use standard profile
+connection = Connection.profile("demo")#, echo=True) # use standard profile
 connection.create_tables()#overwrite=True)
 
 m = Mapper(connection)
