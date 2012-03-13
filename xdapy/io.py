@@ -80,7 +80,7 @@ class IO(object):
         self.mapper = mapper
         self.add_new_types = add_new_types
 
-        #: Ignore KeyErrors?
+        #: If true, we’ll ignore KeyErrors?
         self.ignore_unknown_attributes = False
 
         if known_objects is not None:
