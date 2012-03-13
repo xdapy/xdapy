@@ -1,6 +1,6 @@
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         'count': 'integer',
         'note': 'string',
@@ -8,13 +8,13 @@ class Trial(EntityObject):
         'learning': 'boolean'
     }
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
         'project': 'string',
         'experimenter': 'string'
     }
 
-class Observer(EntityObject):
+class Observer(Entity):
     parameter_types = {
         'birthyear': 'integer',
         'initials': 'string',
@@ -23,7 +23,7 @@ class Observer(EntityObject):
         'glasses': 'boolean'
     }
 
-class Session(EntityObject):
+class Session(Entity):
     parameter_types = {
         'count': 'integer',
         'date': 'date',
@@ -31,7 +31,7 @@ class Session(EntityObject):
         'category1': 'integer'
     }
 
-class Stimulus(EntityObject):
+class Stimulus(Entity):
     parameter_types = {
         'category1': 'integer',
         'category2': 'integer',
@@ -40,7 +40,7 @@ class Stimulus(EntityObject):
         'leaf2': 'integer'
     }
 
-class Response(EntityObject):
+class Response(Entity):
     parameter_types = {
         'category': 'integer',
         'rt': 'float',

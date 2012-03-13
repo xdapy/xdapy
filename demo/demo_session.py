@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
 connection = Connection.profile("demo", echo=True) # use standard profile
 # drop the old database structure
@@ -11,28 +11,28 @@ m = Mapper(connection)
 
 # from objects import Experiment, ...
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     """Concrete class for experiments"""    
     parameter_types = {
         'experimenter': 'string',
         'project': 'string'
     }
 
-#class Experiment(EntityObject):
+#class Experiment(Entity):
 #    """Concrete class for experiments"""
 #    parameter_types = {
 #        'experimenter': 'string',
 #        'project': 'string'
 #    }
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         'date': 'datetime',
         'number_of_runs': 'integer'
     }
     # holds data
 
-class Observer(EntityObject):
+class Observer(Entity):
     """Concrete class for observers"""
     parameter_types = {
         'name': 'string',

@@ -8,12 +8,12 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 from sqlalchemy.orm.session import Session
 
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 from xdapy.errors import MissingSessionError
 import unittest
 
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
         'project': 'string',
         'experimenter': 'string',

@@ -1,5 +1,5 @@
 from xdapy import Mapper, Connection
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
 connection = Connection.default()
 

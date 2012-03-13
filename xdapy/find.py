@@ -10,7 +10,7 @@ __docformat__ = "restructuredtext"
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy.errors import SearchError
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
 class SearchProxy(object):
     """ Builds a representation of a search tree.
@@ -67,8 +67,8 @@ class SearchProxy(object):
             if isinstance(inner, list):
                 return [traverse(i, stack) for i in inner]
 
-            if isinstance(inner, EntityObject):
-                # we might have a single EntityObject here
+            if isinstance(inner, Entity):
+                # we might have a single Entity here
                 return _entity(inner, {}, stack, self)
             return inner
 

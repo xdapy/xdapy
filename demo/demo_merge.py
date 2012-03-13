@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
 connection = Connection.profile("demo") # use standard profile
 connection_2 = Connection.default() # use standard profile
@@ -14,7 +14,7 @@ m_2 = Mapper(connection_2)
 
 # from objects import Experiment, ...
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     """Concrete class for experiments"""    
     parameter_types = {
         'experimenter': 'string',
@@ -23,7 +23,7 @@ class Experiment(EntityObject):
 
 Experiment_nodate = Experiment
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     """Concrete class for experiments"""    
     parameter_types = {
         'experimenter': 'string',
@@ -31,14 +31,14 @@ class Experiment(EntityObject):
         'date': 'date'
     }
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         'date': 'datetime',
         'number_of_runs': 'integer'
     }
     # holds data
 
-class Observer(EntityObject):
+class Observer(Entity):
     """Concrete class for observers"""
     parameter_types = {
         'name': 'string',

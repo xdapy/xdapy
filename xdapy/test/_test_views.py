@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.sql import and_, exists
 from xdapy import Settings
-from xdapy.structures import Data, Parameter, Entity, ParameterOption, \
+from xdapy.structures import Data, Parameter, BaseEntity, ParameterOption, \
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, \
     parameterlist, base
 import datetime
@@ -89,7 +89,7 @@ class TestData(unittest.TestCase):
 
 
     def testValidInput(self):
-        exp = Entity('name')
+        exp = BaseEntity('name')
         for name, data in self.valid_input:
             d = Data(name=name, data=dumps(data))
             exp.data.append(d)
@@ -108,7 +108,7 @@ class TestData(unittest.TestCase):
                 self.assertEqual(data.test, loads(d_reloaded.data).test)
 
     def testUpdate(self):
-        exp = Entity('experiment')
+        exp = BaseEntity('experiment')
         data = Data(name='someother', data=dumps([0, 2, 3, 5]))
         data2 = Data(name='somestring', data=dumps([0, 2, 3, 5]))
 
@@ -118,7 +118,7 @@ class TestData(unittest.TestCase):
         self.session.add(exp)
         self.session.commit()
 
-        self.assertEqual([exp], self.session.query(Entity).all())
+        self.assertEqual([exp], self.session.query(BaseEntity).all())
         self.assertEqual([data, data2], self.session.query(Data).all())
 
         data.name = 'another'
@@ -126,7 +126,7 @@ class TestData(unittest.TestCase):
 
         self.session.commit()
 
-        self.assertEqual([exp], self.session.query(Entity).all())
+        self.assertEqual([exp], self.session.query(BaseEntity).all())
         self.assertEqual([data, data2], self.session.query(Data).order_by(Data.name).all())
 
 class TestParameter(unittest.TestCase):
@@ -505,21 +505,21 @@ class TestEntity(unittest.TestCase):
 
     def testValidInput(self):
         for name in self.valid_input:
-            entity = Entity(name)
+            entity = BaseEntity(name)
             self.assertEqual(entity.name, name)
             self.session.add(entity)
             self.session.commit()
-            entity_reloaded = self.session.query(Entity).filter(and_(Entity.name == name, Entity.id == entity.id)).one()
+            entity_reloaded = self.session.query(BaseEntity).filter(and_(BaseEntity.name == name, BaseEntity.id == entity.id)).one()
             self.assertEqual(entity, entity_reloaded)
 
     def testInvalidInputType(self):
         for name in self.invalid_input_types:
-            self.assertRaises(TypeError, Entity, name)
+            self.assertRaises(TypeError, BaseEntity, name)
 
     def testParametersAttribute(self):
         intparam = IntegerParameter('intname', 1)
         strparam = StringParameter('strname', 'string')
-        exp = Entity('experiment')
+        exp = BaseEntity('experiment')
 
         self.session.add(exp)
         self.session.add(intparam)
@@ -527,7 +527,7 @@ class TestEntity(unittest.TestCase):
         exp.parameters.append(intparam)
         self.session.commit()
 
-        exp_reloaded = self.session.query(Entity).filter(Entity.name == 'experiment').one()
+        exp_reloaded = self.session.query(BaseEntity).filter(BaseEntity.name == 'experiment').one()
         ip_reloaded = self.session.query(Parameter).filter(Parameter.name == 'intname').one()
         sp_reloaded = self.session.query(Parameter).filter(Parameter.name == 'strname').all()
 
@@ -543,8 +543,8 @@ class TestEntity(unittest.TestCase):
         data2 = Data(name='somestring', data=dumps([0, 2, 3, 5]))
         data3 = Data(name='someother', data=dumps([0, 2, 3, 5]))
 
-        exp = Entity('experiment')
-        exp2 = Entity('experiment')
+        exp = BaseEntity('experiment')
+        exp2 = BaseEntity('experiment')
 
         exp.parameters.append(intparam)
         exp.parameters.append(strparam)
@@ -563,14 +563,14 @@ class TestEntity(unittest.TestCase):
 
         #database should only exp,exp2,intparam,intparam2,strparam
         self.assertEqual([intparam, strparam, intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
-        self.assertEqual([exp, exp2], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([exp, exp2], self.session.query(BaseEntity).order_by(BaseEntity.id).all())
         self.assertEqual([data3, data, data2], self.session.query(Data).order_by(Data.name).all())
         self.session.delete(exp)
         self.session.commit()
 
         #database should only contain exp2,intparam2,strparam
         self.assertEqual([strparam, intparam2], self.session.query(Parameter).order_by(Parameter.id).all())
-        self.assertEqual([exp2], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([exp2], self.session.query(BaseEntity).order_by(BaseEntity.id).all())
         self.assertEqual([data3, data2], self.session.query(Data).order_by(Data.name).all())
 
         #relationship is one-to-many and data allowed only for a single parent
@@ -581,7 +581,7 @@ class TestEntity(unittest.TestCase):
         strparam = StringParameter('strname', 'string')
         data = Data(name='somestring', data=dumps([0, 2, 3, 5]))
         data2 = Data(name='someother', data=dumps([0, 2, 3, 5]))
-        exp = Entity('experiment')
+        exp = BaseEntity('experiment')
 
         exp.parameters.append(intparam)
         exp.parameters.append(strparam)
@@ -592,7 +592,7 @@ class TestEntity(unittest.TestCase):
         self.session.commit()
 
         self.assertEqual([intparam, strparam], self.session.query(Parameter).order_by(Parameter.id).all())
-        self.assertEqual([exp], self.session.query(Entity).order_by(Entity.id).all())
+        self.assertEqual([exp], self.session.query(BaseEntity).order_by(BaseEntity.id).all())
         self.assertEqual([data2, data], self.session.query(Data).order_by(Data.name).all())
 
 #        data.name = 'another'
@@ -603,7 +603,7 @@ class TestEntity(unittest.TestCase):
 #        self.session.commit()
 #
 #        self.assertEqual([intparam,strparam], self.session.query(Parameter).all())
-#        self.assertEqual([exp], self.session.query(Entity).all())
+#        self.assertEqual([exp], self.session.query(BaseEntity).all())
 #        self.assertEqual([data2,data],self.session.query(Data).all())
 #
 #        print self.session.query(Parameter).all()
@@ -611,13 +611,13 @@ class TestEntity(unittest.TestCase):
 
 
 #    def testContextAttribute(self):
-#        exp = Entity('experiment')
-#        obs1 = Entity('observer1')
-#        obs2 = Entity('observer2')
+#        exp = BaseEntity('experiment')
+#        obs1 = BaseEntity('observer1')
+#        obs2 = BaseEntity('observer2')
 #
 #        self.session.add(exp)
 #        self.session.add(obs2)
-#        self.session.commit()exp = Entity('experiment')
+#        self.session.commit()exp = BaseEntity('experiment')
 #        self.assertEqual(exp.context,",")
 
 

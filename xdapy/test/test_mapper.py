@@ -5,7 +5,7 @@ Created on Jun 17, 2009
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject, Context, create_entity
+from xdapy.structures import Entity, Context, create_entity
 from xdapy.operators import gt, lt
 
 import unittest
@@ -19,20 +19,20 @@ I ntegrityError: (IntegrityError) duplicate key value violates unique constraint
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
         'project': 'string',
         'experimenter': 'string'
     }
 
-class Observer(EntityObject):
+class Observer(Entity):
     parameter_types = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         'time': 'string',
         'rt': 'integer',
@@ -40,7 +40,7 @@ class Trial(EntityObject):
         'response': 'string'
     }
 
-class Session(EntityObject):
+class Session(Entity):
     parameter_types = {
         'count': 'integer',
         'date': 'date',
@@ -111,13 +111,13 @@ class TestMapper(Setup):
 
         self.assertEqual(len(self.m.find_all(Experiment)), 2)
         self.assertEqual(len(self.m.find_all(Observer)), 2)
-        self.assertEqual(len(self.m.find_all(EntityObject)), 4)
+        self.assertEqual(len(self.m.find_all(Entity)), 4)
         self.assertEqual(len(self.m.find_all(Trial)), 0)
 
         obs = self.m.find_all(Observer)
         self.m.delete(*obs)
         self.m.delete(e)
-        self.assertEqual(len(self.m.find_all(EntityObject)), 1)
+        self.assertEqual(len(self.m.find_all(Entity)), 1)
 
     def testSaveAll(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
@@ -173,7 +173,7 @@ class TestMapper(Setup):
         Observer_new = create_entity("Observer", {})
 
         # approx. equivalent to but does not shadow the original Observer
-        #    class Observer(EntityObject):
+        #    class Observer(Entity):
         #        parameter_types = {}
         #    Observer_new = Observer
         #    del Observer

@@ -1,7 +1,7 @@
 from xdapy import Mapper, Connection
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
-class E(EntityObject):
+class E(Entity):
     parameter_types = {}
 
 connection = Connection.profile("demo")#, echo=True) # use standard profile

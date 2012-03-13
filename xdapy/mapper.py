@@ -13,7 +13,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, Entity, EntityObject, calculate_polymorphic_name, create_entity
+from xdapy.structures import ParameterOption, BaseEntity, Entity, calculate_polymorphic_name, create_entity
 from xdapy.parameters import StringParameter, DateParameter, parameter_for_type
 from xdapy.errors import StringConversionError, FilterError
 from xdapy.find import SearchProxy
@@ -64,12 +64,12 @@ class Mapper(object):
 
     def save(self, *args):
         """
-        Save instances inheriting from `EntityObject` into database.
+        Save instances inheriting from `Entity` into database.
 
         Attributes
         ----------
         args
-            One or more objects derived from `xdapy.structures.EntityObject`.
+            One or more objects derived from `xdapy.structures.Entity`.
 
         Raises
         ------
@@ -88,12 +88,12 @@ class Mapper(object):
 
     def save_all(self, *args):
         """
-        Save instances inheriting from `EntityObject` into database as well as their children.
+        Save instances inheriting from `Entity` into database as well as their children.
 
         Attributes
         ----------
         args
-            One or more objects derived from `xdapy.structures.EntityObject`.
+            One or more objects derived from `xdapy.structures.Entity`.
 
         Raises
         ------
@@ -217,11 +217,11 @@ class Mapper(object):
             # entity class
             entity = self.entity_by_name(entity)
 
-        if isinstance(entity, EntityObject):
+        if isinstance(entity, Entity):
             # if we've been given an instance, get the parameters
             # and update the filter
 
-            # check for EntityObject and filter parameters
+            # check for Entity and filter parameters
             # filter comes second, so we assume it has higher priority
             f = dict(entity.params)
             if filter:
@@ -247,7 +247,7 @@ class Mapper(object):
 
     def find_by_id(self, entity, id):
         with self.auto_session as session:
-            return session.query(entity).filter(Entity.id==id).one()
+            return session.query(entity).filter(BaseEntity.id==id).one()
 
     def find_first(self, entity, filter=None, options=None):
         return self.find(entity, filter, options).first()
@@ -257,8 +257,8 @@ class Mapper(object):
 
     def find_roots(self, entity=None):
         if not entity:
-            entity = Entity
-        return self.find(entity).filter(Entity.parent==None).all()
+            entity = BaseEntity
+        return self.find(entity).filter(BaseEntity.parent==None).all()
 
     def find_related(self, entity, related):
         the_set = set()
@@ -269,7 +269,7 @@ class Mapper(object):
         return list(the_set)
 
     def find_by_uuid(self, uuid):
-        return self.find(Entity).filter(Entity._uuid==uuid).one()
+        return self.find(BaseEntity).filter(BaseEntity._uuid==uuid).one()
 
     def get_data_matrix(self, conditions, items, include=None):
         """ Finds related items for the entity which satisfies condition
@@ -461,10 +461,10 @@ class Mapper(object):
     def register(self, *klasses):
         """Registers the class and the class’s parameters."""
         for klass in klasses:
-            if not issubclass(klass, EntityObject):
-                raise ValueError("Class must be subclass of EntityObject.")
-            if klass is EntityObject:
-                raise ValueError("EntityObject is no valid class.")
+            if not issubclass(klass, Entity):
+                raise ValueError("Class must be subclass of Entity.")
+            if klass is Entity:
+                raise ValueError("Entity is no valid class.")
             self.registered_objects.append(klass)
 
             for name, paramtype in klass.parameter_types.iteritems():
@@ -485,7 +485,7 @@ class Mapper(object):
 
         Parameters
         ----------
-        name: string or subclass of EntityObject
+        name: string or subclass of Entity
             The name of the entity object to find.
         """
         # maybe name was a class already, then we're done

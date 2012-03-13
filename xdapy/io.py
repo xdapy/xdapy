@@ -350,7 +350,7 @@ class XmlIO(IO):
         if not_found:
             print """The following objects were declared in the XML file but never imported:"""
         for nf in not_found:
-            print """class {name}(EntityObject):
+            print """class {name}(Entity):
     parameter_types = {types!r}
 """.format(name=nf[0], types=nf[1])
 

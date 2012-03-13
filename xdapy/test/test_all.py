@@ -15,29 +15,29 @@ __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 from pickle import dumps
 from random import randint
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject, Entity, Data, Context
+from xdapy.structures import Entity, BaseEntity, Data, Context
 from xdapy.parameters import StringParameter
 import unittest
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
         'project': 'string',
         'experimenter': 'string'
     }
 
-class Observer(EntityObject):
+class Observer(Entity):
     parameter_types = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
 
-class Session(EntityObject):
+class Session(Entity):
     parameter_types = {
         'date': 'date'
     }
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         'time': 'string',
         'rt': 'integer',

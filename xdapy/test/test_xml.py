@@ -3,21 +3,21 @@
 from xdapy import Connection, Mapper
 from xdapy.errors import AmbiguousObjectError, InvalidInputError
 from xdapy.io import XmlIO, UnregisteredTypesError
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 from xdapy.utils.decorators import autoappend
 import unittest
 
 objects = []
 
 @autoappend(objects)
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
             'project': 'string',
             'experimenter': 'string'
             }
 
 @autoappend(objects)
-class Observer(EntityObject):
+class Observer(Entity):
     parameter_types = {
         'name': 'string',
         'age': 'integer',
@@ -25,7 +25,7 @@ class Observer(EntityObject):
     }
 
 @autoappend(objects)
-class Session(EntityObject):
+class Session(Entity):
     parameter_types = {
         'date': 'date'
     }
@@ -106,7 +106,7 @@ class TestXml(unittest.TestCase):
     def testXml(self):
         xmlio = XmlIO(self.mapper)
         xmlio.read(self.test_xml)
-        objs = self.mapper.find_all(EntityObject)
+        objs = self.mapper.find_all(Entity)
         roots = self.mapper.find_roots()
         self.assertEqual(len(objs), 7)
         self.assertEqual(len(roots), 6)
@@ -124,7 +124,7 @@ class TestXml(unittest.TestCase):
         self.assertRaises(UnregisteredTypesError, xmlio.read, test_xml)
 
     def test_type_name_twice(self):
-        class Experiment(EntityObject):
+        class Experiment(Entity):
             parameter_types = {"project": "string"}
 
         test_xml = """<xdapy><types>

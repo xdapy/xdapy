@@ -1,25 +1,25 @@
 
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject
+from xdapy.structures import Entity
 
-class Experiment(EntityObject):
+class Experiment(Entity):
     parameter_types = {
         "project": "string"
     }
 
-class Observer(EntityObject):
+class Observer(Entity):
     parameter_types = {
         "name": "string",
         "birthday": "date"
     }
 
-class Session(EntityObject):
+class Session(Entity):
     parameter_types = {
         "date": "date"
         }
 
 
-class Trial(EntityObject):
+class Trial(Entity):
     parameter_types = {
         "duration": "integer",
         "number": "integer",
@@ -98,7 +98,7 @@ contx = m.find_first(Context)
 exp_monorail.connect("Observer", obs_1)
 
 from xdapy.io import XmlIO
-xmlio = XmlIO(m, EntityObject.__subclasses__())
+xmlio = XmlIO(m, Entity.__subclasses__())
 print xmlio.write()
 
 db.drop_tables()

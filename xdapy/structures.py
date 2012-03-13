@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """\
-Contains the classes which are used to store the EntityObject meta data.
+Contains the classes which are used to store the Entity meta data.
 
 **TODO** Figure out what to do with global variable base
 **TODO** Make Data truncation an error
@@ -34,9 +34,9 @@ from xdapy.errors import EntityDefinitionError, InsertionError, MissingSessionEr
 from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 
-class Entity(Base):
+class BaseEntity(Base):
     """
-    The class `Entity` is mapped on the table 'entities'. The name column
+    The class `BaseEntity` is mapped on the table 'entities'. The name column
     contains unique information about the object type (e.g. 'Observer',
     'Experiment'). Each Entity is connected to a set of parameters through the
     adjacency list parameterlist. Those parameters can be accessed via the
@@ -65,7 +65,7 @@ class Entity(Base):
         Returns
         -------
         uuid: string
-            The auto-generated UUID of the `Entity`.
+            The auto-generated UUID of the `BaseEntity`.
         """
         return self._uuid
 
@@ -84,7 +84,7 @@ class Entity(Base):
     # has one parent
     parent_id = Column('parent_id', Integer, ForeignKey('entities.id'),
             doc="The database-backed parent_id field.")
-    children = relationship("Entity", backref=backref("parent", remote_side=[id]),
+    children = relationship("BaseEntity", backref=backref("parent", remote_side=[id]),
             doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
 
     def belongs_to(self, parent):
@@ -114,14 +114,14 @@ class Entity(Base):
 
     __tablename__ = 'entities' #: The db table name.
 
-    #: Subclasses of `Entity` should differ in their `_type` column.
+    #: Subclasses of `BaseEntity` should differ in their `_type` column.
     __mapper_args__ = {'polymorphic_on': _type}
 
     _params = relationship(Parameter,
             collection_class=column_mapped_collection(Parameter.name), # FIXME ???
             cascade="save-update, merge, delete")
 
-    # one to many Entity->Data
+    # one to many BaseEntity->Data
     _data = relationship(Data,
             collection_class=column_mapped_collection(Data.key),
             cascade="save-update, merge, delete")
@@ -155,7 +155,7 @@ class Entity(Base):
         ----------
         connection_type: string
             The type of the connection.
-        connection_object: EntityObject
+        connection_object: Entity
             The object to connect to.
         """
         self_session = Session.object_session(self)
@@ -194,7 +194,7 @@ class Entity(Base):
         ------
         Exception
         """
-        raise Exception("Entity.__init__ should not be called directly.")
+        raise Exception("BaseEntity.__init__ should not be called directly.")
 
     def _attributes(self):
         return {'type': self.type, 'id': self.id, 'uuid': self.uuid}
@@ -213,20 +213,20 @@ class Entity(Base):
         return json
 
     def __repr__(self):
-        return "<Entity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
+        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
 
     def _session(self):
         """ Returns the session which this object belongs to.
         """
         session = Session.object_session(self)
         if session is None:
-            raise MissingSessionError("Entity has no associated session.")
+            raise MissingSessionError("BaseEntity has no associated session.")
         return session
 
-class Meta(DeclarativeMeta):
+class EntityMeta(DeclarativeMeta):
     @staticmethod
     def _calculate_polymorphic_name(name, bases, attrs):
-        if not "EntityObject" in [bscls.__name__ for bscls in bases]:
+        if not "Entity" in [bscls.__name__ for bscls in bases]:
             return name
 
         parameter_types = attrs["parameter_types"]
@@ -260,7 +260,7 @@ class Meta(DeclarativeMeta):
         # We set the polymorphic_identity to the name of the class
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
 
-        super(Meta, cls).__init__(name, bases, attrs)
+        super(EntityMeta, cls).__init__(name, bases, attrs)
 
 class _StrParams(collections.MutableMapping):
     """Association dict for stringified parameters."""
@@ -303,10 +303,10 @@ class _StrParams(collections.MutableMapping):
     def __iter__(self):
         return iter(self.owning.params)
 
-class EntityObject(Entity):
-    """EntityObject is the base class for all entity object definitions."""
-    #: We specify our special metaclass `xdapy.structures.Meta`.
-    __metaclass__ = Meta
+class Entity(BaseEntity):
+    """Entity is the base class for all entity object definitions."""
+    #: We specify our special metaclass `xdapy.structures.EntityMeta`.
+    __metaclass__ = EntityMeta
 
     def __init__(self, _uuid=None, **kwargs):
         # We are here in init because we are a completely new object
@@ -340,7 +340,7 @@ class EntityObject(Entity):
                 self.params[n] = v
 
     def to_json(self, full=False):
-        return super(EntityObject, self).to_json(full)
+        return super(Entity, self).to_json(full)
 
     def __repr__(self):
         return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.type, id=self.id, uuid=self.uuid)
@@ -375,8 +375,8 @@ class EntityObject(Entity):
 
 
 def create_entity(name, parameters):
-    """Creates a dynamic subclass of `EntityObject` which makes it possible
-    to create new `EntityObject` instances ‘on the fly’.
+    """Creates a dynamic subclass of `Entity` which makes it possible
+    to create new `Entity` instances ‘on the fly’.
 
     The function call (and assignment)::
 
@@ -384,14 +384,14 @@ def create_entity(name, parameters):
 
     is equivalent to::
 
-        class MyEntity(EntityObject):
+        class MyEntity(Entity):
             parameter_types = {"name": "string"}
 
     """
     # need to make sure, we get a str and not a unicode obj
     if isinstance(name, unicode):
         name = str(name)
-    return type(name, (EntityObject,), {'parameter_types': parameters})
+    return type(name, (Entity,), {'parameter_types': parameters})
 
 def calculate_polymorphic_name(name, params):
     if "_" in name:
@@ -416,13 +416,13 @@ class Context(Base):
     connection_type = Column('connection_type', String(500))
 
     # Each entity can have a context of related entities
-    back_referenced = relationship(Entity,
+    back_referenced = relationship(BaseEntity,
         backref=backref('connections', cascade="all"), # need the cascade to delete context, if entity is deleted
-        primaryjoin=entity_id==Entity.id)
+        primaryjoin=entity_id==BaseEntity.id)
 
-    connected = relationship(Entity,
+    connected = relationship(BaseEntity,
         backref=backref('back_references', cascade="all"),
-        primaryjoin=connected_id==Entity.id)
+        primaryjoin=connected_id==BaseEntity.id)
 
     @property
     def from_entity(self):

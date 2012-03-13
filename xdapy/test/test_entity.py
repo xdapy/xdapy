@@ -4,7 +4,7 @@
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy import Connection, Mapper
-from xdapy.structures import EntityObject, create_entity
+from xdapy.structures import Entity, create_entity
 from xdapy.errors import EntityDefinitionError
 import unittest
 
@@ -23,22 +23,22 @@ parameter_types_w_date = {
 
 class TestEntity(unittest.TestCase):
     def setUp(self):
-        class Experiment(EntityObject):
+        class Experiment(Entity):
             parameter_types = parameter_types
 
-        class ExperimentalProject(EntityObject):
+        class ExperimentalProject(Entity):
             parameter_types = parameter_types
         
         self.Experiment = Experiment
         self.ExperimentalProject = ExperimentalProject 
     
     def test_same_entity_has_same_hash(self):
-        class Experiment(EntityObject):
+        class Experiment(Entity):
             parameter_types = parameter_types
         self.assertEqual(self.Experiment.__name__, Experiment.__name__)
 
     def test_different_entity_has_different_hash(self):
-        class Experiment(EntityObject):
+        class Experiment(Entity):
             parameter_types = parameter_types_w_date
         self.assertNotEqual(self.Experiment.__name__, Experiment.__name__)
 
@@ -51,7 +51,7 @@ class TestEntity(unittest.TestCase):
 class TestSavedTypes(unittest.TestCase):
     def setUp(self):
 
-        class MyTestEntity(EntityObject):
+        class MyTestEntity(Entity):
             parameter_types = { "some_param": "string" }
 
         self.MyTestEntity = MyTestEntity
@@ -77,7 +77,7 @@ class TestSavedTypes(unittest.TestCase):
         self.assertEqual(ent.type, "MyTestEntity")
         self.assertEqual(ent._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
 
-        found = self.m.find(EntityObject).one()
+        found = self.m.find(Entity).one()
         self.assertEqual(found.type, "MyTestEntity")
         self.assertEqual(found._type, "MyTestEntity_0b97eed8bcd1ab0ceb7370dd2f9d8cb9")
 
