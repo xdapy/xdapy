@@ -168,11 +168,13 @@ class JsonIO(IO):
 
             visited_objs.add(obj)
 
-        objects = [{
-            "type": obj.type,
-            "parameters": dict(obj.json_params)
-
-        } for obj in visited_objs]
+        objects = []
+        for obj in visited_objs:
+            json_obj = {
+                "type": obj.type,
+                "parameters": dict(obj.json_params)
+            }
+            objects.append(json_obj)
 
         return {
             "types": types,
