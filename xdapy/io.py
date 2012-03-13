@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """\
-This module wrapes the input and output functionality.
+This module wraps the input and output functionality.
 """
 
 __docformat__ = "restructuredtext"
