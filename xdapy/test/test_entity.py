@@ -21,7 +21,7 @@ parameter_types_w_date = {
             }
 
 
-class Test(unittest.TestCase):
+class TestEntity(unittest.TestCase):
     def setUp(self):
         class Experiment(EntityObject):
             parameter_types = parameter_types

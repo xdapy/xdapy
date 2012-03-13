@@ -46,7 +46,7 @@ class Trial(EntityObject):
     }
 
 
-class Test(unittest.TestCase):
+class TestAll(unittest.TestCase):
 
     def setUp(self):
         self.connection = Connection.test()
