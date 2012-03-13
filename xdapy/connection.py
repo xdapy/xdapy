@@ -208,7 +208,7 @@ class Connection(object):
 
         """
         try:
-            self.session.begin()
+            self.session.begin(subtransactions=True)
             # We are in autocommit mode. If we do not explicitly begin a session
             # we must flush afterwards because we cannot be sure WHEN the session
             # is really committed.
@@ -218,7 +218,7 @@ class Connection(object):
             yield self.session
         except Exception:
             # Oops. Something went wrong. We won’t commit.
-            self.session.close()
+            self.session.rollback()
             raise
 
         if self.session.is_active:

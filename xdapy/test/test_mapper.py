@@ -255,6 +255,24 @@ class TestMapper(Setup):
 
         self.assertRaises(CircularDependencyError, add_circular_2)
 
+    def test_failing_auto_session_reverts_transaction(self):
+        class DummyException(Exception):
+            pass
+
+        e1 = Experiment()
+        self.m.save(e1)
+        e1.params["experimenter"] = "Some experimenter"
+
+        try:
+            with self.m.auto_session as sess:
+                e1.params["project"] = "e1"
+                self.m.save(e1)
+                raise DummyException
+        except DummyException:
+            pass
+
+        self.assertEqual("Some experimenter", e1.params["experimenter"])
+        self.assertRaises(KeyError, lambda: e1.params["project"])
 
 class TestConnections(Setup):
     def setUp(self):
