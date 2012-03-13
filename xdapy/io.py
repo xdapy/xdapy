@@ -112,15 +112,17 @@ class JsonIO(IO):
         objects = json_data.get("objects") or []
         relations = json_data.get("relations") or []
 
-        self.add_types(types)
+        # begin a new transaction
+        with self.mapper.auto_session as session:
+            self.add_types(types)
 
-        db_objects, mapping = self.add_objects(objects)
-        self.add_relations(relations, mapping)
+            db_objects, mapping = self.add_objects(objects)
+            self.add_relations(relations, mapping)
 
-        for obj in db_objects:
-            self.mapper.save(obj)
+            for obj in db_objects:
+                self.mapper.save(obj)
 
-        return db_objects
+            return db_objects
 
     def write_string(self, objs):
         json_data = self.write_json(objs)
