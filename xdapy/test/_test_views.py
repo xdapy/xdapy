@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker, create_session
 from sqlalchemy.orm.interfaces import SessionExtension
 from sqlalchemy.sql import and_, exists
 from xdapy import Settings
-from xdapy.structures import Data, Parameter, BaseEntity, ParameterOption, \
+from xdapy.structures import Data, Parameter, BaseEntity, ParameterDeclaration, \
     StringParameter, IntegerParameter, FloatParameter, DateParameter, TimeParameter, \
     parameterlist, base
 import datetime
@@ -621,8 +621,8 @@ class TestEntity(unittest.TestCase):
 #        self.assertEqual(exp.context,",")
 
 
-class TestParameterOption(unittest.TestCase):
-    """Testcase for ParameterOption class"""
+class TestParameterDeclaration(unittest.TestCase):
+    """Testcase for ParameterDeclaration class"""
 
     valid_input = (('observer', 'name', 'string'),
                  ('experiment', 'project', 'string'),
@@ -649,25 +649,25 @@ class TestParameterOption(unittest.TestCase):
 
     def testValidInput(self):
         for e_name, p_name, p_type in self.valid_input:
-            parameter_option = ParameterOption(e_name, p_name, p_type)
-            self.assertEqual(parameter_option.parameter_name, p_name)
-            self.session.add(parameter_option)
+            parameter_declaration = ParameterDeclaration(e_name, p_name, p_type)
+            self.assertEqual(parameter_declaration.parameter_name, p_name)
+            self.session.add(parameter_declaration)
             self.session.commit()
-            parameter_option_reloaded = self.session.query(ParameterOption).filter(
-                and_(ParameterOption.entity_name == e_name,
-                     ParameterOption.parameter_name == p_name,
-                     ParameterOption.parameter_type == p_type)).one()
-            self.assertEqual(parameter_option, parameter_option_reloaded)
+            parameter_declaration_reloaded = self.session.query(ParameterDeclaration).filter(
+                and_(ParameterDeclaration.entity_name == e_name,
+                     ParameterDeclaration.parameter_name == p_name,
+                     ParameterDeclaration.parameter_type == p_type)).one()
+            self.assertEqual(parameter_declaration, parameter_declaration_reloaded)
 
     def testInvalidInputType(self):
         for e_name, p_name, p_type in self.invalid_input:
-            self.assertRaises(TypeError, ParameterOption, e_name, p_name, p_type)
+            self.assertRaises(TypeError, ParameterDeclaration, e_name, p_name, p_type)
 
     def testPrimaryKeyConstrain(self):
-        parameter_option1 = ParameterOption('observer', 'parameter', 'integer')
-        parameter_option2 = ParameterOption('observer', 'parameter', 'integer')
-        self.session.add(parameter_option1)
-        self.session.add(parameter_option2)
+        parameter_declaration1 = ParameterDeclaration('observer', 'parameter', 'integer')
+        parameter_declaration2 = ParameterDeclaration('observer', 'parameter', 'integer')
+        self.session.add(parameter_declaration1)
+        self.session.add(parameter_declaration2)
         self.assertRaises(IntegrityError, self.session.commit)
 
 
@@ -692,8 +692,8 @@ if __name__ == "__main__":
 
 #    entity_suite = unittest.TestSuite(map(TestEntity, tests[0:2]))
 #    entity_suite.addTest(TestEntity(tests[3]))
-#    parameteroption_suite = unittest.TestSuite(map(TestParameterOption, tests[0:2]))
-#    parameteroption_suite.addTest(TestParameterOption(tests[4]))
+#    parameterdeclaration_suite = unittest.TestSuite(map(TestParameterDeclaration, tests[0:2]))
+#    parameterdeclaration_suite.addTest(TestParameterDeclaration(tests[4]))
 #    inheritance_suite = unittest.TestSuite(map(TestInheritance,['testRollback','testDeletion']))
 
 #    alltests = unittest.TestSuite([parameter_suite,
@@ -705,7 +705,7 @@ if __name__ == "__main__":
 #                                   time_suite,
 #                                   data_suite,
 #                                   entity_suite,
-#                                   parameteroption_suite,
+#                                   parameterdeclaration_suite,
 #                                   inheritance_suite])
     subtests = unittest.TestSuite([entity_suite])
     unittest.TextTestRunner(verbosity=2).run(subtests)

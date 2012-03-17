@@ -13,7 +13,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from xdapy.errors import InsertionError
 from xdapy.utils.decorators import require
-from xdapy.structures import ParameterOption, BaseEntity, Entity, calculate_polymorphic_name, create_entity
+from xdapy.structures import ParameterDeclaration, BaseEntity, Entity, calculate_polymorphic_name, create_entity
 from xdapy.parameters import StringParameter, DateParameter, parameter_for_type
 from xdapy.errors import StringConversionError, FilterError
 from xdapy.find import SearchProxy
@@ -444,15 +444,15 @@ class Mapper(object):
         Some SQL error -- If the same entry already exists
         """
         with self.auto_session as session:
-            parameter_option = ParameterOption(entity_name, parameter_name, parameter_type)
-            session.merge(parameter_option)
+            parameter_declaration = ParameterDeclaration(entity_name, parameter_name, parameter_type)
+            session.merge(parameter_declaration)
 
     def is_consistent(self, entity_name, parameter_defaults):
         """Checks if an entity definition would be consistent with the current state
         of the database."""
         with self.auto_session as session:
-            db_defaults = (session.query(ParameterOption.parameter_name, ParameterOption.parameter_type)
-                                  .filter(ParameterOption.entity_name=="Observer")
+            db_defaults = (session.query(ParameterDeclaration.parameter_name, ParameterDeclaration.parameter_type)
+                                  .filter(ParameterDeclaration.entity_name=="Observer")
                                   .all())
             db_defaults = dict(db_defaults)
 

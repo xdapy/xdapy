@@ -441,9 +441,9 @@ class Context(Base):
         return "Context({e} has {t} {c})".format(e=self.back_referenced, t=self.connection_type, c=self.connected)
 
 
-class ParameterOption(Base):
+class ParameterDeclaration(Base):
     """
-    The class `ParameterOptio` is mapped on the table 'parameteroptions'. This
+    The class `ParameterDeclaration` is mapped on the table 'parameter_declarations'. This
     table provides a lookup table for entity/parameter pairs and the type the
     parameter is required to have. Ideally this table is filled once after table
     creation. And only if at a later moment the need for a new parameter emerges,
@@ -472,7 +472,7 @@ class ParameterOption(Base):
         self.parameter_type = parameter_type
 
     def __repr__(self):
-        return "<ParameterOption('%s','%s', '%s')>" % (self.entity_name,
+        return "<ParameterDeclaration('%s','%s', '%s')>" % (self.entity_name,
                                                        self.parameter_name,
                                                        self.parameter_type)
 
@@ -481,7 +481,7 @@ class ParameterOption(Base):
     parameter_name = Column('parameter_name', String(40), primary_key=True)
     parameter_type = Column('parameter_type', String(40))
 
-    __tablename__ = 'parameteroptions'
+    __tablename__ = 'parameter_declarations'
     __table_args__ = (UniqueConstraint(parameter_name, entity_name), {})
 
     @validates('parameter_name')
