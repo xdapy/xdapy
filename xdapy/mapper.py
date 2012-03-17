@@ -12,7 +12,6 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy.errors import InsertionError
-from xdapy.utils.decorators import require
 from xdapy.structures import ParameterDeclaration, BaseEntity, Entity, calculate_polymorphic_name, create_entity
 from xdapy.parameters import StringParameter, DateParameter, parameter_for_type
 from xdapy.errors import StringConversionError, FilterError
@@ -427,10 +426,6 @@ class Mapper(object):
                 raise InsertionError('Child already has parent. Please set force=True.')
             child.parent = parent
 
-
-    @require('entity_name', str)
-    @require('parameter_name', basestring)
-    @require('parameter_type', basestring)
     def register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
 
