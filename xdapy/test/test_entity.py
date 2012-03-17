@@ -9,12 +9,12 @@ from xdapy.errors import EntityDefinitionError
 import unittest
 
 
-parameter_types = {
+declared_params = {
                 'project': 'string',
                 'experimenter': 'string'
             }
 
-parameter_types_w_date = {
+declared_params_w_date = {
                 'project': 'string',
                 'experimenter': 'string',
                 'project_start': 'date'
@@ -24,22 +24,22 @@ parameter_types_w_date = {
 class TestEntity(unittest.TestCase):
     def setUp(self):
         class Experiment(Entity):
-            parameter_types = parameter_types
+            declared_params = declared_params
 
         class ExperimentalProject(Entity):
-            parameter_types = parameter_types
+            declared_params = declared_params
         
         self.Experiment = Experiment
         self.ExperimentalProject = ExperimentalProject 
     
     def test_same_entity_has_same_hash(self):
         class Experiment(Entity):
-            parameter_types = parameter_types
+            declared_params = declared_params
         self.assertEqual(self.Experiment.__name__, Experiment.__name__)
 
     def test_different_entity_has_different_hash(self):
         class Experiment(Entity):
-            parameter_types = parameter_types_w_date
+            declared_params = declared_params_w_date
         self.assertNotEqual(self.Experiment.__name__, Experiment.__name__)
 
         self.assertNotEqual(self.Experiment.__name__, self.ExperimentalProject.__name__)
@@ -52,7 +52,7 @@ class TestSavedTypes(unittest.TestCase):
     def setUp(self):
 
         class MyTestEntity(Entity):
-            parameter_types = { "some_param": "string" }
+            declared_params = { "some_param": "string" }
 
         self.MyTestEntity = MyTestEntity
 

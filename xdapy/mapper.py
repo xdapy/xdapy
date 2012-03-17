@@ -152,7 +152,7 @@ class Mapper(object):
 
                 or_clause = []
                 # Ask for the type of the parameter according to the entity
-                parameter_class = parameter_for_type(entity.parameter_types[key])
+                parameter_class = parameter_for_type(entity.declared_params[key])
                 for val in value:
                     if callable(val):
                         # we’ve been given a function
@@ -467,7 +467,7 @@ class Mapper(object):
                 raise ValueError("Entity is no valid class.")
             self.registered_objects.append(klass)
 
-            for name, paramtype in klass.parameter_types.iteritems():
+            for name, paramtype in klass.declared_params.iteritems():
                 self.register_parameter(klass.__name__, name, paramtype)
 
     def is_registered(self, name, parameters):

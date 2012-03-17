@@ -1,7 +1,7 @@
 from xdapy import Mapper, Connection, Entity
 
 class E(Entity):
-    parameter_types = {}
+    declared_params = {}
 
 connection = Connection.profile("demo")#, echo=True) # use standard profile
 connection.create_tables()#overwrite=True)

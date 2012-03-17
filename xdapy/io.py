@@ -134,7 +134,7 @@ class JsonIO(IO):
         return json.dump(json_data, fileobj, indent=2)
 
     def write_json(self, objs):
-        types = [{"type": t.__original_class_name__, "parameters": t.parameter_types} for t in self.mapper.registered_objects]
+        types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_objects]
 
         relations = []
         visited_objs = set()
@@ -351,7 +351,7 @@ class XmlIO(IO):
             print """The following objects were declared in the XML file but never imported:"""
         for nf in not_found:
             print """class {name}(Entity):
-    parameter_types = {types!r}
+    declared_params = {types!r}
 """.format(name=nf[0], types=nf[1])
 
         if not_found:
@@ -493,7 +493,7 @@ class XmlIO(IO):
 
     def write_types(self, object):
         obj_entity = ET.Element("entity")
-        for name, type in object.parameter_types.iteritems():
+        for name, type in object.declared_params.iteritems():
             parameter = ET.Element("parameter")
             parameter.attrib["name"] = name
             parameter.attrib["type"] = type

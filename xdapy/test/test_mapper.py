@@ -20,20 +20,20 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
         'project': 'string',
         'experimenter': 'string'
     }
 
 class Observer(Entity):
-    parameter_types = {
+    declared_params = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
 
 class Trial(Entity):
-    parameter_types = {
+    declared_params = {
         'time': 'string',
         'rt': 'integer',
         'valid': 'boolean',
@@ -41,7 +41,7 @@ class Trial(Entity):
     }
 
 class Session(Entity):
-    parameter_types = {
+    declared_params = {
         'count': 'integer',
         'date': 'date',
         'category1': 'integer',
@@ -174,7 +174,7 @@ class TestMapper(Setup):
 
         # approx. equivalent to but does not shadow the original Observer
         #    class Observer(Entity):
-        #        parameter_types = {}
+        #        declared_params = {}
         #    Observer_new = Observer
         #    del Observer
 

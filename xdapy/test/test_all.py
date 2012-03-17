@@ -20,25 +20,25 @@ from xdapy.parameters import StringParameter
 import unittest
 
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
         'project': 'string',
         'experimenter': 'string'
     }
 
 class Observer(Entity):
-    parameter_types = {
+    declared_params = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
     }
 
 class Session(Entity):
-    parameter_types = {
+    declared_params = {
         'date': 'date'
     }
 
 class Trial(Entity):
-    parameter_types = {
+    declared_params = {
         'time': 'string',
         'rt': 'integer',
         'valid': 'boolean',

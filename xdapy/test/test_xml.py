@@ -10,14 +10,14 @@ objects = []
 
 @autoappend(objects)
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
             'project': 'string',
             'experimenter': 'string'
             }
 
 @autoappend(objects)
 class Observer(Entity):
-    parameter_types = {
+    declared_params = {
         'name': 'string',
         'age': 'integer',
         'handedness': 'string'
@@ -25,7 +25,7 @@ class Observer(Entity):
 
 @autoappend(objects)
 class Session(Entity):
-    parameter_types = {
+    declared_params = {
         'date': 'date'
     }
 
@@ -124,7 +124,7 @@ class TestXml(unittest.TestCase):
 
     def test_type_name_twice(self):
         class Experiment(Entity):
-            parameter_types = {"project": "string"}
+            declared_params = {"project": "string"}
 
         test_xml = """<xdapy><types>
             <entity name="Experiment">

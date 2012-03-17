@@ -12,20 +12,20 @@ m = Mapper(connection)
 
 class Experiment(Entity):
     """Concrete class for experiments"""    
-    parameter_types = {
+    declared_params = {
         'experimenter': 'string',
         'project': 'string'
     }
 
 #class Experiment(Entity):
 #    """Concrete class for experiments"""
-#    parameter_types = {
+#    declared_params = {
 #        'experimenter': 'string',
 #        'project': 'string'
 #    }
 
 class Trial(Entity):
-    parameter_types = {
+    declared_params = {
         'date': 'datetime',
         'number_of_runs': 'integer'
     }
@@ -33,7 +33,7 @@ class Trial(Entity):
 
 class Observer(Entity):
     """Concrete class for observers"""
-    parameter_types = {
+    declared_params = {
         'name': 'string',
         'age': 'integer',
         'glasses': 'boolean'

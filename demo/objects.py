@@ -1,7 +1,7 @@
 from xdapy import Entity
 
 class Trial(Entity):
-    parameter_types = {
+    declared_params = {
         'count': 'integer',
         'note': 'string',
         'rotation': 'float',
@@ -9,13 +9,13 @@ class Trial(Entity):
     }
 
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
         'project': 'string',
         'experimenter': 'string'
     }
 
 class Observer(Entity):
-    parameter_types = {
+    declared_params = {
         'birthyear': 'integer',
         'initials': 'string',
         'handedness': 'string',
@@ -24,7 +24,7 @@ class Observer(Entity):
     }
 
 class Session(Entity):
-    parameter_types = {
+    declared_params = {
         'count': 'integer',
         'date': 'date',
         'category2': 'integer',
@@ -32,7 +32,7 @@ class Session(Entity):
     }
 
 class Stimulus(Entity):
-    parameter_types = {
+    declared_params = {
         'category1': 'integer',
         'category2': 'integer',
         'leaf1': 'integer',
@@ -41,7 +41,7 @@ class Stimulus(Entity):
     }
 
 class Response(Entity):
-    parameter_types = {
+    declared_params = {
         'category': 'integer',
         'rt': 'float',
         'button': 'string',

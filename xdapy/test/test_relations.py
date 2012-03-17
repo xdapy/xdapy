@@ -2,24 +2,24 @@
 from xdapy import Connection, Mapper, Entity
 
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
         "project": "string"
     }
 
 class Observer(Entity):
-    parameter_types = {
+    declared_params = {
         "name": "string",
         "birthday": "date"
     }
 
 class Session(Entity):
-    parameter_types = {
+    declared_params = {
         "date": "date"
         }
 
 
 class Trial(Entity):
-    parameter_types = {
+    declared_params = {
         "duration": "integer",
         "number": "integer",
         "valid": "boolean"

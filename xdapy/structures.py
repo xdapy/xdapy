@@ -229,8 +229,11 @@ class EntityMeta(DeclarativeMeta):
         if not "Entity" in [bscls.__name__ for bscls in bases]:
             return name
 
-        parameter_types = attrs["parameter_types"]
-        return calculate_polymorphic_name(name, parameter_types)
+        try:
+            declared_params = attrs["declared_params"]
+        except KeyError:
+            raise AttributeError("Entity class '%s' must have 'declared_params' attribute." % name)
+        return calculate_polymorphic_name(name, declared_params)
 
 
     def __new__(cls, name, bases, attrs):
@@ -247,7 +250,7 @@ class EntityMeta(DeclarativeMeta):
 
         def _saveParam(k, v):
             try:
-                parameter_type = cls.parameter_types[k]
+                parameter_type = cls.declared_params[k]
             except KeyError:
                 raise KeyError("%s has no key '%s'." % (cls.__original_class_name__, k))
 
@@ -277,7 +280,7 @@ class _StrParams(collections.MutableMapping):
 
     def __setitem__(self, key, val):
         # TODO: Make more consistent
-        parameter_name = self.owning.parameter_types[key]
+        parameter_name = self.owning.declared_params[key]
         parameter_class = parameter_for_type(parameter_name)
 
         # TODO: Maybe put the None check inside the from_string methods
@@ -385,19 +388,19 @@ def create_entity(name, parameters):
     is equivalent to::
 
         class MyEntity(Entity):
-            parameter_types = {"name": "string"}
+            declared_params = {"name": "string"}
 
     """
     # need to make sure, we get a str and not a unicode obj
     if isinstance(name, unicode):
         name = str(name)
-    return type(name, (Entity,), {'parameter_types': parameters})
+    return type(name, (Entity,), {'declared_params': parameters})
 
 def calculate_polymorphic_name(name, params):
     if "_" in name:
         raise EntityDefinitionError("Entity class must not contain an underscore")
 
-    # create hash from sorted parameter_types
+    # create hash from sorted declared_params
     the_hash = hash_dict(params)
 
     return name + "_" + the_hash

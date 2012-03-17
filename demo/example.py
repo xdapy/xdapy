@@ -96,7 +96,7 @@ o = {}
 from xdapy import Entity
 print Entity.__subclasses__()
 
-o["otherObj"] = type("otherObj", (Entity,), {'parameter_types': {'myParam': 'string'}})
+o["otherObj"] = type("otherObj", (Entity,), {'declared_params': {'myParam': 'string'}})
 
 print [s.__name__ for s in Entity.__subclasses__()]
 oo = o["otherObj"](myParam="Hey")

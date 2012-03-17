@@ -13,7 +13,7 @@ import unittest
 
 
 class Experiment(Entity):
-    parameter_types = {
+    declared_params = {
         'project': 'string',
         'experimenter': 'string',
         'int_value': 'integer'
