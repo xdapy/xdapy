@@ -460,13 +460,13 @@ class ParameterDeclaration(Base):
         A one-word-description of the experimental object
     parameter_name
         A one-word-description of the parameter
-    parameter_value
+    parameter_type
         The polymorphic type of the parameter (e.g. 'integer', 'string')
 
     Raises
     ------
     TypeError
-        Occurs if arguments aren't strings or type not in list.
+        Raised, if arguments aren't strings or type not in list.
     """
 
     def __init__(self, entity_name, parameter_name, parameter_type):
