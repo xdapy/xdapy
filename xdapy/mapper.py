@@ -447,7 +447,7 @@ class Mapper(object):
         of the database."""
         with self.auto_session as session:
             db_defaults = (session.query(ParameterDeclaration.parameter_name, ParameterDeclaration.parameter_type)
-                                  .filter(ParameterDeclaration.entity_name=="Observer")
+                                  .filter(ParameterDeclaration.entity_name==entity_name)
                                   .all())
             db_defaults = dict(db_defaults)
 
