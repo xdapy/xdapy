@@ -487,17 +487,11 @@ class ParameterDeclaration(Base):
     __tablename__ = 'parameter_declarations'
     __table_args__ = (UniqueConstraint(parameter_name, entity_name), {})
 
-    @validates('parameter_name')
-    def validate_parameter_name(self, key, p_name):
-        if not isinstance(p_name, basestring):
-            raise TypeError("Argument 'parameter_name' must be a string")
-        return p_name
-
-    @validates('entity_name')
-    def validate_entity_name(self, key, e_name):
-        if not isinstance(e_name, str):
-            raise TypeError("Argument 'entity_name' must be a string")
-        return e_name
+    @validates('parameter_name', 'entity_name')
+    def validate_parameter_name(self, key, name):
+        if not isinstance(name, basestring):
+            raise TypeError("Argument '%s' must be a string" % key)
+        return name
 
     @validates('parameter_type')
     def validate_parameter_type(self, key, p_type):
