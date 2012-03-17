@@ -426,7 +426,7 @@ class Mapper(object):
                 raise InsertionError('Child already has parent. Please set force=True.')
             child.parent = parent
 
-    def register_parameter(self, entity_name, parameter_name, parameter_type):
+    def _register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
 
         Attribute:
@@ -463,7 +463,7 @@ class Mapper(object):
             self.registered_objects.append(klass)
 
             for name, paramtype in klass.declared_params.iteritems():
-                self.register_parameter(klass.__name__, name, paramtype)
+                self._register_parameter(klass.__name__, name, paramtype)
 
     def is_registered(self, name, parameters):
         polymorphic_name = calculate_polymorphic_name(name, parameters)

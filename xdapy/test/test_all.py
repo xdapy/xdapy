@@ -55,16 +55,16 @@ class TestAll(unittest.TestCase):
 
         #register params
         self.mapper.register(Observer, Experiment, Session, Trial)
-        #register_parameter('Observer', 'name', 'string')
-        #self.p.register_parameter('Observer', 'age', 'integer')
-        #self.p.register_parameter('Observer', 'handedness', 'string')
-        #self.p.register_parameter('Experiment', 'project', 'string')
-        #self.p.register_parameter('Experiment', 'experimenter', 'string')
-        #self.p.register_parameter('Session', 'date', 'string')
-        #self.p.register_parameter('Trial', 'time', 'string')
-        #self.p.register_parameter('Trial', 'rt', 'integer')
-        #self.p.register_parameter('Trial', 'valid', 'integer')
-        #self.p.register_parameter('Trial', 'response', 'string')
+        #_register_parameter('Observer', 'name', 'string')
+        #self.p._register_parameter('Observer', 'age', 'integer')
+        #self.p._register_parameter('Observer', 'handedness', 'string')
+        #self.p._register_parameter('Experiment', 'project', 'string')
+        #self.p._register_parameter('Experiment', 'experimenter', 'string')
+        #self.p._register_parameter('Session', 'date', 'string')
+        #self.p._register_parameter('Trial', 'time', 'string')
+        #self.p._register_parameter('Trial', 'rt', 'integer')
+        #self.p._register_parameter('Trial', 'valid', 'integer')
+        #self.p._register_parameter('Trial', 'response', 'string')
 
         #create hierarchy
         self.e1 = Experiment(project='MyProject', experimenter="John Doe")

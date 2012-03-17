@@ -399,12 +399,12 @@ class TestConnections(Setup):
 #                          (24, 'project', 'string'))
 #
 #        for e, p, pt in valid_parameters:
-#            self.m.register_parameter(e, p, pt)
+#            self.m._register_parameter(e, p, pt)
 #
 #        for e, p, pt in invalid_parameters:
-#            self.assertRaises(TypeError, self.m.register_parameter, e, p, pt)
+#            self.assertRaises(TypeError, self.m._register_parameter, e, p, pt)
 #
-#        self.assertRaises(IntegrityError, self.m.register_parameter,
+#        self.assertRaises(IntegrityError, self.m._register_parameter,
 #                          'Experiment', 'reference', 'string')
 
 #===============================================================================
