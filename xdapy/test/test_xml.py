@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Connection, Mapper
+from xdapy import Connection, Mapper, Entity
 from xdapy.errors import AmbiguousObjectError, InvalidInputError
 from xdapy.io import XmlIO, UnregisteredTypesError
-from xdapy.structures import Entity
 from xdapy.utils.decorators import autoappend
 import unittest
 

@@ -1,5 +1,5 @@
 
-from xdapy import Connection, Mapper
+from xdapy import Connection, Mapper, Entity
 from xdapy.io import JsonIO
 
 connection = Connection.profile("demo") # use standard profile

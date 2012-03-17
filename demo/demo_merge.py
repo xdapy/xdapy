@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity
+from xdapy import Connection, Mapper, Entity
 
 connection = Connection.profile("demo") # use standard profile
 connection_2 = Connection.default() # use standard profile

@@ -4,8 +4,8 @@ Created on Jun 17, 2009
 """
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity, Context, create_entity
+from xdapy import Connection, Mapper, Entity
+from xdapy.structures import Context, create_entity
 from xdapy.operators import gt, lt
 
 import unittest

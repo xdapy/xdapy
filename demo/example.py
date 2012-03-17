@@ -93,7 +93,7 @@ m.save(e1)
 
 o = {}
 
-from xdapy.structures import Entity
+from xdapy import Entity
 print Entity.__subclasses__()
 
 o["otherObj"] = type("otherObj", (Entity,), {'parameter_types': {'myParam': 'string'}})

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity
+from xdapy import Connection, Mapper, Entity
 
 connection = Connection.profile("demo", echo=True) # use standard profile
 # drop the old database structure

@@ -1,6 +1,5 @@
 
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity
+from xdapy import Connection, Mapper, Entity
 
 class Experiment(Entity):
     parameter_types = {

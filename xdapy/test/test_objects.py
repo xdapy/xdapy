@@ -7,8 +7,7 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from sqlalchemy.orm.session import Session
 
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity
+from xdapy import Connection, Mapper, Entity
 from xdapy.errors import MissingSessionError
 import unittest
 

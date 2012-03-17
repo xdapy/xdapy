@@ -14,8 +14,8 @@ __authors__ = ['"hannah" <hannah.dold@mailbox.tu-berlin.de>']
 
 from pickle import dumps
 from random import randint
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity, BaseEntity, Data, Context
+from xdapy import Connection, Mapper, Entity
+from xdapy.structures import BaseEntity, Data, Context
 from xdapy.parameters import StringParameter
 import unittest
 

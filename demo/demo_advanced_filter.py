@@ -1,5 +1,4 @@
-from xdapy import Mapper, Connection
-from xdapy.structures import Entity
+from xdapy import Mapper, Connection, Entity
 
 connection = Connection.profile("demo")
 connection.create_tables()

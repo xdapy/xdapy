@@ -3,8 +3,8 @@
 # alphabetical order by last name, please
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
-from xdapy import Connection, Mapper
-from xdapy.structures import Entity, create_entity
+from xdapy import Connection, Mapper, Entity
+from xdapy.structures import create_entity
 from xdapy.errors import EntityDefinitionError
 import unittest
 

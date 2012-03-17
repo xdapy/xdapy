@@ -27,6 +27,7 @@ Base = declarative_base()
 
 from connection import Connection
 from mapper import Mapper
+from structures import Entity
 
 # use a NullHandler to avoid the ‘No handlers could be found for logger xdapy’ warning.
 import logging
@@ -40,5 +41,5 @@ except AttributeError:
 # add the NullHandler to all xdapy loggers
 logging.getLogger(__name__).addHandler(NullHandler())
 
-__all__ = [Base, Connection, Mapper]
+__all__ = [Base, Connection, Mapper, Entity]
 

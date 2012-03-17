@@ -1,4 +1,4 @@
-from xdapy.structures import Entity
+from xdapy import Entity
 
 class Trial(Entity):
     parameter_types = {

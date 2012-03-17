@@ -2,11 +2,10 @@
 
 from xml.etree import ElementTree as ET
 
-from xdapy.structures import Entity
 from xdapy.utils.decorators import autoappend
 from xdapy.io import XmlIO
 
-from xdapy import Connection, Mapper
+from xdapy import Connection, Mapper, Entity
 
 connection = Connection.profile("demo") # use standard profile
 #connection = Connection(dbname="xdapy")
