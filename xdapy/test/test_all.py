@@ -135,19 +135,19 @@ class TestAll(unittest.TestCase):
         self.connection.engine.dispose()
 
     def testReturn(self):
-        self.assertListEqual(self.mapper.find_first(Observer(name="Susanne Sorgenfrei")).children, [self.s8, self.s9, self.s10])
-        self.assertListEqual(self.mapper.find_first(Observer(name="Susi Sorgen")).children, [])
-        self.assertListEqual(self.mapper.find_first(Observer(name="Max Mustermann")).children, [self.s6, self.s7])
-        self.assertListEqual(self.mapper.find_first("Observer", {"name": "Max Mustermann"}).children, [self.s6, self.s7])
+        self.assertEqual(self.mapper.find_first(Observer(name="Susanne Sorgenfrei")).children, [self.s8, self.s9, self.s10])
+        self.assertEqual(self.mapper.find_first(Observer(name="Susi Sorgen")).children, [])
+        self.assertEqual(self.mapper.find_first(Observer(name="Max Mustermann")).children, [self.s6, self.s7])
+        self.assertEqual(self.mapper.find_first("Observer", {"name": "Max Mustermann"}).children, [self.s6, self.s7])
 
         self.assertEqual(self.mapper.find("Trial").count(), 14)
-        self.assertListEqual(self.mapper.find_first("Observer", {"name": "Max"}, {"strict": False}).children, [self.s6, self.s7])
-        self.assertListEqual(self.mapper.find_first(Observer(name="Max"), options={"strict": False}).children, [self.s6, self.s7])
+        self.assertEqual(self.mapper.find_first("Observer", {"name": "Max"}, {"strict": False}).children, [self.s6, self.s7])
+        self.assertEqual(self.mapper.find_first(Observer(name="Max"), options={"strict": False}).children, [self.s6, self.s7])
 
         self.assertEqual(self.mapper.find_first(Session(date='2009-09-24')), self.s10)
-        self.assertListEqual(self.mapper.find_all(Session, {"date": "2009"}, options={"strict": False, "convert_string": True}), [self.s6, self.s7, self.s8, self.s9, self.s10])
-#        self.assertListEqual(self.mapper.find_all(Session, {"date": "2009-09"}, options={"strict": False, "convert_string": True}), [self.s7, self.s8, self.s9, self.s10])
-        self.assertListEqual(self.mapper.find_all(Session, {"date": "2009-08"}, options={"strict": False, "convert_string": True}), [self.s6])
+        self.assertEqual(self.mapper.find_all(Session, {"date": "2009"}, options={"strict": False, "convert_string": True}), [self.s6, self.s7, self.s8, self.s9, self.s10])
+#        self.assertEqual(self.mapper.find_all(Session, {"date": "2009-09"}, options={"strict": False, "convert_string": True}), [self.s7, self.s8, self.s9, self.s10])
+        self.assertEqual(self.mapper.find_all(Session, {"date": "2009-08"}, options={"strict": False, "convert_string": True}), [self.s6])
 
 if __name__ == "__main__":
     unittest.main()

@@ -38,8 +38,7 @@ class TestJson(unittest.TestCase):
           }"""
 
         jio = JsonIO(self.mapper)
-        with self.assertRaises(InvalidInputError):
-            objs = jio.read_string(json)
+        self.assertRaises(InvalidInputError, jio.read_string, json)
 
     def test_simple_import(self):
         json = """
@@ -152,5 +151,5 @@ class TestJson(unittest.TestCase):
         objs = jio.read_json(json)
         self.assertEqual(len(objs), 5)
         roots = self.mapper.find_roots()
-        self.assertSetEqual(set([roots[0].params["s"], roots[1].params["s"]]), set(["parent1", "parent2"]))
+        self.assertEqual(set([roots[0].params["s"], roots[1].params["s"]]), set(["parent1", "parent2"]))
 
