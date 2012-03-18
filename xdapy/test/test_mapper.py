@@ -5,6 +5,7 @@ Created on Jun 17, 2009
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
+from xdapy.errors import InsertionError
 from xdapy.structures import Context, create_entity
 from xdapy.operators import gt, lt
 
@@ -274,9 +275,9 @@ class TestMapper(Setup):
         self.assertEqual("Some experimenter", e1.params["experimenter"])
         self.assertRaises(KeyError, lambda: e1.params["project"])
 
-class TestConnections(Setup):
+class TestContext(Setup):
     def setUp(self):
-        super(TestConnections, self).setUp()
+        super(TestContext, self).setUp()
 
         self.e1 = Experiment(project="e1")
         self.e2 = Experiment(project="e2")
@@ -292,7 +293,7 @@ class TestConnections(Setup):
 
         self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
 
-    def test_connections_have_set_ids(self):
+    def test_connections_automatically_set_ids(self):
         # need to check that connections have correct id and entity_id,
         # although the Experiment and Observer did not have an id
         # when the connection was established
@@ -348,6 +349,38 @@ class TestConnections(Setup):
         self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
         # check that connections have been added to session
         self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
+
+    def test_connections_are_unique_with_session(self):
+        e1 = Experiment()
+        o1 = Observer()
+        o2 = Observer()
+
+        self.m.save(e1)
+        self.m.save(o1)
+
+        # we may only connect to o1 once
+        e1.connect("CCC", o1)
+        self.assertRaises(InsertionError, e1.connect, "DDD", o1)
+
+        # o2 however, works
+        e1.connect("CCC", o2)
+
+        self.assertEquals(len(e1.connected), 2)
+
+    def test_connections_are_unique_without_session(self):
+        e1 = Experiment()
+        o1 = Observer()
+        o2 = Observer()
+
+        # we may only connect to o1 once
+        e1.connect("CCC", o1)
+        self.assertRaises(InsertionError, e1.connect, "DDD", o1)
+
+        # o2 however, works
+        e1.connect("CCC", o2)
+
+        self.assertEquals(len(e1.connected), 2)
+
 
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")

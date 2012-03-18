@@ -158,11 +158,8 @@ class BaseEntity(Base):
         connection_object: Entity
             The object to connect to.
         """
-        self_session = Session.object_session(self)
-        if self_session:
-            # check, if we are already connected with connection_object
-            if self_session.query(Context).filter(Context.back_referenced==self).filter(Context.connected==connection_object).count() > 0:
-                raise InsertionError("{0} already has a connection to {1}".format(self, connection_object))
+        if connection_object in self.connected:
+            raise InsertionError("{0} already has a connection to {1}".format(self, connection_object))
 
         # Create a new context object.
         # The back reference is automatically appended through setting the back reference
@@ -436,6 +433,7 @@ class Context(Base):
         return self.connected
 
     __tablename__ = 'contexts'
+    __table_args__ = (UniqueConstraint(entity_id, connected_id), {})
 
     def __repr__(self):
         return "Context(entity_id={id!s}, connected_id={cid!s}, connection_type={type})".format(id=self.entity_id, cid=self.connected_id, type=self.connection_type)
