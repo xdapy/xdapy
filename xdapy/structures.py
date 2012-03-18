@@ -262,6 +262,46 @@ class EntityMeta(DeclarativeMeta):
 
         super(EntityMeta, cls).__init__(name, bases, attrs)
 
+class _InheritedParams(collections.Mapping):
+    """ Immutable association dict for inherited parameters.
+    """
+    def __init__(self, owning):
+        self.owning = owning
+
+    def _find_parent_with_key(self, key):
+        to_traverse = [self.owning] + self.owning.all_parents()
+
+        for entity in to_traverse:
+            if key in entity.params:
+                return entity
+
+        # key not found in any parent entity
+        return None
+
+    def _lookup(self, key):
+        entity = self._find_parent_with_key(key)
+        if not entity:
+            raise KeyError("Key %r not found in %r or parent entities." % (key, self.owning))
+        return entity.params
+
+    def __getitem__(self, key):
+        return self._lookup(key)[key]
+
+    def __iter__(self):
+        to_traverse = [self.owning] + self.owning.all_parents()
+        keys = set()
+        for entity in to_traverse:
+            keys = keys.union(entity.params.keys())
+
+        return iter(keys)
+
+    def __len__(self):
+        return len(self.__iter__())
+
+    def __repr__(self):
+        return dict((k, v) for k, v in self.iteritems()).__repr__()
+
+
 class _StrParams(collections.MutableMapping):
     """Association dict for stringified parameters."""
     def __init__(self, owning, json_format=False):
@@ -332,6 +372,12 @@ class Entity(BaseEntity):
         if not hasattr(self, '_str_params'):
             self._str_params = _StrParams(self)
         return self._str_params
+
+    @property
+    def inherited_params(self):
+        if not hasattr(self, '_inherited_params'):
+            self._inherited_params = _InheritedParams(self)
+        return self._inherited_params
 
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items"""

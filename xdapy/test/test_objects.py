@@ -165,6 +165,46 @@ class TestObjectDict(unittest.TestCase):
         self.assertEqual(exp_1.data["M"].chunks(), 0)
         self.assertEqual(exp_2.data["M"].chunks(), 0)
 
+    def testInheritedParams(self):
+        class GrandParent(Entity):
+            declared_params = {
+                "A1": "string",
+                "A2": "string",
+                "A3": "integer",
+                "A4": "integer"
+            }
+
+        class Parent(Entity):
+            declared_params = {
+                "A1": "integer"
+            }
+
+        class Child(Entity):
+            declared_params = {
+                "A1": "string",
+                "A4": "integer"
+            }
+
+        gparent = GrandParent(A1="GP", A2="GP", A3=300)
+        parent = Parent(A1=100)
+        child = Child(A1="C", A4=500)
+
+        child.parent = parent
+        parent.parent = gparent
+
+        self.assertEqual(child.inherited_params, {"A1": "C", "A2": "GP", "A3": 300, "A4": 500})
+
+        # now the type must have changed to the inherited int
+        del child.params["A1"]
+        self.assertEqual(child.inherited_params, {"A1": 100, "A2": "GP", "A3": 300, "A4": 500})
+
+        # and again
+        del parent.params["A1"]
+        self.assertEqual(child.inherited_params, {"A1": "GP", "A2": "GP", "A3": 300, "A4": 500})
+
+        def reassign():
+            child.inherited_params["A1"] = "C0"
+        self.assertRaises(TypeError, reassign)
 
 
     def testAssignDataTooEarly(self):
