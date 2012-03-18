@@ -96,7 +96,9 @@ class Connection(object):
         self._engine = None
 
 
+    #: Path of the configuration file.
     DEFAULT_CONFIG_PATH = "~/.xdapy/engine.ini"
+    #: Identifier for the test profile.
     TEST_PROFILE = "test"
 
     @classmethod
