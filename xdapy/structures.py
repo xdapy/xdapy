@@ -217,7 +217,7 @@ class BaseEntity(Base):
         """
         session = Session.object_session(self)
         if session is None:
-            raise MissingSessionError("BaseEntity has no associated session.")
+            raise MissingSessionError("Entity '%r' has no associated session." % self)
         return session
 
 class EntityMeta(DeclarativeMeta):
