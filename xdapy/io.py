@@ -70,7 +70,7 @@ def gen_rnd_key():
 
 class IO(object):
     def __init__(self, mapper, known_objects=None, add_new_types=False):
-        """ If known_objects is None (or left empty), it defaults to mapper.registered_objects.
+        """ If known_objects is None (or left empty), it defaults to mapper.registered_entities.
         This is most likely the right thing and supplying other objects might lead to inconsistencies.
 
         An empty dict means there are no known_objects.
@@ -93,7 +93,7 @@ class IO(object):
     @property
     def known_objects(self):
         if self._known_objects is None:
-            return dict((obj.__name__, obj) for obj in self.mapper.registered_objects)
+            return dict((obj.__name__, obj) for obj in self.mapper.registered_entities)
         return self._known_objects
 
 import json
@@ -134,7 +134,7 @@ class JsonIO(IO):
         return json.dump(json_data, fileobj, indent=2)
 
     def write_json(self, objs):
-        types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_objects]
+        types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_entities]
 
         relations = []
         visited_objs = set()

@@ -39,13 +39,13 @@ class Mapper(object):
     connection
         The database connection
 
-    registered_objects
+    registered_entities
         The objects this mapper cares about
     """
 
     def __init__(self, connection):
         self.connection = connection
-        self.registered_objects = []
+        self.registered_entities = []
 
     @property
     def auto_session(self):
@@ -432,14 +432,14 @@ class Mapper(object):
                 raise ValueError("Class must be subclass of Entity.")
             if klass is Entity:
                 raise ValueError("Entity is no valid class.")
-            self.registered_objects.append(klass)
+            self.registered_entities.append(klass)
 
             for name, paramtype in klass.declared_params.iteritems():
                 self._register_parameter(klass.__name__, name, paramtype)
 
     def is_registered(self, name, parameters):
         polymorphic_name = calculate_polymorphic_name(name, parameters)
-        return polymorphic_name in self.registered_objects
+        return polymorphic_name in self.registered_entities
 
     def register_type(self, name, parameters):
         new_type = create_entity(name, parameters)
@@ -456,10 +456,10 @@ class Mapper(object):
             The name of the entity object to find.
         """
         # maybe name was a class already, then we're done
-        if name in self.registered_objects:
+        if name in self.registered_entities:
             return name
 
-        klasses = dict((sub.__name__, sub) for sub in self.registered_objects)
+        klasses = dict((sub.__name__, sub) for sub in self.registered_entities)
         if name in klasses:
             return klasses[name]
         klasses_guessed = [cls for cls in klasses if cls.startswith(name + "_") or cls == name]

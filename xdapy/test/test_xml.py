@@ -135,7 +135,7 @@ class TestXml(unittest.TestCase):
                 <parameter name="project" type="string"/>
             </entity>
         </types></xdapy>"""
-        objects = self.mapper.registered_objects
+        objects = self.mapper.registered_entities
         objects.append(Experiment)
         xmlio = XmlIO(self.mapper, objects)
         self.assertRaises(AmbiguousObjectError, xmlio.read, test_xml)
