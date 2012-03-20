@@ -257,7 +257,7 @@ class Mapper(object):
     def find_roots(self, entity=None):
         if not entity:
             entity = BaseEntity
-        return self.find(entity).filter(BaseEntity.parent is None).all()
+        return self.find(entity).filter(BaseEntity.parent==None).all()
 
     def find_related(self, entity, related):
         the_set = set()
