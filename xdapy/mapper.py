@@ -470,6 +470,8 @@ class Mapper(object):
 
         raise ValueError("""No entity with name "{0}" registered.""".format(name))
 
+    def __repr__(self):
+        return "Mapper(%r)" % self.connection
 
 if __name__ == "__main__":
     pass

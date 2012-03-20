@@ -269,3 +269,7 @@ class Connection(object):
         Drops all xdapy tables.
         """
         Base.metadata.drop_all(bind=self.engine)
+
+    def __repr__(self):
+        return "Connection(uri=%r)" % self.uri
+
