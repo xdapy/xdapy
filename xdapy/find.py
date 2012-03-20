@@ -165,3 +165,6 @@ class _parent(SearchProxy):
     def is_valid(self, item):
         return self.inner.is_valid(item.parent)
 
+class _child(SearchProxy):
+    def is_valid(self, item):
+        return any(self.inner.is_valid(child) for child in item.children)

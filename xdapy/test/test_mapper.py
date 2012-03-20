@@ -7,7 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
 from xdapy.errors import InsertionError
 from xdapy.structures import Context, create_entity
-from xdapy.operators import gt, lt
+from xdapy.operators import gt, lt, eq
 
 import unittest
 """
@@ -520,6 +520,7 @@ class TestComplicatedQuery(Setup):
 
         e1 = Experiment(project="E1", experimenter="X1")
         e2 = Experiment(project="E2", experimenter="X1")
+        self.e2 = e2
         e3 = Experiment(project="E3")
 
         t1 = Trial(rt=1)
@@ -529,6 +530,7 @@ class TestComplicatedQuery(Setup):
         t4 = Trial(rt=4)
 
         s1_1 = Session(count=1, category1=0)
+        self.s1_1 = s1_1
         s1_2 = Session(count=2, category1=1)
         s2_1 = Session(count=3, category1=0)
         s2_2 = Session(count=4, category1=1)
@@ -557,6 +559,14 @@ class TestComplicatedQuery(Setup):
         self.assertEqual(len(sessions), 2)
         counts = set([s.params["count"] for s in sessions])
         self.assertEqual(set([5, 6]), counts)
+
+        # find the experiment with the child trial(rt=3)
+        experiment = self.m.super_find("Experiment", {"_child": ("Trial", {"rt": eq(3)})})[0]
+        self.assertEqual(experiment, self.e2)
+        
+        # find the trial with child session(count=1)
+        trial = self.m.super_find("Trial", {"_child": ("Session", {"count": eq(1)})})[0]
+        self.assertEqual(trial, self.t1)
 
     def test_complicated(self):
 
