@@ -398,34 +398,6 @@ class Mapper(object):
         proxy = SearchProxy((entity, the_filter))
         return proxy.find(self)
 
-    def connect_objects(self, parent, child, force=False):
-        """ Connect two related objects
-
-        Parameters
-        ----------
-        parent : The parent object derived from datamanager.objects.ObjectDict or
-            the integer id describing this object.
-
-        child : The child object derived from datamanager.objects.ObjectDict or
-            the integer id describing this object.
-
-        Raises
-        ------
-        RequestObjectError : If the objects to be connected are not properly
-            saved in the database
-
-        TODO: Maybe consider to save objects automatically
-        TODO: Revise session closing
-        TODO: Why this method and not parent.children.append(child)?
-        """
-        with self.auto_session:
-            if child in parent.all_parents() + [parent]:
-                raise InsertionError('Can not insert child because of circularity.')
-
-            if child.parent and not force:
-                raise InsertionError('Child already has parent. Please set force=True.')
-            child.parent = parent
-
     def _register_parameter(self, entity_name, parameter_name, parameter_type):
         """Register a new parameter description for a specific experimental object
 

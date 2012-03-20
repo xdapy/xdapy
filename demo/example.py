@@ -59,21 +59,11 @@ pdb.set_trace()
 with m.auto_session as session:
     session.add_all([e1, e2, o1, o2, o3, s1, s2])
 
-#    m.connect_objects(e1, o1)
-#    m.connect_objects(o1, o2)
-
-o1.parent = e1
-
 #    print m.get_children(e1)
 #    print m.get_children(o1, 1)   
 
 # print m.get_data_matrix([], {'Observer':['age','name']})
 
-#only e1 and e2 are root
-#    m.connect_objects(e1, o1)
-#    m.connect_objects(e1, o2, True)
-#    m.connect_objects(e2, o3)
-#    m.connect_objects(e1, o3)
 print "---"
 experiments = m.find_all(Experiment)
 

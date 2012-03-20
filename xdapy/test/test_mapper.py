@@ -397,12 +397,6 @@ class TestContext(Setup):
 #        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
 #        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
 #
-#        #only e1 and e2 are root
-#        self.m.connect_objects(e1, o1)
-#        self.m.connect_objects(e1, o2)
-#        self.m.connect_objects(e2, o3)
-#        self.m.connect_objects(e2, o2)
-#
 #        #make sure the correct data is retrieved
 #        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
 #                                                [[26L], [38L]]))
