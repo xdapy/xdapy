@@ -91,7 +91,7 @@ class BaseEntity(Base):
         """ Can be used as an alternative for self.parent = parent."""
         self.parent = parent
 
-    def all_parents(self):
+    def ancestors(self):
         """ Returns a list of all parent and grand-parent entities.
         """
         node = self
@@ -103,13 +103,13 @@ class BaseEntity(Base):
             parents.append(node)
         return parents
 
-    def all_children(self):
+    def siblings(self):
         """ Returns a list of all children and siblings.
         """
         children = set()
         children.update(self.children)
         for child in self.children:
-            children.update(child.all_children())
+            children.update(child.siblings())
         return children
 
     __tablename__ = 'entities' #: The db table name.
@@ -269,7 +269,7 @@ class _InheritedParams(collections.Mapping):
         self.owning = owning
 
     def _find_parent_with_key(self, key):
-        to_traverse = [self.owning] + self.owning.all_parents()
+        to_traverse = [self.owning] + self.owning.ancestors()
 
         for entity in to_traverse:
             if key in entity.params:
@@ -288,7 +288,7 @@ class _InheritedParams(collections.Mapping):
         return self._lookup(key)[key]
 
     def __iter__(self):
-        to_traverse = [self.owning] + self.owning.all_parents()
+        to_traverse = [self.owning] + self.owning.ancestors()
         keys = set()
         for entity in to_traverse:
             keys = keys.union(entity.params.keys())
@@ -399,13 +399,13 @@ class Entity(BaseEntity):
     def info(self):
         """Prints information about the entity."""
         print str(self)
-        parents = self.all_parents()
+        parents = self.ancestors()
         print parents
-        print "has", len(self.children), "children and", len(self.all_children()), "siblings"
+        print "has", len(self.children), "children and", len(self.siblings()), "siblings"
 
     def print_tree(self):
         """Prints a graphical representation of the entity and its parents and grand-parents."""
-        parents = self.all_parents()
+        parents = self.ancestors()
         for p in parents:
             print "+-", p
             for c in p.connections:

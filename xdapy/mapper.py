@@ -300,9 +300,9 @@ class Mapper(object):
             related = set(entities)
             for entity in entities:
                 if "PARENT" in include:
-                    related.update(entity.all_parents())
+                    related.update(entity.ancestors())
                 if "CHILDREN" in include:
-                    related.update(entity.all_children())
+                    related.update(entity.siblings())
                 if "CONTEXT" in include:
                     related.update(entity.connected)
                 if "CONTEXT_REVERSED" in include:
