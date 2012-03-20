@@ -45,14 +45,12 @@ class SearchProxy(object):
 
                 stack = stack + [key]
 
-                if key == "_any":
-                    return _any(value, stack, self)
-                if key == "_all":
-                    return _all(value, stack, self)
-                if key == "_parent":
-                    return _parent(value, stack, self)
-                if key == "_with":
-                    return _with(value, stack, self)
+                subclasses = [_any, _all, _parent, _child, _with]
+                try:
+                    subclass = next((s for s in subclasses if key == s.__name__))
+                    return subclass(value, stack, self)
+                except StopIteration:
+                    pass
 
                 # collect the params
                 # it is a parameter, if value is not a dict
