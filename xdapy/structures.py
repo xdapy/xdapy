@@ -420,7 +420,7 @@ class Entity(BaseEntity):
             print " ", "+-", "belongs to", c.back_referenced
 
 
-def create_entity(name, parameters):
+def create_entity(name, declared_params):
     """Creates a dynamic subclass of `Entity` which makes it possible
     to create new `Entity` instances ‘on the fly’.
 
@@ -437,14 +437,14 @@ def create_entity(name, parameters):
     # need to make sure, we get a str and not a unicode obj
     if isinstance(name, unicode):
         name = str(name)
-    return type(name, (Entity,), {'declared_params': parameters})
+    return type(name, (Entity,), {'declared_params': declared_params})
 
-def calculate_polymorphic_name(name, params):
+def calculate_polymorphic_name(name, declared_params):
     if "_" in name:
         raise EntityDefinitionError("Entity class must not contain an underscore")
 
     # create hash from sorted declared_params
-    the_hash = hash_dict(params)
+    the_hash = hash_dict(declared_params)
 
     return name + "_" + the_hash
 

@@ -437,12 +437,12 @@ class Mapper(object):
             for name, paramtype in klass.declared_params.iteritems():
                 self._register_parameter(klass.__name__, name, paramtype)
 
-    def is_registered(self, name, parameters):
-        polymorphic_name = calculate_polymorphic_name(name, parameters)
+    def is_registered(self, name, declared_params):
+        polymorphic_name = calculate_polymorphic_name(name, declared_params)
         return polymorphic_name in self.registered_entities
 
-    def register_type(self, name, parameters):
-        new_type = create_entity(name, parameters)
+    def register_type(self, name, declared_params):
+        new_type = create_entity(name, declared_params=declared_params)
         self.register(new_type)
         return new_type
 
