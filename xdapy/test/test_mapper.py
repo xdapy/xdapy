@@ -381,6 +381,14 @@ class TestContext(Setup):
 
         self.assertEquals(len(e1.connected), 2)
 
+    def test_special_context_method(self):
+        t1 = Trial()
+        self.m.save(t1)
+
+        self.e1.connect("Trial", t1)
+
+        self.assertEqual(self.e1.context, {"Observer": [self.o1, self.o2], "Trial": [t1]})
+
 
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")

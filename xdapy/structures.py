@@ -178,6 +178,17 @@ class BaseEntity(Base):
         """
         return [c.back_referenced for c in self.back_references]
 
+    @property
+    def context(self):
+        """ Returns a dictionary of connection types and connected objects.
+        Read-only for now. May become r/w in the future.
+        """
+        grouped = itertools.groupby(self.connections, lambda context_obj: context_obj.connection_type)
+        ctx = {}
+        for connection_type, connections in grouped:
+            ctx[connection_type] = [connection.connected for connection in connections]
+        return ctx
+
     @validates('_type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
