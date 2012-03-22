@@ -90,6 +90,9 @@ pygments_style = 'sphinx'
 
 autodoc_member_order = 'bysource'
 
+from sphinx.ext.autodoc import  ModuleDocumenter, bool_option
+ModuleDocumenter.option_spec['private-members']=bool_option
+ModuleDocumenter.option_spec['special-members']=bool_option
 # -- Options for HTML output ---------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
