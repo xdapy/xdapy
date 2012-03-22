@@ -152,8 +152,8 @@ class _entity(SearchProxy):
         self.key = key
 
     def is_valid(self, item):
-        # FIXME: Does not work when item is not a string
-        return item.type == self.key and self.inner.is_valid(item)
+        # FIXME: Is this the correct solution?
+        return (item == self.key or item.type == self.key) and self.inner.is_valid(item)
 
     def find(self, mapper):
         # TODO: This retrieves everything. Should do some filtering before, if possible.

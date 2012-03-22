@@ -578,8 +578,13 @@ class TestComplicatedQuery(Setup):
         trial = self.m.super_find("Trial", {"_child": ("Session", {"count": eq(1)})})[0]
         self.assertEqual(trial, self.t1)
 
-        # find the experiments with observer o1
+        # find the experiments with observer Observer(name="A")
         experiments = self.m.super_find("Experiment", {("_context", "Observed by"): ("Observer", {"name": "A"})})
+        self.assertEqual(set(experiments), set([self.e1, self.e2]))
+
+    def test_find_by_object(self):
+        # find the experiments with observer o1
+        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): self.o1})
         self.assertEqual(set(experiments), set([self.e1, self.e2]))
 
     def test_complicated(self):
