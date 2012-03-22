@@ -13,7 +13,7 @@ import unittest
 """
 TODO: Real test for create_tables
 As of Juli 7, 2010: 4Errors
-I ntegrityError: (IntegrityError) duplicate key value violates unique constraint "stringparameters_pkey"
+IntegrityError: (IntegrityError) duplicate key value violates unique constraint "stringparameters_pkey"
  'INSERT INTO stringparameters (id, name, value) VALUES (%(id)s, %(name)s, %(value)s)' {'id': 4L, 'value': 'John Doe', 'name': 'experimenter'}
 
 """
@@ -517,10 +517,12 @@ class TestComplicatedQuery(Setup):
     def setUp(self):
         super(TestComplicatedQuery, self).setUp()
 
-        o1 = Observer(name="A")
-        o2 = Observer(name="B")
+        self.o1 = Observer(name="A")
+        self.o2 = Observer(name="B")
+        self.o3 = Observer(name="C")
 
         e1 = Experiment(project="E1", experimenter="X1")
+        self.e1 = e1
         e2 = Experiment(project="E2", experimenter="X1")
         self.e2 = e2
         e3 = Experiment(project="E3")
@@ -539,7 +541,13 @@ class TestComplicatedQuery(Setup):
         s3_1 = Session(count=5, category1=0)
         s4_1 = Session(count=6, category1=1)
 
-        self.m.save(o1, o2, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
+        e1.connect("Observed by", self.o1)
+        e1.connect("Observed by", self.o2)
+        e2.connect("Observed by", self.o1)
+        e2.connect("Observed by", self.o3)
+        e3.connect("Observed by", self.o3)
+
+        self.m.save(self.o1, self.o2, self.o3, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 
         t1.parent = e1
         t2.parent = e1
@@ -569,6 +577,10 @@ class TestComplicatedQuery(Setup):
         # find the trial with child session(count=1)
         trial = self.m.super_find("Trial", {"_child": ("Session", {"count": eq(1)})})[0]
         self.assertEqual(trial, self.t1)
+
+        # find the experiments with observer o1
+        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): ("Observer", {"name": "A"})})
+        self.assertEqual(set(experiments), set([self.e1, self.e2]))
 
     def test_complicated(self):
 

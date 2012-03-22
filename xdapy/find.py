@@ -45,12 +45,18 @@ class SearchProxy(object):
 
                 stack = stack + [key]
 
-                subclasses = [_any, _all, _parent, _child, _with]
-                try:
-                    subclass = next((s for s in subclasses if key == s.__name__))
-                    return subclass(value, stack, self)
-                except StopIteration:
-                    pass
+                if key == "_any":
+                    return _any(value, stack, self)
+                if key == "_all":
+                    return _all(value, stack, self)
+                if key == "_parent":
+                    return _parent(value, stack, self)
+                if key == "_child":
+                    return _child(value, stack, self)
+                if key == "_with":
+                    return _with(value, stack, self)
+                if isinstance(key, tuple) and len(key) == 2 and key[0] == "_context":
+                    return _context(value, stack, self)
 
                 # collect the params
                 # it is a parameter, if value is not a dict
@@ -166,3 +172,9 @@ class _parent(SearchProxy):
 class _child(SearchProxy):
     def is_valid(self, item):
         return any(self.inner.is_valid(child) for child in item.children)
+
+class _context(SearchProxy):
+    def is_valid(self, item):
+        key = self.stack[-1]
+        connection_type = key[1]
+        return any(self.inner.is_valid(connected) for connected in item.context[connection_type])
