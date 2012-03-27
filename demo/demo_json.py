@@ -15,8 +15,8 @@ jio.ignore_unknown_attributes = True
 with open("demo/detection.json") as f:
     objs = jio.read_file(f)
 
-for cls in m.registered_objects:
-    print """class {name}(EntityObject):\n    parameter_types = {types!r}\n""".format(name=cls.__original_class_name__, types=cls.parameter_types)
+for cls in m.registered_entities:
+    print """class {name}(EntityObject):\n    parameter_types = {types!r}\n""".format(name=cls.__original_class_name__, types=cls.declared_params)
 
 print len(objs), "objects"
 
