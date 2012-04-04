@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 # Script to automatically generate documentation and commit this to the gh-pages
 # branch.
@@ -7,6 +7,11 @@ DOCBRANCH=gh-pages
 UPSTREAM=$(git config branch.$DOCBRANCH.remote)
 DOCDIRECTORY=build/html/
 
+
+if [ "$1" != "--commit" ] ; then
+  echo "Assuming no-commit mode. Use '${0} --commit' to commit."
+  DRY_RUN=1
+fi
 
 # check, if index is empty
 if ! git diff-index --cached --quiet --ignore-submodules HEAD ; then
@@ -40,6 +45,10 @@ make clean
 if ! make html; then
     echo "Fatal: 'make'ing the docs failed cannot commit!"
     exit 5
+fi
+
+if [ -n $DRY_RUN ] ; then
+  exit 0
 fi
 
 # Add a .nojekyll file
