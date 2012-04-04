@@ -11,7 +11,10 @@ DOCDIRECTORY=build/html/
 if [ "$1" != "--commit" ] ; then
   echo "Assuming no-commit mode. Use '${0} --commit' to commit."
   DRY_RUN=1
+else
+  DRY_RUN=0
 fi
+
 
 # check, if index is empty
 if ! git diff-index --cached --quiet --ignore-submodules HEAD ; then
@@ -47,7 +50,7 @@ if ! make html; then
     exit 5
 fi
 
-if [ -n $DRY_RUN ] ; then
+if [ $DRY_RUN -eq 1 ] ; then
   exit 0
 fi
 
