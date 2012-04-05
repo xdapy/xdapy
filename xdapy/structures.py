@@ -276,12 +276,27 @@ class EntityMeta(DeclarativeMeta):
 class _InheritedParams(collections.Mapping):
     """ Immutable association dict for inherited parameters.
     """
-    def __init__(self, owning):
+    def __init__(self, owning, unique_keys_only=True):
         self.owning = owning
+        self.unique_keys_only = unique_keys_only
+
+    def _unique_declared_keys(self):
+        """ Ancestor merge of all keys in declared_params which are unique.
+        """
+        to_traverse = [self.owning] + self.owning.ancestors()
+
+        key_count = {}
+        for entity in to_traverse:
+            for key in entity.declared_params:
+                val = key_count.get(key, 0)
+                key_count[key] = val + 1
+        keys = [key for key, count in key_count.iteritems() if count == 1]
+        return set(keys)
 
     def _find_parent_with_key(self, key):
         to_traverse = [self.owning] + self.owning.ancestors()
 
+        # We return the first parent entity with a fitting key
         for entity in to_traverse:
             if key in entity.params:
                 return entity
@@ -293,6 +308,8 @@ class _InheritedParams(collections.Mapping):
         entity = self._find_parent_with_key(key)
         if not entity:
             raise KeyError("Key %r not found in %r or parent entities." % (key, self.owning))
+        if self.unique_keys_only and key not in self._unique_declared_keys():
+            raise KeyError("Key %r is not uniquely identified in %r's ancestor's declared_params dict." % (key, self.owning))
         return entity.params
 
     def __getitem__(self, key):
@@ -300,9 +317,14 @@ class _InheritedParams(collections.Mapping):
 
     def __iter__(self):
         to_traverse = [self.owning] + self.owning.ancestors()
+
         keys = set()
         for entity in to_traverse:
             keys = keys.union(entity.params.keys())
+
+        if self.unique_keys_only:
+            # only keep those which are also unique in declared_params
+            keys = keys & self._unique_declared_keys()
 
         return iter(keys)
 
@@ -386,9 +408,23 @@ class Entity(BaseEntity):
 
     @property
     def inherited_params(self):
+        """ Return a dict-like object with all parent and ancestor params.
+
+        Child params have precedence over parent params.
+        """
         if not hasattr(self, '_inherited_params'):
-            self._inherited_params = _InheritedParams(self)
+            self._inherited_params = _InheritedParams(self, unique_keys_only=False)
         return self._inherited_params
+
+    @property
+    def unique_params(self):
+        """ Return a dict-like object with all unique parent and ancestor params.
+
+        A key name which is defined more than once is ignored.
+        """
+        if not hasattr(self, '_unique_params'):
+            self._unique_params = _InheritedParams(self, unique_keys_only=True)
+        return self._unique_params
 
     def _set_items_from_arguments(self, d):
         """Insert function arguments as items"""

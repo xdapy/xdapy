@@ -182,29 +182,45 @@ class TestObjectDict(unittest.TestCase):
         class Child(Entity):
             declared_params = {
                 "A1": "string",
-                "A4": "integer"
+                "A4": "integer",
+                "A5": "float",
+                "A6": "float"
             }
 
         gparent = GrandParent(A1="GP", A2="GP", A3=300)
         parent = Parent(A1=100)
-        child = Child(A1="C", A4=500)
+        child = Child(A1="C", A4=500, A5=0.5)
 
         child.parent = parent
         parent.parent = gparent
 
-        self.assertEqual(child.inherited_params, {"A1": "C", "A2": "GP", "A3": 300, "A4": 500})
+        self.assertEqual(child.inherited_params, {"A1": "C", "A2": "GP", "A3": 300, "A4": 500, "A5": 0.5})
+        self.assertEqual(child.unique_params, {"A2": "GP", "A3": 300, "A5": 0.5})
 
         # now the type must have changed to the inherited int
         del child.params["A1"]
-        self.assertEqual(child.inherited_params, {"A1": 100, "A2": "GP", "A3": 300, "A4": 500})
+        self.assertEqual(child.inherited_params, {"A1": 100, "A2": "GP", "A3": 300, "A4": 500, "A5": 0.5})
+        self.assertEqual(child.unique_params, {"A2": "GP", "A3": 300, "A5": 0.5})
 
         # and again
         del parent.params["A1"]
-        self.assertEqual(child.inherited_params, {"A1": "GP", "A2": "GP", "A3": 300, "A4": 500})
+        self.assertEqual(child.inherited_params, {"A1": "GP", "A2": "GP", "A3": 300, "A4": 500, "A5": 0.5})
+        self.assertEqual(child.unique_params, {"A2": "GP", "A3": 300, "A5": 0.5})
 
-        def reassign():
+        del child.params["A5"]
+        self.assertEqual(child.inherited_params, {"A1": "GP", "A2": "GP", "A3": 300, "A4": 500})
+        self.assertEqual(child.unique_params, {"A2": "GP", "A3": 300})
+
+        def reassign_inherited():
             child.inherited_params["A1"] = "C0"
-        self.assertRaises(TypeError, reassign)
+        self.assertRaises(TypeError, reassign_inherited)
+        def reassign_unique():
+            child.unique_params["A2"] = "C0"
+        self.assertRaises(TypeError, reassign_unique)
+
+        def access_non_unique():
+            child.unique_params["A1"]
+        self.assertRaises(KeyError, access_non_unique)
 
 
     def testAssignDataTooEarly(self):
