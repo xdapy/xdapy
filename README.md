@@ -1,4 +1,18 @@
+xdapy
+=====
+
+*A Python database wrapper.*
+
+Prerequisites
+-------------
+
+* Python 2.6 / 2.7
+* SQLAlchemy
+* psycopg2 (Python–PostgreSQL Database Adapter)
+* A postgresql database
+
 Information concerning the Compass CSS interface.
+-------------------------------------------------
 
 The CSS files are generated using the Compass framework [1].  This framework
 takes files in the SCSS format and creates plain CSS files which can be read by
@@ -10,7 +24,7 @@ In order to use the Compass framework, one has to use ruby bundle [2].
 
 Updating the CSS is done using
 
-> compass compile
+    > compass compile
 
 Note that we aim to put both SCSS and CSS files under source control. This may
 be a hurdle for the CSS developer as it may result in unneeded conflicts every
