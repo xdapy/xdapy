@@ -1,7 +1,9 @@
-xdapy
-=====
+★ xdapy ★
+===========
 
 *A Python database wrapper.*
+
+☞ [Documentation on github] (http://debilski.github.com/xdapy/)
 
 Prerequisites
 -------------
