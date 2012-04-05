@@ -8,6 +8,8 @@ xdapy
 Python framework for object storage
 -----------------------------------
 
+Fork on github: https://github.com/Debilski/xdapy
+
 Contents:
 
 .. toctree::
