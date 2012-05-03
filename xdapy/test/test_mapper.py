@@ -5,8 +5,8 @@ Created on Jun 17, 2009
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
-from xdapy.errors import InsertionError
 from xdapy.structures import Context, create_entity
+from xdapy.errors import InsertionError
 from xdapy.operators import gt, lt, eq
 
 import unittest
@@ -286,10 +286,10 @@ class TestContext(Setup):
         self.o2 = Observer(name="o2")
         self.o3 = Observer(name="o3")
 
-        self.e1.connect("Observer", self.o1)
-        self.e1.connect("Observer", self.o2)
-        self.e2.connect("Observer", self.o2)
-        self.e2.connect("Observer", self.o3)
+        self.e1.connect_object("Observer", self.o1)
+        self.e1.connect_object("Observer", self.o2)
+        self.e2.connect_object("Observer", self.o2)
+        self.e2.connect_object("Observer", self.o3)
 
         self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
 
@@ -342,15 +342,15 @@ class TestContext(Setup):
         ooo2 = Observer()
         self.m.save(eee1, eee2, ooo1, ooo2)
 
-        eee1.connect("CCC", ooo1)
-        eee1.connect("CCC", ooo2)
-        eee2.connect("CCC", ooo1)
+        eee1.connect_object("CCC", ooo1)
+        eee1.connect_object("CCC", ooo2)
+        eee2.connect_object("CCC", ooo1)
 
         self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
         # check that connections have been added to session
         self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
 
-    def test_connections_are_unique_with_session(self):
+    def test_connections_must_be_unique(self):
         e1 = Experiment()
         o1 = Observer()
         o2 = Observer()
@@ -358,34 +358,38 @@ class TestContext(Setup):
         self.m.save(e1)
         self.m.save(o1)
 
-        # we may only connect to o1 once
-        e1.connect("CCC", o1)
-        self.assertRaises(InsertionError, e1.connect, "DDD", o1)
+        e1.connect_object("CCC", o1)
+        self.assertRaises(InsertionError, e1.connect_object, "CCC", o1)
 
-        # o2 however, works
-        e1.connect("CCC", o2)
+        e1.connect_object("DDD", o1)
+        e1.connect_object("CCC", o2)
 
-        self.assertEquals(len(e1.connected), 2)
+        self.assertIn(o1, e1.connected)
+        self.assertIn(o2, e1.connected)
 
-    def test_connections_are_unique_without_session(self):
+        self.assertEquals(len(e1.connected), 3)
+
+    def test_connections_must_be_unique_without_session(self):
         e1 = Experiment()
         o1 = Observer()
         o2 = Observer()
 
-        # we may only connect to o1 once
-        e1.connect("CCC", o1)
-        self.assertRaises(InsertionError, e1.connect, "DDD", o1)
+        e1.connect_object("CCC", o1)
+        self.assertRaises(InsertionError, e1.connect_object, "CCC", o1)
 
-        # o2 however, works
-        e1.connect("CCC", o2)
+        e1.connect_object("DDD", o1)
+        e1.connect_object("CCC", o2)
 
-        self.assertEquals(len(e1.connected), 2)
+        self.assertIn(o1, e1.connected)
+        self.assertIn(o2, e1.connected)
+
+        self.assertEquals(len(e1.connected), 3)
 
     def test_special_context_method(self):
         t1 = Trial()
         self.m.save(t1)
 
-        self.e1.connect("Trial", t1)
+        self.e1.connect_object("Trial", t1)
 
         self.assertEqual(self.e1.context, {"Observer": [self.o1, self.o2], "Trial": [t1]})
 
@@ -541,11 +545,11 @@ class TestComplicatedQuery(Setup):
         s3_1 = Session(count=5, category1=0)
         s4_1 = Session(count=6, category1=1)
 
-        e1.connect("Observed by", self.o1)
-        e1.connect("Observed by", self.o2)
-        e2.connect("Observed by", self.o1)
-        e2.connect("Observed by", self.o3)
-        e3.connect("Observed by", self.o3)
+        e1.connect_object("Observed by", self.o1)
+        e1.connect_object("Observed by", self.o2)
+        e2.connect_object("Observed by", self.o1)
+        e2.connect_object("Observed by", self.o3)
+        e3.connect_object("Observed by", self.o3)
 
         self.m.save(self.o1, self.o2, self.o3, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 

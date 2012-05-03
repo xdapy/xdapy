@@ -41,10 +41,10 @@ s2_2.parent = t2
 s3_1.parent = t3
 s4_1.parent = t4
 
-t1.connect("Observer", o1)
-t2.connect("Observer", o1)
-t3.connect("Observer", o2)
-t4.connect("Observer", o2)
+t1.connect_object("Observer", o1)
+t2.connect_object("Observer", o1)
+t3.connect_object("Observer", o2)
+t4.connect_object("Observer", o2)
 
 m.save(o1, o2, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 

@@ -148,7 +148,7 @@ class BaseEntity(Base):
             self.__data_assoc = _DataAssoc(self)
         return self.__data_assoc
 
-    def connect(self, connection_type, connection_object):
+    def connect_object(self, connection_type, connection_object):
         """ Connect this entity with `connection_object` via the `connection_type`.
 
         Parameters
@@ -156,10 +156,10 @@ class BaseEntity(Base):
         connection_type: string
             The type of the connection.
         connection_object: Entity
-            The object to connect to.
+            The object to connect_object to.
         """
-        if connection_object in self.connected:
-            raise InsertionError("{0} already has a connection to {1}".format(self, connection_object))
+        if (connection_type, connection_object) in [(c.connection_type, c.connected) for c in self.connections]:
+            raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))
 
         # Create a new context object.
         # The back reference is automatically appended through setting the back reference

@@ -287,7 +287,7 @@ class JsonIO(IO):
                 mapping[rel_from].parent = mapping[rel_to]
 
             elif rel_type == "context":
-                mapping[rel_from].connect(rel_name, mapping[rel_to])
+                mapping[rel_from].connect_object(rel_name, mapping[rel_to])
             else:
                 raise InvalidInputError("Unknown relation type: {0}.".format(rel_type))
 
@@ -326,7 +326,7 @@ class XmlIO(IO):
             from_id = entity.attrib["from"]
             to_id = entity.attrib["to"]
             name = entity.attrib["name"]
-            references[from_id].connect(name, references[to_id])
+            references[from_id].connect_object(name, references[to_id])
 
     def filter_types(self, e):
         types = {}

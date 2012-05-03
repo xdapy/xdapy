@@ -67,16 +67,16 @@ m.save(exp_monorail, exp_neptune)
 
 eeee = Experiment()
 oooo = Observer()
-eeee.connect("Obs", oooo)
+eeee.connect_object("Obs", oooo)
 
 
-exp_monorail.connect("C", obs_1)
-exp_monorail.connect("C", obs_2)
-exp_neptune.connect("C", obs_1)
+exp_monorail.connect_object("C", obs_1)
+exp_monorail.connect_object("C", obs_2)
+exp_neptune.connect_object("C", obs_1)
 
 print exp_neptune.connections
 
-#exp_neptune.connect("C", obs_1)
+#exp_neptune.connect_object("C", obs_1)
 
 from xdapy.structures import Context
 
@@ -94,7 +94,7 @@ print m.find_all(Experiment)
 contx = m.find_first(Context)
 #m.registerConnection(Experiment, Observer, "Observer")
 
-exp_monorail.connect("Observer", obs_1)
+exp_monorail.connect_object("Observer", obs_1)
 
 from xdapy.io import XmlIO
 xmlio = XmlIO(m, Entity.__subclasses__())
