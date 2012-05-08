@@ -74,7 +74,6 @@ def gen_uuid():
 
 def hash_dict(attrs):
       """Generates a hash from a simple dict containing string keys and values."""
-      string = "{"
       ordered = ['"' + k.lower() + '":"' + attrs[k].lower() + '"'
                        for k in sorted(attrs)]
       string = "{" + ",".join(ordered) + "}"
