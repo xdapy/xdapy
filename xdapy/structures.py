@@ -483,10 +483,19 @@ def create_entity(name, declared_params):
     return type(name, (Entity,), {'declared_params': declared_params})
 
 def calculate_polymorphic_name(name, declared_params):
-    if "_" in name:
-        raise EntityDefinitionError("Entity class must not contain an underscore")
+    split_name = name.split('_')
+    if len(split_name) > 2:
+        raise EntityDefinitionError("Entity class must not contain more than one underscore.")
+    elif len(split_name) == 2:
+        # Try, whether the second part is a correct hash.
+        the_hash = hash_dict(declared_params)
+        if split_name[1] == the_hash:
+            return name
+        else:
+            raise EntityDefinitionError("Entity name has incorrect hash after underscore.")
 
-    # create hash from sorted declared_params
+    # No underscore. Good!
+    # Create hash from sorted declared_params
     the_hash = hash_dict(declared_params)
 
     return name + "_" + the_hash
