@@ -5,6 +5,7 @@ This module provides the code to access a database on an abstract level.
 
 Created on Jun 17, 2009
 """
+import itertools
 
 __docformat__ = "restructuredtext"
 
@@ -469,6 +470,30 @@ class Mapper(object):
             raise ValueError("""More than one entity with name "{0}" registered.""".format(name))
 
         raise ValueError("""No entity with name "{0}" registered.""".format(name))
+
+    def entities_from_db(self):
+        """ This returns all entities which are registered in the database.
+        It returns a list of tuples containing the entity name and the
+        dict of declared parameters.
+
+        Thus to add all entities from the database to the Python (SQLAlchemy) runtime,
+        the following code can be used::
+
+            for entity_name, declared_params in mapper.entities_from_db():
+                mapper.register_type(entity_name, declared_params)
+
+        Returns
+        -------
+            list of tuples (entity_name, declared_params)
+        """
+        entities_params = []
+
+        with self.auto_session as session:
+            all_entity_params = session.query(ParameterDeclaration)
+            for entity_name, param_decl in itertools.groupby(all_entity_params, lambda e: e.entity_name):
+                entities_params.append((entity_name, dict((e.parameter_name, e.parameter_type) for e in param_decl)))
+
+            return entities_params
 
     def __repr__(self):
         return "Mapper(%r)" % self.connection
