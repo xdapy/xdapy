@@ -59,7 +59,7 @@ e2 = Experiment()
 e2.params["project"] = "My other project"
 
 t1 = Trial()
-t1.belongs_to(e1) # t1.parent = e1
+t1.parent = e1
 
 t1.data["data set 1"].put("Some data")
 
@@ -106,26 +106,26 @@ m.session.query(xdapy.structures.Data).all()
 
 
 trial1_1 = Trial(number_of_runs=7)
-trial1_1.belongs_to(experiment1)
+trial1_1.parent  = experiment1
 trial1_2 = Trial(number_of_runs=23)
-trial1_2.belongs_to(experiment1)
+trial1_2.parent  = experiment1
 trial1_3 = Trial(number_of_runs=21)
-trial1_3.belongs_to(experiment1)
+trial1_3.parent  = experiment1
 trial1_4 = Trial(number_of_runs=3)
-trial1_4.belongs_to(experiment1)
+trial1_4.parent  = experiment1
 trial1_5 = Trial(number_of_runs=3)
-trial1_5.belongs_to(experiment1)
+trial1_5.parent  = experiment1
 
 trial2_1 = Trial(number_of_runs=8)
-trial2_1.belongs_to(experiment2)
+trial2_1.parent  = experiment2
 trial2_2 = Trial(number_of_runs=5)
-trial2_2.belongs_to(experiment2)
+trial2_2.parent  = experiment2
 trial2_3 = Trial(number_of_runs=4)
-trial2_3.belongs_to(experiment2)
+trial2_3.parent  = experiment2
 trial2_4 = Trial(number_of_runs=2)
-trial2_4.belongs_to(experiment2)
+trial2_4.parent  = experiment2
 trial2_5 = Trial(number_of_runs=1)
-trial2_5.belongs_to(experiment2)
+trial2_5.parent  = experiment2
 
 trial1_1.connect_object("Observer", observer1)
 trial1_2.connect_object("Observer", observer1)

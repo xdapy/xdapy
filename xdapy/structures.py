@@ -87,10 +87,6 @@ class BaseEntity(Base):
     children = relationship("BaseEntity", backref=backref("parent", remote_side=[id]),
             doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
 
-    def belongs_to(self, parent):
-        """ Can be used as an alternative for self.parent = parent."""
-        self.parent = parent
-
     def ancestors(self):
         """ Returns a list of all parent and grand-parent entities.
         """
