@@ -29,7 +29,7 @@ PostgreSQL database dump:
     CREATE TABLE entities (
         id integer NOT NULL,
         type character varying(60),
-        uuid uuid,
+        unique_id varying(60) NOT NULL,
         parent_id integer
     );
 

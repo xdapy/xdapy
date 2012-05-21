@@ -268,8 +268,8 @@ class Mapper(object):
                     the_set.add(rel)
         return list(the_set)
 
-    def find_by_uuid(self, uuid):
-        return self.find(BaseEntity).filter(BaseEntity._uuid==uuid).one()
+    def find_by_unique_id(self, unique_id):
+        return self.find(BaseEntity).filter(BaseEntity._unique_id==unique_id).one()
 
     def get_data_matrix(self, conditions, items, include=None):
         """ Finds related items for the entity which satisfies condition

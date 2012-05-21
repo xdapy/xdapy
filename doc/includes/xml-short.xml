@@ -7,7 +7,7 @@
         </entity>
     </types>
     <objects>
-        <entity id="1" type="Observer" uuid="e4a7918b-8317-427d-800e-1a221df38db2">
+        <entity id="1" type="Observer" unique_id="e4a7918b-8317-427d-800e-1a221df38db2">
             <parameter name="age" value="200" />
         </entity>
     </objects>

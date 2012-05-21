@@ -34,11 +34,11 @@ And a more complicated example:
 .. literalinclude:: includes/xml-short.xml
    :language: xml
 
-References between several entity objects are expressed either by using the `id` variable or the `uuid` identifier. The `id` is seen as a local identifier: It is not retained during import or export of objects. Each id is only unique for the medium it is defined in. E.g. for several input files of XML data, there may be several objects with ``id="92"``. All references with a specifier ``"id:92"`` can of course only be resolved inside that file.
+References between several entity objects are expressed either by using the `id` variable or the `unique_id` identifier. The `id` is seen as a local identifier: It is not retained during import or export of objects. Each id is only unique for the medium it is defined in. E.g. for several input files of XML data, there may be several objects with ``id="92"``. All references with a specifier ``"id:92"`` can of course only be resolved inside that file.
 
-For global references, the object mapper introduces a UUID. This identifier may be used for stable referencing across several files.
+For global references, the object mapper introduces a unique_id. This identifier may be used for stable referencing across several files.
 
-In general, the object mapper will take care of generating these UUID numbers. When creating a XML or JSON file for input, it is sufficient (and advisable) to only use `id` references and leave out `uuid` values.
+In general, the object mapper will take care of generating these unique_id numbers. When creating a XML or JSON file for input, it is sufficient (and advisable) to only use `id` references and leave out `unique_id` values.
 
 JSON
 ----

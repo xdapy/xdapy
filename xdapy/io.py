@@ -46,7 +46,7 @@ def gen_keys(entity):
     """Returns a list of keys for an entity."""
     keys = []
     try:
-        keys.append(gen_uuid_key)
+        keys.append(gen_unique_id_key)
     except:
         pass
     try:
@@ -57,8 +57,8 @@ def gen_keys(entity):
         keys.append(gen_rnd_key())
 
 
-def gen_uuid_key(entity):
-    return "uuid:" + entity.uuid
+def gen_unique_id_key(entity):
+    return "unique_id:" + entity.unique_id
 
 def gen_id_key(entity):
     return "id:" + entity.id
@@ -149,8 +149,8 @@ class JsonIO(IO):
             if obj.parent:
                 relation = {
                     "relation": "child",
-                    "from": "uuid:" + obj.uuid,
-                    "to": "uuid:" + obj.parent.uuid
+                    "from": "unique_id:" + obj.unique_id,
+                    "to": "unique_id:" + obj.parent.unique_id
                 }
                 relations.append(relation)
                 unvisited_objs.add(obj.parent)
@@ -162,8 +162,8 @@ class JsonIO(IO):
                 relation = {
                     "relation": "context",
                     "name": connection.connection_type,
-                    "from": "uuid:" + obj.uuid,
-                    "to": "uuid:" + connection.connected.uuid
+                    "from": "unique_id:" + obj.unique_id,
+                    "to": "unique_id:" + connection.connected.unique_id
                 }
                 relations.append(relation)
                 unvisited_objs.add(connection.connected)
@@ -199,7 +199,7 @@ class JsonIO(IO):
             }
 
     def _iter_objects(self, objects):
-        valid_keys = ["id", "uuid", "type", "parameters", "children"]
+        valid_keys = ["id", "unique_id", "type", "parameters", "children"]
 
         for obj in objects:
             unknown_keys = check_superfluous_keys(obj, valid_keys)
@@ -208,7 +208,7 @@ class JsonIO(IO):
 
             yield {
                 "id": obj.get("id"),
-                "uuid": obj.get("uuid"),
+                "unique_id": obj.get("unique_id"),
                 "type": obj.get("type"),
                 "params": obj.get("parameters") or {},
                 "children": obj.get("children") or []
@@ -233,7 +233,7 @@ class JsonIO(IO):
         db_objects = []
 
         for obj in self._iter_objects(objects):
-            entity_obj = self.mapper.create(obj["type"], _uuid=obj["uuid"])
+            entity_obj = self.mapper.create(obj["type"], _unique_id=obj["unique_id"])
 
             for k, v in obj["params"].iteritems():
                 try:
@@ -247,8 +247,8 @@ class JsonIO(IO):
             if obj["id"]:
                 mapping["id:" + str(obj["id"])] = entity_obj
 
-            if obj["uuid"]:
-                mapping["uuid:" + obj["uuid"]] = entity_obj
+            if obj["unique_id"]:
+                mapping["unique_id:" + obj["unique_id"]] = entity_obj
             self.mapper.save(entity_obj)
 
             # handle potential children
@@ -321,7 +321,7 @@ class XmlIO(IO):
                 self.filter_relations(e, references)
 
     def filter_relations(self, e, references):
-        # TODO: Make relations work with uuids
+        # TODO: Make relations work with unique_ids
         for entity in e:
             from_id = entity.attrib["from"]
             to_id = entity.attrib["to"]
@@ -388,8 +388,8 @@ class XmlIO(IO):
     def parse_entity(self, entity, ref_ids):
         type = entity.attrib["type"]
 
-        uuid = entity.attrib.get("uuid") # _uuid defaults to None
-        new_entity = self.entity_by_name(type, _uuid=uuid)
+        unique_id = entity.attrib.get("unique_id") # _unique_id defaults to None
+        new_entity = self.entity_by_name(type, _unique_id=unique_id)
 
         if new_entity is None:
             return new_entity
@@ -408,9 +408,9 @@ class XmlIO(IO):
                 raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity
 
-        if "uuid" in entity.attrib:
+        if "unique_id" in entity.attrib:
             # add id attribute to ref_ids
-            id = "uuid:" + entity.attrib["uuid"]
+            id = "unique_id:" + entity.attrib["unique_id"]
             if id in ref_ids:
                 raise InvalidInputError("Ambiguous declaration of {0}".format(id))
             ref_ids[id] = new_entity

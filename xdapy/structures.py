@@ -12,20 +12,16 @@ __docformat__ = "restructuredtext"
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
                '"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
-import uuid as py_uuid
 import collections
 import itertools
 
-from sqlalchemy import Column, ForeignKey, String, Integer
+from sqlalchemy import Column, ForeignKey, String, Integer, event
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.orm.session import Session
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
-
-# So we really want to support only Postgresql?
-from sqlalchemy.dialects.postgresql import UUID
 
 from xdapy import Base
 from xdapy.parameters import Parameter, parameter_ids, parameter_for_type
@@ -53,21 +49,25 @@ class BaseEntity(Base):
     #: a hash uniquely identifying the stored parameters.
     _type = Column('type', String(60))
 
-    #: The database-backed uuid column.
-    _uuid = Column('uuid', UUID(), default=gen_uuid, index=True, unique=True)
+    #: The database-backed unique_id column.
+    _unique_id = Column('uniqueid', String(60), index=True, unique=True)
 
-    @synonym_for("_uuid")
+    @synonym_for("_unique_id")
     @property
-    def uuid(self):
+    def unique_id(self):
         """
-        Getter property for the database-backed `_uuid` field.
+        Getter property for the database-backed `_unique_id` field.
 
         Returns
         -------
-        uuid: string
-            The auto-generated UUID of the `BaseEntity`.
+        unique_id: string
+            The auto-generated unique_id of the `BaseEntity`.
+            Defaults to unique_id unless overridden.
         """
-        return self._uuid
+        return self._unique_id
+
+    def gen_unique_id(self):
+        return gen_uuid()
 
     @property
     def type(self):
@@ -201,7 +201,7 @@ class BaseEntity(Base):
         raise Exception("BaseEntity.__init__ should not be called directly.")
 
     def _attributes(self):
-        return {'type': self.type, 'id': self.id, 'uuid': self.uuid}
+        return {'type': self.type, 'id': self.id, 'unique_id': self.unique_id}
 
     def to_json(self, full=False):
         json = self._attributes()
@@ -217,7 +217,7 @@ class BaseEntity(Base):
         return json
 
     def __repr__(self):
-        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.uuid)
+        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.unique_id)
 
     def _session(self):
         """ Returns the session which this object belongs to.
@@ -226,6 +226,14 @@ class BaseEntity(Base):
         if session is None:
             raise MissingSessionError("Entity '%r' has no associated session." % self)
         return session
+
+@event.listens_for(BaseEntity, "before_insert", propagate=True)
+def gen_default_unique_id(mapper, connection, instance):
+    if not instance._unique_id:
+        default_value = instance.gen_unique_id()
+        if not default_value:
+            raise ValueError("Empty value %r in default_fun for %r" % (default_value, instance))
+        instance._unique_id = default_value
 
 class EntityMeta(DeclarativeMeta):
     @staticmethod
@@ -377,13 +385,12 @@ class Entity(BaseEntity):
     #: We specify our special metaclass `xdapy.structures.EntityMeta`.
     __metaclass__ = EntityMeta
 
-    def __init__(self, _uuid=None, **kwargs):
+    def __init__(self, _unique_id=None, **kwargs):
         # We are here in init because we are a completely new object
         # Hence, the _type (our polymorphic_identity) has not been set yet.
         self._type = self.__mapper_args__['polymorphic_identity'] # which should be self.__class__.__name__
 
-        # if we received an _uuid, check that it is valid
-        self._uuid = _uuid and str(py_uuid.UUID(_uuid))
+        self._unique_id = _unique_id
 
         self._set_items_from_arguments(kwargs)
 
@@ -432,7 +439,7 @@ class Entity(BaseEntity):
         return super(Entity, self).to_json(full)
 
     def __repr__(self):
-        return "{cls}(id={id!s},uuid={uuid!s})".format(cls=self.type, id=self.id, uuid=self.uuid)
+        return "{cls}(id={id!s},unique_id={unique_id!s})".format(cls=self.type, id=self.id, unique_id=self.unique_id)
 
     def __str__(self):
         items  = itertools.chain([('id', self.id)], self.params.iteritems())

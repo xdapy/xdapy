@@ -19,15 +19,15 @@
         </entity>
     </types>
     <objects>
-        <entity id="1" type="Observer" uuid="e4a7918b-8317-427d-800e-1a221df38db2">
+        <entity id="1" type="Observer" unique_id="e4a7918b-8317-427d-800e-1a221df38db2">
             <parameter name="age" value="200"/>
         </entity>
-        <entity id="2" type="Experiment" uuid="663076b4-f35d-40f2-8cc9-b06b2fb27e48">
-            <entity id="3" type="Session" uuid="115bc5fe-da2c-458a-85d9-c8786762801f">
-                <entity id="4" type="Trial" uuid="c26ebe68-c6d2-4a9a-bb73-2d783737b992">
+        <entity id="2" type="Experiment" unique_id="663076b4-f35d-40f2-8cc9-b06b2fb27e48">
+            <entity id="3" type="Session" unique_id="115bc5fe-da2c-458a-85d9-c8786762801f">
+                <entity id="4" type="Trial" unique_id="c26ebe68-c6d2-4a9a-bb73-2d783737b992">
                     <parameter name="valid" value="FALSE"/>
                 </entity>
-                <entity id="5" type="Trial" uuid="57019f27-8f43-445a-b41e-bfebe644f9d8">
+                <entity id="5" type="Trial" unique_id="57019f27-8f43-445a-b41e-bfebe644f9d8">
                     <parameter name="valid" value="TRUE"/>
                 </entity>
             </entity>

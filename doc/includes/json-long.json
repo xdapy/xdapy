@@ -8,7 +8,7 @@
                 }
             ], 
             "type": "Observer", 
-            "uuid": "e4a7918b-8317-427d-800e-1a221df38db2"
+            "unique_id": "e4a7918b-8317-427d-800e-1a221df38db2"
         }, 
         {
             "children": [
@@ -22,7 +22,7 @@
                                 }
                             ], 
                             "type": "Trial", 
-                            "uuid": "c26ebe68-c6d2-4a9a-bb73-2d783737b992"
+                            "unique_id": "c26ebe68-c6d2-4a9a-bb73-2d783737b992"
                         }, 
                         {
                             "id": 5, 
@@ -32,17 +32,17 @@
                                 }
                             ], 
                             "type": "Trial", 
-                            "uuid": "57019f27-8f43-445a-b41e-bfebe644f9d8"
+                            "unique_id": "57019f27-8f43-445a-b41e-bfebe644f9d8"
                         }
                     ], 
                     "id": 3, 
                     "type": "Session", 
-                    "uuid": "115bc5fe-da2c-458a-85d9-c8786762801f"
+                    "unique_id": "115bc5fe-da2c-458a-85d9-c8786762801f"
                 }
             ], 
             "id": 2, 
             "type": "Experiment", 
-            "uuid": "663076b4-f35d-40f2-8cc9-b06b2fb27e48"
+            "unique_id": "663076b4-f35d-40f2-8cc9-b06b2fb27e48"
         }
     ], 
     "relations": [

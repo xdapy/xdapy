@@ -87,8 +87,8 @@
       <parameter name="source_directory" />
       <parameter name="source_file" />
       <parameter name="stimulus_file" />
-      <!-- Kind-Entities werden inline angehängt, alternativ lässt sich aber auch das parent-Attribut verweden (mit Präfix id/uuid, siehe unten) -->
-      <entity type="Session" uuid="dd77d125-2eb8-4d65-a506-173d79edfed5"> <!-- beim Exportieren werden die UUIDs mit geschrieben. Diese bleiben auch nach dem Import unverändert. -->
+      <!-- Kind-Entities werden inline angehängt, alternativ lässt sich aber auch das parent-Attribut verweden (mit Präfix id/unique_id, siehe unten) -->
+      <entity type="Session" unique_id="dd77d125-2eb8-4d65-a506-173d79edfed5"> <!-- beim Exportieren werden die unique_ids mit geschrieben. Diese bleiben auch nach dem Import unverändert. -->
         <parameter name="Number_of_Trials">50</parameter>
         <parameter name="count" />
         <parameter name="data_file" />
@@ -103,7 +103,7 @@
         <parameter name="presentationTime">80</parameter>
         <parameter name="signalContrast">0.075</parameter>
         <parameter name="stimulusSizeDegrees">3</parameter>
-        <entity type="Trial" id="3" parent="uuid:dd77d125-2eb8-4d65-a506-173d79edfed5">
+        <entity type="Trial" id="3" parent="unique_id:dd77d125-2eb8-4d65-a506-173d79edfed5">
           <parameter name="count" />
           <parameter name="noise_seed">0</parameter>
           <parameter name="note" />
@@ -133,6 +133,6 @@
   <relations> <!-- Relationen kommen ans Ende der Datei in einen Extra-Abschnitt -->
     <context name="Observer" from="id:1" to="id:2" /> <!-- id:1 hat einen Oberserver, nämlich id:2 -->
     <context name="Setup" from="id:3" to="id:5" />
-    <context name="Setup" from="id:4" to="uuid:dd77d125-2eb8-4d65-a506-173d79edfed5" /> <!-- kann auch als uuid spezifiziert werden -->
+    <context name="Setup" from="id:4" to="unique_id:dd77d125-2eb8-4d65-a506-173d79edfed5" /> <!-- kann auch als unique_id spezifiziert werden -->
   </relations>
 </xdapy>

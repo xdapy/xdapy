@@ -86,13 +86,13 @@ def migrate_obj(obj, old_mapper, new_mapper, mapping):
     if klass in mapping:
         mapto = mapping[klass]
     
-    # check, if uuid is already present
+    # check, if unique_id is already present
     try:
-        new_obj = new_mapper.find_by_uuid(obj.uuid) # TODO Deal with closed sessions
+        new_obj = new_mapper.find_by_unique_id(obj.unique_id) # TODO Deal with closed sessions
     except exc.NoResultFound:
-        new_obj = mapto(_uuid = obj.uuid)
+        new_obj = mapto(_unique_id = obj.unique_id)
     except exc.MultipleResultsFound:
-        raise DataInconsistencyError("UUID in mapper {0} is not unique".format(new_mapper))
+        raise DataInconsistencyError("unique_id in mapper {0} is not unique".format(new_mapper))
 
     # copy params
     for k,v in obj.params.iteritems():
@@ -112,15 +112,15 @@ from sqlalchemy.orm.exc import NoResultFound
 def migrate_connections(m1, m2):
     conn1 = m1.find(Context)
     for c1 in conn1:
-        from_uuid = c1.from_entity.uuid
-        to_uuid = c1.to_entity.uuid
+        from_unique_id = c1.from_entity.unique_id
+        to_unique_id = c1.to_entity.unique_id
         name = c1.connection_type
 
-        print from_uuid, to_uuid
+        print from_unique_id, to_unique_id
 
         try:
-            m2_from = m2.find_by_uuid(from_uuid)
-            m2_to = m2.find_by_uuid(to_uuid)
+            m2_from = m2.find_by_unique_id(from_unique_id)
+            m2_to = m2.find_by_unique_id(to_unique_id)
             m2_from.connect_object(name, m2_to)
         except NoResultFound:
             pass

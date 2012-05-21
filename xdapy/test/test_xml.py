@@ -110,10 +110,10 @@ class TestXml(unittest.TestCase):
         self.assertEqual(len(objs), 7)
         self.assertEqual(len(roots), 6)
 
-    def test_bad_uuid(self):
-        test_xml = wrap_xml_values("""<entity id="1" type="Experiment" uuid="2" />""")
+    def test_unique_id(self):
+        test_xml = wrap_xml_values("""<entity id="1" type="Experiment" unique_id="2" />""")
         xmlio = XmlIO(self.mapper)
-        self.assertRaises(ValueError, xmlio.read, test_xml)
+        xmlio.read(test_xml)
 
     def test_undefined_type(self):
         test_xml = """<xdapy><types>
