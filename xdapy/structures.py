@@ -67,6 +67,15 @@ class BaseEntity(Base):
         return self._unique_id
 
     def gen_unique_id(self):
+        """
+        This method can be overridden in a subclass to automatically
+        provide a default value for the `unique_id` field.
+
+        Returns
+        -------
+        unique_id: string
+            uuid value
+        """
         return gen_uuid()
 
     @property
@@ -229,6 +238,12 @@ class BaseEntity(Base):
 
 @event.listens_for(BaseEntity, "before_insert", propagate=True)
 def gen_default_unique_id(mapper, connection, instance):
+    """
+    This gets called before insertion and looks if a
+    value for the _unique_id field has been provided.
+    If not, it calls `BaseEntity.gen_unique_id` (which provides
+    a uuid but may have been changed to something else.)
+    """
     if not instance._unique_id:
         default_value = instance.gen_unique_id()
         if not default_value:
