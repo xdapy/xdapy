@@ -21,6 +21,8 @@ from xdapy import Base
 from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError, DatabaseError
 
+ALLOWED_ENGINES = ["sqlite", "postgresql"]
+
 class Connection(object):
     """Initialises a Connection object which holds all parameters to create engines and sessions.
 
@@ -62,22 +64,7 @@ class Connection(object):
 
     def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
                        uri=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
-        if uri:
-            if host or dialect or user or password:
-                raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
-        else:
-            if not dialect:
-                dialect = "postgresql"
-            if not host:
-                host = ""
-            if not user:
-                user = ""
-            if not password:
-                password = ""
-            if not dbname:
-                raise ConfigurationError("No dbname specified")
-            uri = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
-        self.uri = uri
+        self.uri = self._gen_uri(host, dialect, user, password, dbname, uri)
 
         if session_opts is None:
             session_opts = {}
@@ -94,6 +81,10 @@ class Connection(object):
 
         self._session = None
         self._engine = None
+
+        if self.engine_name not in ALLOWED_ENGINES:
+            raise ConfigurationError("%r is no supported engine. Supported engines are %s." %
+                                    (self.engine_name, ", ".join(ALLOWED_ENGINES)))
 
 
     #: Path of the configuration file.
@@ -180,7 +171,7 @@ class Connection(object):
             opts.update(config_obj.get(profile))
 
         # keep only valid options
-        valid_opts = ['dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
+        valid_opts = ['uri', 'dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
 
         opts = dict((k,v) for k,v in opts.iteritems() if k in valid_opts)
 
@@ -191,8 +182,27 @@ class Connection(object):
         # do check that test is not the same as normal
         main_profile = cls._extract_options(config)
         test_profile = cls._extract_options(config, cls.TEST_PROFILE)
-        if main_profile['host'] == test_profile['host'] and main_profile['dbname'] == test_profile['dbname']:
+        if cls._gen_uri(**main_profile) == cls._gen_uri(**test_profile):
             raise ConfigurationError("Please use a different test db.")
+
+    @classmethod
+    def _gen_uri(cls, host=None, dialect=None, user=None, password=None, dbname=None, uri=None):
+        if uri:
+            if host or dialect or user or password:
+                raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
+        else:
+            if not dialect:
+                dialect = "postgresql"
+            if not host:
+                host = ""
+            if not user:
+                user = ""
+            if not password:
+                password = ""
+            if not dbname:
+                raise ConfigurationError("No dbname specified")
+            uri = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
+        return uri
 
     @property
     @contextmanager
@@ -240,6 +250,10 @@ class Connection(object):
         if not self._engine:
             self._engine = create_engine(self.uri, **self._engine_opts)
         return self._engine
+
+    @property
+    def engine_name(self):
+        return self.engine.name
 
     def _table_names(self):
         return self.engine.table_names()
