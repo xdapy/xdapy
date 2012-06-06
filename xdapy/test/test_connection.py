@@ -11,7 +11,7 @@ class TestConnectionFailsOnNonemptyDatabase(unittest.TestCase):
         self.assertEqual(len(self.connection._table_names()), 0, msg="Test database was not emtpy prior testing.")
 
         # create a table
-        result = self.connection.session.execute("CREATE TABLE test ();")
+        result = self.connection.session.execute("CREATE TABLE test (dummy char(2));")
 
     def tearDown(self):
         # delete the table again
@@ -40,7 +40,7 @@ class TestConnectionDoesNotDropOtherTables(unittest.TestCase):
         self.connection.create_tables()
 
         # create a table
-        result = self.connection.session.execute("CREATE TABLE test ();")
+        result = self.connection.session.execute("CREATE TABLE test (dummy char(2));")
 
         self.connection.drop_tables()
 
