@@ -169,17 +169,41 @@ class Mapper(object):
                                 val = parameter_class.from_string(val)
                             except StringConversionError:
                                 if parameter_class == DateParameter:
+                                    # Here, we want to match a certain YEAR, a certain
+                                    # combination of YEAR-MONTH or a certain combination
+                                    # YEAR-MONTH-DAY from a date.
+                                    # Therefore, we need to extract YEAR, MONTH and DAY
+                                    # from a date and match those separately.
+                                    # Unfortunately, there is no common SQL function for
+                                    # this task, so we're left with ``date_part('year', date)``
+                                    # for Postgres and ``strftime('%Y', date)`` for Sqlite.
+                                    # We check the `engine_name` and generate the respective
+                                    # methods.
+
                                     # get year month day
                                     ymd = val.split('-')
 
                                     clauses = []
+
                                     from sqlalchemy.sql.expression import func
+                                    if self.connection.engine_name == "postgresql":
+                                        year_part = lambda value: func.date_part('year', value)
+                                        month_part = lambda value: func.date_part('month', value)
+                                        day_part = lambda value: func.date_part('day', value)
+                                    elif self.connection.engine_name == "sqlite":
+                                        year_part = lambda value: func.strftime('%Y', value)
+                                        month_part = lambda value: func.strftime('%m', value)
+                                        day_part = lambda value: func.strftime('%d', value)
+                                    else:
+                                        raise ValueError("Unsupported operation: Unknown engine name %r." %
+                                                          self.connection.engine_name)
+
                                     if len(ymd) > 0:
-                                         clauses.append(func.date_part('year', parameter_class.value) ==  ymd[0])
+                                         clauses.append(year_part(parameter_class.value) ==  ymd[0])
                                     if len(ymd) > 1:
-                                         clauses.append(func.date_part('month', parameter_class.value) ==  ymd[1])
+                                         clauses.append(month_part(parameter_class.value) ==  ymd[1])
                                     if len(ymd) > 2:
-                                         clauses.append(func.date_part('day', parameter_class.value) ==  ymd[2])
+                                         clauses.append(day_part(parameter_class.value) ==  ymd[2])
 
                                     clause = (and_(*clauses))
                                     or_clause.append(clause)
@@ -494,6 +518,18 @@ class Mapper(object):
                 entities_params.append((entity_name, dict((e.parameter_name, e.parameter_type) for e in param_decl)))
 
             return entities_params
+
+    def the_big_picture(self):
+        """ Tries to print a big picture of all connections.
+        """
+        roots = self.find_roots()
+        def _by_entity_type(entity):
+            return entity._type
+
+        sorted_roots = sorted(roots, _by_entity_type)
+        root_groups = itertools.groupby(roots, _by_entity_type)
+
+
 
     def __repr__(self):
         return "Mapper(%r)" % self.connection
