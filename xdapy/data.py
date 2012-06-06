@@ -23,8 +23,7 @@ from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, validates, synonym
 from sqlalchemy.ext.declarative import synonym_for
 
-# So we really want to support only Postgresql?
-from sqlalchemy.dialects.postgresql import BYTEA
+from sqlalchemy.types import LargeBinary
 
 from xdapy import Base
 from xdapy.errors import DataInconsistencyError
@@ -57,7 +56,7 @@ class DataChunks(Base):
             doc="The index of the data chunk. Used to keep the correct order of chunks.")
 
     # hide the raw value in order to allow for a specific setter method
-    _chunk = Column('data', BYTEA(DATA_COLUMN_LENGTH), nullable=False,
+    _chunk = Column('data', LargeBinary(DATA_COLUMN_LENGTH), nullable=False,
             doc="The binary chunk data. Size is specified in `DATA_COLUMN_LENGTH`.")
 
     @property
