@@ -153,7 +153,7 @@ class BaseEntity(Base):
             self.__data_assoc = _DataAssoc(self)
         return self.__data_assoc
 
-    def connect_object(self, connection_type, connection_object):
+    def attach(self, connection_type, connection_object):
         """ Connect this entity with `connection_object` via the `connection_type`.
 
         Parameters
@@ -161,7 +161,7 @@ class BaseEntity(Base):
         connection_type: string
             The type of the connection.
         connection_object: Entity
-            The object to connect_object to.
+            The object to attach.
         """
         if (connection_type, connection_object) in [(c.connection_type, c.connected) for c in self.connections]:
             raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))

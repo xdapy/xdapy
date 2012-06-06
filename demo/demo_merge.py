@@ -73,7 +73,7 @@ e3.data["b"].put("Even more data")
 e4 = Experiment(project="My other Project", experimenter="Nichol Pauline")
 m_2.save(e4)
 
-e3.connect_object("O", e1)
+e3.attach("O", e1)
 m.save(e3, e2)
 
 mapping = {Experiment_nodate: Experiment}
@@ -121,7 +121,7 @@ def migrate_connections(m1, m2):
         try:
             m2_from = m2.find_by_unique_id(from_unique_id)
             m2_to = m2.find_by_unique_id(to_unique_id)
-            m2_from.connect_object(name, m2_to)
+            m2_from.attach(name, m2_to)
         except NoResultFound:
             pass
 

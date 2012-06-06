@@ -286,10 +286,10 @@ class TestContext(Setup):
         self.o2 = Observer(name="o2")
         self.o3 = Observer(name="o3")
 
-        self.e1.connect_object("Observer", self.o1)
-        self.e1.connect_object("Observer", self.o2)
-        self.e2.connect_object("Observer", self.o2)
-        self.e2.connect_object("Observer", self.o3)
+        self.e1.attach("Observer", self.o1)
+        self.e1.attach("Observer", self.o2)
+        self.e2.attach("Observer", self.o2)
+        self.e2.attach("Observer", self.o3)
 
         self.m.save(self.e1, self.e2, self.o1, self.o2, self.o3)
 
@@ -342,9 +342,9 @@ class TestContext(Setup):
         ooo2 = Observer()
         self.m.save(eee1, eee2, ooo1, ooo2)
 
-        eee1.connect_object("CCC", ooo1)
-        eee1.connect_object("CCC", ooo2)
-        eee2.connect_object("CCC", ooo1)
+        eee1.attach("CCC", ooo1)
+        eee1.attach("CCC", ooo2)
+        eee2.attach("CCC", ooo1)
 
         self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
         # check that connections have been added to session
@@ -358,11 +358,11 @@ class TestContext(Setup):
         self.m.save(e1)
         self.m.save(o1)
 
-        e1.connect_object("CCC", o1)
-        self.assertRaises(InsertionError, e1.connect_object, "CCC", o1)
+        e1.attach("CCC", o1)
+        self.assertRaises(InsertionError, e1.attach, "CCC", o1)
 
-        e1.connect_object("DDD", o1)
-        e1.connect_object("CCC", o2)
+        e1.attach("DDD", o1)
+        e1.attach("CCC", o2)
 
         self.assertIn(o1, e1.connected)
         self.assertIn(o2, e1.connected)
@@ -374,11 +374,11 @@ class TestContext(Setup):
         o1 = Observer()
         o2 = Observer()
 
-        e1.connect_object("CCC", o1)
-        self.assertRaises(InsertionError, e1.connect_object, "CCC", o1)
+        e1.attach("CCC", o1)
+        self.assertRaises(InsertionError, e1.attach, "CCC", o1)
 
-        e1.connect_object("DDD", o1)
-        e1.connect_object("CCC", o2)
+        e1.attach("DDD", o1)
+        e1.attach("CCC", o2)
 
         self.assertIn(o1, e1.connected)
         self.assertIn(o2, e1.connected)
@@ -389,7 +389,7 @@ class TestContext(Setup):
         t1 = Trial()
         self.m.save(t1)
 
-        self.e1.connect_object("Trial", t1)
+        self.e1.attach("Trial", t1)
 
         self.assertEqual(self.e1.context, {"Observer": [self.o1, self.o2], "Trial": [t1]})
 
@@ -545,11 +545,11 @@ class TestComplicatedQuery(Setup):
         s3_1 = Session(count=5, category1=0)
         s4_1 = Session(count=6, category1=1)
 
-        e1.connect_object("Observed by", self.o1)
-        e1.connect_object("Observed by", self.o2)
-        e2.connect_object("Observed by", self.o1)
-        e2.connect_object("Observed by", self.o3)
-        e3.connect_object("Observed by", self.o3)
+        e1.attach("Observed by", self.o1)
+        e1.attach("Observed by", self.o2)
+        e2.attach("Observed by", self.o1)
+        e2.attach("Observed by", self.o3)
+        e3.attach("Observed by", self.o3)
 
         self.m.save(self.o1, self.o2, self.o3, e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 
