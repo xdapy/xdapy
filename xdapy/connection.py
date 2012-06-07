@@ -41,8 +41,8 @@ class Connection(object):
         The database password. (Defaults to ``""``.)
     dbname: string
         The name of the database to use.
-    uri: string, optional
-        A URI representation of the database connection of the form `{dialect}://{user}:{password}@{host}/{dbname}`.
+    url: string, optional
+        A URL representation of the database connection of the form `{dialect}://{user}:{password}@{host}/{dbname}`.
         If this field is given, all other fields may be left out.
     echo: bool, optional
         Print all SQL queries to stdout. (Defaults to ``False``.)
@@ -55,16 +55,16 @@ class Connection(object):
 
     Attributes
     ----------
-    uri
-        The constructed database URI.
+    url
+        The constructed database URL.
     Session
         The SQLAlchemy session.
 
     """
 
     def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
-                       uri=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
-        self.uri = self._gen_uri(host, dialect, user, password, dbname, uri)
+                       url=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
+        self.url = self._gen_url(host, dialect, user, password, dbname, url)
 
         if session_opts is None:
             session_opts = {}
@@ -171,7 +171,7 @@ class Connection(object):
             opts.update(config_obj.get(profile))
 
         # keep only valid options
-        valid_opts = ['uri', 'dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
+        valid_opts = ['url', 'dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
 
         opts = dict((k,v) for k,v in opts.iteritems() if k in valid_opts)
 
@@ -182,14 +182,14 @@ class Connection(object):
         # do check that test is not the same as normal
         main_profile = cls._extract_options(config)
         test_profile = cls._extract_options(config, cls.TEST_PROFILE)
-        if cls._gen_uri(**main_profile) == cls._gen_uri(**test_profile):
+        if cls._gen_url(**main_profile) == cls._gen_url(**test_profile):
             raise ConfigurationError("Please use a different test db.")
 
     @classmethod
-    def _gen_uri(cls, host=None, dialect=None, user=None, password=None, dbname=None, uri=None):
-        if uri:
+    def _gen_url(cls, host=None, dialect=None, user=None, password=None, dbname=None, url=None):
+        if url:
             if host or dialect or user or password:
-                raise ConfigurationError("If uri is given neither host, dialect, user nor password may be specified")
+                raise ConfigurationError("If url is given neither host, dialect, user nor password may be specified")
         else:
             if not dialect:
                 dialect = "postgresql"
@@ -201,8 +201,8 @@ class Connection(object):
                 password = ""
             if not dbname:
                 raise ConfigurationError("No dbname specified")
-            uri = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
-        return uri
+            url = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
+        return url
 
     @property
     @contextmanager
@@ -248,7 +248,7 @@ class Connection(object):
     @property
     def engine(self):
         if not self._engine:
-            self._engine = create_engine(self.uri, **self._engine_opts)
+            self._engine = create_engine(self.url, **self._engine_opts)
         return self._engine
 
     @property
@@ -285,5 +285,5 @@ class Connection(object):
         Base.metadata.drop_all(bind=self.engine)
 
     def __repr__(self):
-        return "Connection(uri=%r)" % self.uri
+        return "Connection(url=%r)" % self.url
 
