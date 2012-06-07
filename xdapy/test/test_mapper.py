@@ -364,10 +364,27 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.connected)
-        self.assertIn(o2, e1.connected)
+        self.assertIn(o1, e1.connected())
+        self.assertIn(o2, e1.connected())
 
-        self.assertEquals(len(e1.connected), 3)
+        self.assertIn(o1, e1.connected("CCC"))
+        self.assertIn(o2, e1.connected("CCC"))
+        self.assertIn(o1, e1.connected("DDD"))
+        self.assertNotIn(o2, e1.connected("DDD"))
+
+        self.assertIn(e1, o1.back_referenced("CCC"))
+        self.assertIn(e1, o2.back_referenced("CCC"))
+        self.assertIn(e1, o1.back_referenced("DDD"))
+        self.assertNotIn(e1, o2.back_referenced("DDD"))
+
+        self.assertEquals(len(e1.connected()), 3)
+
+        self.assertIsNotNone(e1.id)
+        self.assertIsNotNone(o1.id)
+        self.assertIsNotNone(o2.id)
+        self.assertIsNotNone(e1.unique_id)
+        self.assertIsNotNone(o1.unique_id)
+        self.assertIsNotNone(o2.unique_id)
 
     def test_connections_must_be_unique_without_session(self):
         e1 = Experiment()
@@ -380,10 +397,27 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.connected)
-        self.assertIn(o2, e1.connected)
+        self.assertIn(o1, e1.connected())
+        self.assertIn(o2, e1.connected())
 
-        self.assertEquals(len(e1.connected), 3)
+        self.assertIn(o1, e1.connected("CCC"))
+        self.assertIn(o2, e1.connected("CCC"))
+        self.assertIn(o1, e1.connected("DDD"))
+        self.assertNotIn(o2, e1.connected("DDD"))
+
+        self.assertIn(e1, o1.back_referenced("CCC"))
+        self.assertIn(e1, o2.back_referenced("CCC"))
+        self.assertIn(e1, o1.back_referenced("DDD"))
+        self.assertNotIn(e1, o2.back_referenced("DDD"))
+
+        self.assertEquals(len(e1.connected()), 3)
+
+        self.assertIsNone(e1.id)
+        self.assertIsNone(o1.id)
+        self.assertIsNone(o2.id)
+        self.assertIsNone(e1.unique_id)
+        self.assertIsNone(o1.unique_id)
+        self.assertIsNone(o2.unique_id)
 
     def test_special_context_method(self):
         t1 = Trial()

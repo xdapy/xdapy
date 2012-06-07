@@ -171,17 +171,21 @@ class BaseEntity(Base):
         context = Context(back_referenced=self, connected=connection_object, connection_type=connection_type)
         return context
 
-    @property
-    def connected(self):
+    def connected(self, conn_type=None):
         """ Lists all connected objects.
         """
-        return [c.connected for c in self.connections]
+        if conn_type is None:
+            return [c.connected for c in self.connections]
+        else:
+            return [c.connected for c in self.connections if c.connection_type==conn_type]
 
-    @property
-    def back_referenced(self):
+    def back_referenced(self, conn_type=None):
         """ Returns all objects which have connected to this object.
         """
-        return [c.back_referenced for c in self.back_references]
+        if conn_type is None:
+            return [c.back_referenced for c in self.back_references]
+        else:
+            return [c.back_referenced for c in self.back_references if c.connection_type==conn_type]
 
     @property
     def context(self):
