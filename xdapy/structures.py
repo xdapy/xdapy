@@ -163,39 +163,39 @@ class BaseEntity(Base):
         connection_object: Entity
             The object to attach.
         """
-        if (connection_type, connection_object) in [(c.connection_type, c.connected) for c in self.connections]:
+        if connection_object in self.attachments(connection_type):
             raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))
 
         # Create a new context object.
         # The back reference is automatically appended through setting the back reference
-        context = Context(back_referenced=self, connected=connection_object, connection_type=connection_type)
+        context = Context(holder=self, attachment=connection_object, connection_type=connection_type)
         return context
 
-    def connected(self, conn_type=None):
-        """ Lists all connected objects.
+    def attachments(self, conn_type=None):
+        """ Lists all attachments to this object.
         """
         if conn_type is None:
-            return [c.connected for c in self.connections]
+            return [c.attachment for c in self.connections]
         else:
-            return [c.connected for c in self.connections if c.connection_type==conn_type]
+            return [c.attachment for c in self.connections if c.connection_type==conn_type]
 
-    def back_referenced(self, conn_type=None):
-        """ Returns all objects which have connected to this object.
+    def holders(self, conn_type=None):
+        """ Returns all objects which have attachments to this object.
         """
         if conn_type is None:
-            return [c.back_referenced for c in self.back_references]
+            return [c.holder for c in self.back_references]
         else:
-            return [c.back_referenced for c in self.back_references if c.connection_type==conn_type]
+            return [c.holder for c in self.back_references if c.connection_type==conn_type]
 
     @property
     def context(self):
-        """ Returns a dictionary of connection types and connected objects.
+        """ Returns a dictionary of attachment types and attached objects.
         Read-only for now. May become r/w in the future.
         """
         grouped = itertools.groupby(self.connections, lambda context_obj: context_obj.connection_type)
         ctx = {}
         for connection_type, connections in grouped:
-            ctx[connection_type] = [connection.connected for connection in connections]
+            ctx[connection_type] = [connection.attachment for connection in connections]
         return ctx
 
     @validates('_type')
@@ -478,15 +478,15 @@ class Entity(BaseEntity):
         for p in parents:
             print "+-", p
             for c in p.connections:
-                print "|", "+-", "has a", c.connection_type, c.connected
+                print "|", "+-", "has a", c.connection_type, c.attachments
             for c in p.back_references:
-                print "|", "+-", "belongs to", c.back_referenced
+                print "|", "+-", "belongs to", c.holders
             print "|"
         print "+-", self
         for c in self.connections:
-            print " ", "+-", "has a", c.connection_type, c.connected
+            print " ", "+-", "has a", c.connection_type, c.attachments
         for c in self.back_references:
-            print " ", "+-", "belongs to", c.back_referenced
+            print " ", "+-", "belongs to", c.holders
 
 
 def create_entity(name, declared_params):
@@ -540,11 +540,11 @@ class Context(Base):
     connection_type = Column('connection_type', String(500), primary_key=True)
 
     # Each entity can have a context of related entities
-    back_referenced = relationship(BaseEntity,
+    holder = relationship(BaseEntity,
         backref=backref('connections', cascade="all"), # need the cascade to delete context, if entity is deleted
         primaryjoin=entity_id==BaseEntity.id)
 
-    connected = relationship(BaseEntity,
+    attachment = relationship(BaseEntity,
         backref=backref('back_references', cascade="all"),
         primaryjoin=connected_id==BaseEntity.id)
 

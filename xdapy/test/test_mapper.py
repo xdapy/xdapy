@@ -364,20 +364,20 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.connected())
-        self.assertIn(o2, e1.connected())
+        self.assertIn(o1, e1.attachments())
+        self.assertIn(o2, e1.attachments())
 
-        self.assertIn(o1, e1.connected("CCC"))
-        self.assertIn(o2, e1.connected("CCC"))
-        self.assertIn(o1, e1.connected("DDD"))
-        self.assertNotIn(o2, e1.connected("DDD"))
+        self.assertIn(o1, e1.attachments("CCC"))
+        self.assertIn(o2, e1.attachments("CCC"))
+        self.assertIn(o1, e1.attachments("DDD"))
+        self.assertNotIn(o2, e1.attachments("DDD"))
 
-        self.assertIn(e1, o1.back_referenced("CCC"))
-        self.assertIn(e1, o2.back_referenced("CCC"))
-        self.assertIn(e1, o1.back_referenced("DDD"))
-        self.assertNotIn(e1, o2.back_referenced("DDD"))
+        self.assertIn(e1, o1.holders("CCC"))
+        self.assertIn(e1, o2.holders("CCC"))
+        self.assertIn(e1, o1.holders("DDD"))
+        self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.connected()), 3)
+        self.assertEquals(len(e1.attachments()), 3)
 
         self.assertIsNotNone(e1.id)
         self.assertIsNotNone(o1.id)
@@ -397,20 +397,20 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.connected())
-        self.assertIn(o2, e1.connected())
+        self.assertIn(o1, e1.attachments())
+        self.assertIn(o2, e1.attachments())
 
-        self.assertIn(o1, e1.connected("CCC"))
-        self.assertIn(o2, e1.connected("CCC"))
-        self.assertIn(o1, e1.connected("DDD"))
-        self.assertNotIn(o2, e1.connected("DDD"))
+        self.assertIn(o1, e1.attachments("CCC"))
+        self.assertIn(o2, e1.attachments("CCC"))
+        self.assertIn(o1, e1.attachments("DDD"))
+        self.assertNotIn(o2, e1.attachments("DDD"))
 
-        self.assertIn(e1, o1.back_referenced("CCC"))
-        self.assertIn(e1, o2.back_referenced("CCC"))
-        self.assertIn(e1, o1.back_referenced("DDD"))
-        self.assertNotIn(e1, o2.back_referenced("DDD"))
+        self.assertIn(e1, o1.holders("CCC"))
+        self.assertIn(e1, o2.holders("CCC"))
+        self.assertIn(e1, o1.holders("DDD"))
+        self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.connected()), 3)
+        self.assertEquals(len(e1.attachments()), 3)
 
         self.assertIsNone(e1.id)
         self.assertIsNone(o1.id)

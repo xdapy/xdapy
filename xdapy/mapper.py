@@ -291,7 +291,7 @@ class Mapper(object):
     def find_related(self, entity, related):
         the_set = set()
         for e in self.find(related[0], related[1]):
-            for rel in e.connected:
+            for rel in e.attachments:
                 if rel.__class__ == entity and rel not in the_set:
                     the_set.add(rel)
         return list(the_set)
@@ -333,9 +333,9 @@ class Mapper(object):
                 if "CHILDREN" in include:
                     related.update(entity.siblings())
                 if "CONTEXT" in include:
-                    related.update(entity.connected)
+                    related.update(entity.attachments)
                 if "CONTEXT_REVERSED" in include:
-                    related.update(entity.back_referenced)
+                    related.update(entity.holders)
 
             row = {}
             for rel in related:

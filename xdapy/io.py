@@ -163,10 +163,10 @@ class JsonIO(IO):
                     "relation": "context",
                     "name": connection.connection_type,
                     "from": "unique_id:" + obj.unique_id,
-                    "to": "unique_id:" + connection.connected.unique_id
+                    "to": "unique_id:" + connection.attachments.unique_id
                 }
                 relations.append(relation)
-                unvisited_objs.add(connection.connected)
+                unvisited_objs.add(connection.attachments)
 
             visited_objs.add(obj)
 
@@ -480,8 +480,8 @@ class XmlIO(IO):
 
         for rel in self.mapper.session.query(Context):
             context = ET.Element("context")
-            context.attrib["from"] = "id:" + str(rel.back_referenced.id)
-            context.attrib["to"] = "id:" + str(rel.connected.id)
+            context.attrib["from"] = "id:" + str(rel.holder.id)
+            context.attrib["to"] = "id:" + str(rel.attachment.id)
             context.attrib["name"] = rel.connection_type
             relations.append(context)
 
