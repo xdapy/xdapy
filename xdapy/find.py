@@ -80,14 +80,14 @@ class SearchProxy(object):
         if isinstance(self.inner, tuple):
             if len(self.inner) != 2:
                 raise ValueError("Tuple {0} must only have two elements.".format(self.inner))
-            print self.inner[0]
+            #print self.inner[0]
             self.inner = self.inner[1]
 
     def find(self, mapper):
         return self.inner.find(mapper)
 
     def is_valid(self, item):
-        print type(self)
+        #print type(self)
         return self.inner.is_valid(item)
 
     def all_parents(self):
@@ -158,7 +158,7 @@ class _entity(SearchProxy):
     def find(self, mapper):
         # TODO: This retrieves everything. Should do some filtering before, if possible.
         items = mapper.find_all(self.key)
-        print items
+        #print items
         return [item for item in items if self.is_valid(item)]
 
     @property
