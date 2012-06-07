@@ -13,12 +13,12 @@ __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>',
 
 from os import path
 from contextlib import contextmanager
+import ConfigParser
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 from xdapy import Base
-from xdapy.utils.configobj import ConfigObj
 from xdapy.errors import ConfigurationError, DatabaseError
 
 ALLOWED_ENGINES = ["sqlite", "postgresql"]
@@ -31,19 +31,8 @@ class Connection(object):
 
     Parameters
     ----------
-    host: string, optional
-        The host where the database lives. (Defaults to ``"localhost"``.)
-    dialect: string, optional
-        The SQL dialect to use. (Defaults to ``"postgresql"``, which is also the only supported option.)
-    user: string, optional
-        The database user. (Defaults to ``""``.)
-    password: string, optional
-        The database password. (Defaults to ``""``.)
-    dbname: string
-        The name of the database to use.
-    url: string, optional
+    url: string
         A URL representation of the database connection of the form `{dialect}://{user}:{password}@{host}/{dbname}`.
-        If this field is given, all other fields may be left out.
     echo: bool, optional
         Print all SQL queries to stdout. (Defaults to ``False``.)
     check_empty: bool
@@ -62,9 +51,8 @@ class Connection(object):
 
     """
 
-    def __init__(self, host=None, dialect=None, user=None, password=None, dbname=None,
-                       url=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
-        self.url = self._gen_url(host, dialect, user, password, dbname, url)
+    def __init__(self, url=None, echo=False, check_empty=False, session_opts=None, engine_opts=None):
+        self.url = url
 
         if session_opts is None:
             session_opts = {}
@@ -89,6 +77,8 @@ class Connection(object):
 
     #: Path of the configuration file.
     DEFAULT_CONFIG_PATH = "~/.xdapy/engine.ini"
+    #: Identifier for the default profile.
+    DEFAULT_PROFILE = "default"
     #: Identifier for the test profile.
     TEST_PROFILE = "test"
 
@@ -100,16 +90,15 @@ class Connection(object):
         Create file ``~/.xdapy/engine.ini`` with the following content and replace
         your username, password, host and dbname::
 
-            dialect = postgresql
-            user = hannah
-            password = ""
-            host = localhost
-            dbname = xdapy
+            # url syntax: {dialect}://{user}:{password}@{host}/{dbname}
+            [default]
+            url = postgresql://hannah@localhost/xdapy
             [test]
-            dbname = xdapy_test
+            # url syntax for sqlite
+            url = sqlite:///test.db
             check_empty = true
             [demo]
-            dbname = xdapy_demo
+            url = sqlite:///demo.db
 
 
         Parameters
@@ -128,21 +117,32 @@ class Connection(object):
             raise ConfigurationError('the engine ini file does not exist. please create file \n'\
                                      ' ~/.xdapy/engine.ini with following content and replace \n'\
                                      'with your settings: \n\n'\
-                                     'dialect = postgresql\n'\
-                                     'user = myname\n'\
-                                     'password = mypassword\n'\
-                                     'host = localhost\n'\
-                                     'dbname = xdapy')
+                                     '[default]\n'\
+                                     'url = dburl\n'\
+                                     '[test]\n'\
+                                     'url = testurl\n')
 
-        config = ConfigObj(filename)
+        config = ConfigParser.RawConfigParser()
+        config.read(filename)
 
         # do the very important check that we don’t lose our db while testing
         cls._check_config_file_sanity(config)
 
-        opts = cls._extract_options(config, profile)
+        options = {}
 
-        opts.update(kwargs)
-        return cls(**opts)
+        options["url"] = config.get(profile, "url")
+
+        try:
+            options["echo"] = config.getboolean(profile, "echo")
+        except ConfigParser.NoOptionError:
+            pass
+
+        try:
+            options["check_empty"] = config.getboolean(profile, "check_empty")
+        except ConfigParser.NoOptionError:
+            pass
+
+        return cls(**options)
 
     @classmethod
     def test(cls, **kwargs):
@@ -158,51 +158,15 @@ class Connection(object):
 
         Shortcut for ``Connection(profile=None, **kwargs)``.
         """
-        return cls.profile(profile=None, **kwargs)
-
-    @staticmethod
-    def _extract_options(config_obj, profile=None):
-        opts = {}
-        opts.update(config_obj)
-        if profile:
-            if config_obj.get(profile) is None:
-                raise Exception("The profile '%s' is not specified in your configuration." % profile)
-            # merge the profile options to base
-            opts.update(config_obj.get(profile))
-
-        # keep only valid options
-        valid_opts = ['url', 'dialect', 'user', 'password', 'host', 'dbname', 'check_empty']
-
-        opts = dict((k,v) for k,v in opts.iteritems() if k in valid_opts)
-
-        return opts
+        return cls.profile(profile=cls.DEFAULT_PROFILE, **kwargs)
 
     @classmethod
     def _check_config_file_sanity(cls, config):
         # do check that test is not the same as normal
-        main_profile = cls._extract_options(config)
-        test_profile = cls._extract_options(config, cls.TEST_PROFILE)
-        if cls._gen_url(**main_profile) == cls._gen_url(**test_profile):
+        main_url = config.get("default", "url")
+        test_url = config.get("test", "url")
+        if main_url == test_url:
             raise ConfigurationError("Please use a different test db.")
-
-    @classmethod
-    def _gen_url(cls, host=None, dialect=None, user=None, password=None, dbname=None, url=None):
-        if url:
-            if host or dialect or user or password:
-                raise ConfigurationError("If url is given neither host, dialect, user nor password may be specified")
-        else:
-            if not dialect:
-                dialect = "postgresql"
-            if not host:
-                host = ""
-            if not user:
-                user = ""
-            if not password:
-                password = ""
-            if not dbname:
-                raise ConfigurationError("No dbname specified")
-            url = """{dialect}://{user}:{password}@{host}/{dbname}""".format(dialect=dialect, user=user, password=password, host=host, dbname=dbname)
-        return url
 
     @property
     @contextmanager
