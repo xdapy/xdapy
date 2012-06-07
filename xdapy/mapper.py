@@ -38,7 +38,7 @@ class Mapper(object):
     Attributes
     ----------
     connection
-        The database connection
+        The database connection or URL
 
     registered_entities
         The objects this mapper cares about
@@ -46,6 +46,7 @@ class Mapper(object):
 
     def __init__(self, connection):
         if isinstance(connection, basestring):
+            # We’ve been given a URL. Use it.
             connection = Connection(url=connection)
 
         self.connection = connection
