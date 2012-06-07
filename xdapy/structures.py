@@ -533,7 +533,7 @@ class Context(Base):
     entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
     connected_id = Column('connected_id', Integer, ForeignKey('entities.id'), primary_key=True)
 
-    connection_type = Column('connection_type', String(500))
+    connection_type = Column('connection_type', String(500), primary_key=True)
 
     # Each entity can have a context of related entities
     back_referenced = relationship(BaseEntity,
@@ -553,7 +553,7 @@ class Context(Base):
         return self.connected
 
     __tablename__ = 'contexts'
-    __table_args__ = (UniqueConstraint(entity_id, connected_id), {})
+    __table_args__ = (UniqueConstraint(entity_id, connected_id, connection_type), {})
 
     def __repr__(self):
         return "Context(entity_id={id!s}, connected_id={cid!s}, connection_type={type})".format(id=self.entity_id, cid=self.connected_id, type=self.connection_type)
