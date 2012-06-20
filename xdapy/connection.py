@@ -23,6 +23,27 @@ from xdapy.errors import ConfigurationError, DatabaseError
 
 ALLOWED_ENGINES = ["sqlite", "postgresql"]
 
+MIN_PSYCOPG2_VERSION = (2, 4, 1)
+
+def _check_engine(engine):
+    """ psycopg2 driver < 2.4.1 has a bug when connected to PostgreSQL 9.0:
+    The transmitted data for bytea columns is different which messes up everything.
+    In order to fix this, we can:
+     - set the bytea_output parameter to escape in the server
+     - execute the database command SET bytea_output TO escape;
+       in the session before reading binary data
+     - upgrade the libpq library on the client to at least 9.0
+    [Psycopg2 FAQ](http://initd.org/psycopg/docs/faq.html)
+
+    We choose to fail here to be on the safe side. If necessary, the check
+    may be changed to execute the `SET bytea_output TO escape;` command.
+    """
+    if engine.driver == "psycopg2":
+        psycopg2_version = engine.dialect.psycopg2_version
+        if psycopg2_version <= MIN_PSYCOPG2_VERSION:
+            raise DatabaseError("Psycopg2 driver too old %r. Please update to at least %r." %
+                                (psycopg2_version, MIN_PSYCOPG2_VERSION))
+
 class Connection(object):
     """Initialises a Connection object which holds all parameters to create engines and sessions.
 
@@ -73,6 +94,8 @@ class Connection(object):
         if self.engine_name not in ALLOWED_ENGINES:
             raise ConfigurationError("%r is no supported engine. Supported engines are %s." %
                                     (self.engine_name, ", ".join(ALLOWED_ENGINES)))
+
+        _check_engine(self.engine)
 
 
     #: Path of the configuration file.
