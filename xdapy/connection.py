@@ -44,6 +44,30 @@ def _check_engine(engine):
             raise DatabaseError("Psycopg2 driver too old %r. Please update to at least %r." %
                                 (psycopg2_version, MIN_PSYCOPG2_VERSION))
 
+
+def _options_from_config(filename, section):
+    config = ConfigParser.RawConfigParser()
+    config.read(filename)
+
+    options = {}
+
+    try:
+        options["url"] = config.get(section, "url")
+    except ConfigParser.NoSectionError:
+        return options
+
+    try:
+        options["echo"] = config.getboolean(section, "echo")
+    except ConfigParser.NoOptionError:
+        pass
+
+    try:
+        options["check_empty"] = config.getboolean(section, "check_empty")
+    except ConfigParser.NoOptionError:
+        pass
+
+    return options
+
 class Connection(object):
     """Initialises a Connection object which holds all parameters to create engines and sessions.
 
@@ -145,25 +169,20 @@ class Connection(object):
                                      '[test]\n'\
                                      'url = testurl\n')
 
-        config = ConfigParser.RawConfigParser()
-        config.read(filename)
+        options = _options_from_config(filename, profile)
 
-        # do the very important check that we don’t lose our db while testing
-        cls._check_config_file_sanity(config)
+        if profile == cls.TEST_PROFILE:
+            # default to in-memory db
+            if options.get("url") is None:
+                options["url"] = "sqlite://"
 
-        options = {}
+            else:
+                # do the very important check that we don’t lose our db while testing
+                main_options = _options_from_config(filename, cls.DEFAULT_PROFILE)
+                if options["url"] == main_options["url"]:
+                    raise ConfigurationError("Please use a different test db for testing.")
 
-        options["url"] = config.get(profile, "url")
-
-        try:
-            options["echo"] = config.getboolean(profile, "echo")
-        except ConfigParser.NoOptionError:
-            pass
-
-        try:
-            options["check_empty"] = config.getboolean(profile, "check_empty")
-        except ConfigParser.NoOptionError:
-            pass
+        options.update(**kwargs)
 
         return cls(**options)
 
@@ -184,12 +203,8 @@ class Connection(object):
         return cls.profile(profile=cls.DEFAULT_PROFILE, **kwargs)
 
     @classmethod
-    def _check_config_file_sanity(cls, config):
-        # do check that test is not the same as normal
-        main_url = config.get("default", "url")
-        test_url = config.get("test", "url")
-        if main_url == test_url:
-            raise ConfigurationError("Please use a different test db.")
+    def memory(cls, **kwargs):
+        return cls(url="sqlite://", **kwargs)
 
     @property
     @contextmanager
