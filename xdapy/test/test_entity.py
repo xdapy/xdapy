@@ -115,6 +115,11 @@ class TestUniqueId(unittest.TestCase):
         self.m.register(NameEntityAutoId)
         self.m.register(NameEntity)
 
+    def tearDown(self):
+        self.connection.drop_tables()
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
+
     def test_unique_id(self):
         user = NameEntity(first_name="David", last_name="Persaud")
         self.assertIsNone(user._unique_id)
