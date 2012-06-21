@@ -262,6 +262,27 @@ class Mapper(object):
         return entity, filter
 
     def find(self, entity, filter=None, options=None):
+        """ Finds entities in the mapper.
+
+        This method prepares the query (via SQLAlchemy).
+        Further SQLAlchemy operations may be applied to the
+        returned object.
+
+        An SQLAlchemy query can be used as an iterator
+        to automatically step through a result list.
+
+        Parameters
+        ----------
+        entity : string or class
+            The entity to search for
+        filter : dict
+            a filter
+        options
+
+        Returns
+        -------
+        instance of `sqlalchemy.orm.query.Query`
+        """
         with self.auto_session as session:
             entity, filter = self._mk_entity_filter(entity, filter)
 
@@ -273,14 +294,16 @@ class Mapper(object):
             else:
                 return query
 
-    def find_by_id(self, entity, id):
-        with self.auto_session as session:
-            return session.query(entity).filter(BaseEntity.id==id).one()
-
     def find_first(self, entity, filter=None, options=None):
+        """
+        Convenience method for ``find(...).first()``.
+        """
         return self.find(entity, filter, options).first()
 
     def find_all(self, entity, filter=None, options=None):
+        """
+        Convenience method for ``find(...).all()``.
+        """
         return self.find(entity, filter, options).all()
 
     def find_roots(self, entity=None):
@@ -295,6 +318,10 @@ class Mapper(object):
                 if rel.__class__ == entity and rel not in the_set:
                     the_set.add(rel)
         return list(the_set)
+
+    def find_by_id(self, entity, id):
+        with self.auto_session as session:
+            return session.query(entity).filter(BaseEntity.id==id).one()
 
     def find_by_unique_id(self, unique_id):
         return self.find(BaseEntity).filter(BaseEntity._unique_id==unique_id).one()
