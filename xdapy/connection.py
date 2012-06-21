@@ -143,9 +143,26 @@ class Connection(object):
             [test]
             # url syntax for sqlite
             url = sqlite:///test.db
+            # other parameters
             check_empty = true
             [demo]
-            url = sqlite:///demo.db
+            # url syntax for sqlite in-memory db
+            url = sqlite://
+
+        The test section may be left blank, in which case a sqlite in-memory database
+        will be used.
+
+        Sections `default` and `test` are special and may be used as::
+
+            xdapy.Connection.default()
+
+        and ::
+
+            xdapy.Connection.test()
+
+        Other sections (`demo` in the example code) may be used as::
+
+            xdapy.Connection.profile("demo")
 
 
         Parameters
