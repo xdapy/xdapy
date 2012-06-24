@@ -20,7 +20,7 @@ from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy.orm.session import Session
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm.collections import column_mapped_collection
+from sqlalchemy.orm.collections import column_mapped_collection, MappedCollection
 from sqlalchemy.ext.declarative import DeclarativeMeta, synonym_for
 
 from xdapy import Base
@@ -152,51 +152,6 @@ class BaseEntity(Base):
         if not hasattr(self, "__data_assoc"):
             self.__data_assoc = _DataAssoc(self)
         return self.__data_assoc
-
-    def attach(self, connection_type, connection_object):
-        """ Connect this entity with `connection_object` via the `connection_type`.
-
-        Parameters
-        ----------
-        connection_type: string
-            The type of the connection.
-        connection_object: Entity
-            The object to attach.
-        """
-        if connection_object in self.attachments(connection_type):
-            raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))
-
-        # Create a new context object.
-        # The back reference is automatically appended through setting the back reference
-        context = Context(holder=self, attachment=connection_object, connection_type=connection_type)
-        return context
-
-    def attachments(self, conn_type=None):
-        """ Lists all attachments to this object.
-        """
-        if conn_type is None:
-            return [c.attachment for c in self.connections]
-        else:
-            return [c.attachment for c in self.connections if c.connection_type==conn_type]
-
-    def holders(self, conn_type=None):
-        """ Returns all objects which have attachments to this object.
-        """
-        if conn_type is None:
-            return [c.holder for c in self.back_references]
-        else:
-            return [c.holder for c in self.back_references if c.connection_type==conn_type]
-
-    @property
-    def context(self):
-        """ Returns a dictionary of attachment types and attached objects.
-        Read-only for now. May become r/w in the future.
-        """
-        grouped = itertools.groupby(self.connections, lambda context_obj: context_obj.connection_type)
-        ctx = {}
-        for connection_type, connections in grouped:
-            ctx[connection_type] = [connection.attachment for connection in connections]
-        return ctx
 
     @validates('_type')
     def validate_name(self, key, e_name):
@@ -399,6 +354,86 @@ class _StrParams(collections.MutableMapping):
     def __iter__(self):
         return iter(self.owning.params)
 
+class _ContextBySetDict(collections.MutableMapping):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def keys(self):
+        return list(set(ctx.connection_type for ctx in self.parent.holds_context))
+
+    def __delitem__(self, connection_type):
+        toremove = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        self.parent.holds_context.difference_update(toremove)
+
+    def __getitem__(self, connection_type):
+        return _ContextBySet(self.parent, connection_type,
+            [ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+
+    def __setitem__(self, connection_type, value):
+        current = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        toremove = set([ctx for ctx in current if ctx.attachment not in value])
+        toadd = set([Context(connection_type=connection_type,attachment=v) for v in value if v not in current])
+        self.parent.holds_context.update(toadd)
+        self.parent.holds_context.difference_update(toremove)
+
+    def __repr__(self):
+        return repr({k: self[k] for k in self})
+
+    def __len__(self):
+        return len(self.keys())
+
+
+class _ContextBySet(collections.MutableSet):
+
+    def __init__(self, parent, connection_type, items):
+        self.connection_type = connection_type
+        self.parent = parent
+
+    def __iter__(self):
+        return iter([ctx.attachment for ctx
+                     in self.parent.holds_context if ctx.connection_type == self.connection_type])
+
+    def update(self, items):
+        curr = set([ctx.attachment for ctx
+                    in self.parent.holds_context if ctx.connection_type==self.connection_type])
+        toadd = set(items).difference(curr)
+        self.parent.holds_context.update(
+            [Context(key=self.connection_type, attachment=item) for item in toadd])
+
+    def remove(self, item):
+        for ctx in self.parent.holds_context:
+            if ctx.connection_type == self.connection_type and ctx.attachment is item:
+                self.parent.holds_context.remove(ctx)
+                break
+        else:
+            raise ValueError("Value not present")
+
+    def add(self, item):
+        for ctx in self.parent.holds_context:
+            if ctx.connection_type == self.connection_type and ctx.attachment is item:
+                break
+        else:
+            self.parent.holds_context.add(Context(connection_type=self.connection_type, attachment=item))
+
+    def __repr__(self):
+        return repr(set(self))
+
+    def __contains__(self, item):
+        return item in iter(self)
+
+    def __len__(self):
+        return sum(1 for _ in iter(self))
+
+    def discard(self, item):
+        for ctx in self.parent.holds_context:
+            if ctx.key == self.connection_type and ctx.attachment is item:
+                self.parent.holds_context.remove(ctx)
+                break
+
+
 class Entity(BaseEntity):
     """Entity is the base class for all entity object definitions."""
     #: We specify our special metaclass `xdapy.structures.EntityMeta`.
@@ -488,6 +523,34 @@ class Entity(BaseEntity):
         for c in self.back_references:
             print " ", "+-", "belongs to", c.holders
 
+    def attach(self, connection_type, connection_object):
+        if connection_object in self.context[connection_type]:
+            raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))
+        self.context[connection_type].add(connection_object)
+
+    def attachments(self, connection_type=None):
+        if connection_type:
+            return self.context[connection_type]
+        else:
+            return set(item for sublist in self.context.values() for item in sublist)
+
+    def holders(self, connection_type=None):
+        if connection_type:
+            return set(ctx.holder for ctx in self.attached_by if ctx.connection_type==connection_type)
+        else:
+            return set(ctx.holder for ctx in self.attached_by)
+
+    @property
+    def context(self):
+        return _ContextBySetDict(self)
+
+    @context.setter
+    def context(self, dict_):
+        toremove = set([ctx for ctx in self.holds_context if ctx.key not in dict_])
+        toadd = set([Context(key=k, attachment=item) for k, v in dict_.items()
+                     for item in itertools.chain(v)])
+        self.holds_context.update(toadd)
+        self.holds_context.difference_update(toremove)
 
 def create_entity(name, declared_params):
     """Creates a dynamic subclass of `Entity` which makes it possible
@@ -526,7 +589,6 @@ def calculate_polymorphic_name(name, declared_params):
 
     return name + "_" + the_hash
 
-
 class Context(Base):
     """
     The class `Context` is mapped on the table 'data'. The name assigned to Data
@@ -534,19 +596,19 @@ class Context(Base):
     adjacency list 'datalist'. The corresponding entities can be accessed via
     the entities attribute of the Data class.
     """
-    entity_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
-    connected_id = Column('connected_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    holder_id = Column('entity_id', Integer, ForeignKey('entities.id'), primary_key=True)
+    attachment_id = Column('connected_id', Integer, ForeignKey('entities.id'), primary_key=True)
 
     connection_type = Column('connection_type', String(500), primary_key=True)
 
-    # Each entity can have a context of related entities
-    holder = relationship(BaseEntity,
-        backref=backref('connections', cascade="all"), # need the cascade to delete context, if entity is deleted
-        primaryjoin=entity_id==BaseEntity.id)
+    holder = relationship(Entity,
+        primaryjoin=lambda: Context.holder_id==Entity.id,
+        backref=backref("holds_context", collection_class=set, cascade="all"))
 
-    attachment = relationship(BaseEntity,
-        backref=backref('back_references', cascade="all"),
-        primaryjoin=connected_id==BaseEntity.id)
+    attachment = relationship(Entity,
+        primaryjoin=lambda: Context.attachment_id==Entity.id,
+        backref=backref("attached_by", collection_class=set, cascade="all"))
+
 
     @property
     def from_entity(self):
@@ -557,13 +619,13 @@ class Context(Base):
         return self.connected
 
     __tablename__ = 'contexts'
-    __table_args__ = (UniqueConstraint(entity_id, connected_id, connection_type), {})
+    __table_args__ = (UniqueConstraint(holder_id, attachment_id, connection_type), {})
 
     def __repr__(self):
-        return "Context(entity_id={id!s}, connected_id={cid!s}, connection_type={type})".format(id=self.entity_id, cid=self.connected_id, type=self.connection_type)
+        return "Context(holder_id={id!s}, attachment_id={aid!s}, connection_type={type})".format(id=self.holder_id, aid=self.attachment_id, type=self.connection_type)
 
     def __str__(self):
-        return "Context({e} has {t} {c})".format(e=self.back_referenced, t=self.connection_type, c=self.connected)
+        return "Context({e} has {t} {a})".format(e=self.holder, t=self.connection_type, a=self.attachment)
 
 
 class ParameterDeclaration(Base):

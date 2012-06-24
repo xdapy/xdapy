@@ -309,8 +309,20 @@ class TestContext(Setup):
         self.assertTrue(all(observer_ids))
 
         for conn in connections:
-            self.assertTrue(conn.entity_id in experiment_ids)
-            self.assertTrue(conn.connected_id in observer_ids)
+            self.assertTrue(conn.holder_id in experiment_ids)
+            self.assertTrue(conn.attachment_id in observer_ids)
+
+    def test_connections(self):
+        connections = self.m.find_all(Context)
+        self.assertIn(self.o1, self.e1.context["Observer"])
+        self.assertIn(self.o2, self.e1.context["Observer"])
+        self.assertNotIn(self.o3, self.e1.context["Observer"])
+
+        self.assertNotIn(self.o1, self.e2.context["Observer"])
+        self.assertIn(self.o2, self.e2.context["Observer"])
+        self.assertIn(self.o3, self.e2.context["Observer"])
+
+        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o1 and c.connection_type=="Observer" for c in connections))
 
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
@@ -346,7 +358,7 @@ class TestContext(Setup):
         eee1.attach("CCC", ooo2)
         eee2.attach("CCC", ooo1)
 
-        self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
+        self.assertEqual(len(eee2.holds_context), 1, "eee2.holds_context has not been updated.")
         # check that connections have been added to session
         self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
 
@@ -377,7 +389,7 @@ class TestContext(Setup):
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.attachments()), 3)
+        self.assertEquals(len(e1.attachments()), 2)
 
         self.assertIsNotNone(e1.id)
         self.assertIsNotNone(o1.id)
@@ -410,7 +422,7 @@ class TestContext(Setup):
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.attachments()), 3)
+        self.assertEquals(len(e1.attachments()), 2)
 
         self.assertIsNone(e1.id)
         self.assertIsNone(o1.id)
@@ -425,7 +437,7 @@ class TestContext(Setup):
 
         self.e1.attach("Trial", t1)
 
-        self.assertEqual(self.e1.context, {"Observer": [self.o1, self.o2], "Trial": [t1]})
+        self.assertEqual(self.e1.context, {"Observer": set([self.o1, self.o2]), "Trial": set([t1])})
 
 
 #    def testGetDataMatrix(self):
