@@ -546,8 +546,8 @@ class Entity(BaseEntity):
 
     @context.setter
     def context(self, dict_):
-        toremove = set([ctx for ctx in self.holds_context if ctx.key not in dict_])
-        toadd = set([Context(key=k, attachment=item) for k, v in dict_.items()
+        toremove = set([ctx for ctx in self.holds_context if ctx.connection_type not in dict_])
+        toadd = set([Context(connection_type=k, attachment=item) for k, v in dict_.items()
                      for item in itertools.chain(v)])
         self.holds_context.update(toadd)
         self.holds_context.difference_update(toremove)
