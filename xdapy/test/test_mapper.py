@@ -332,6 +332,28 @@ class TestContext(Setup):
 
         self.assertTrue(len(context), 4)
 
+    def test_context_contains(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        self.assertTrue("Observer" in self.e1.context)
+        self.assertTrue("Additional Observer" in self.e1.context)
+        self.assertFalse("XXX Additional Observer XXX" in self.e1.context)
+
+        self.assertTrue("Observer" in self.e2.context)
+        self.assertFalse("Additional Observer" in self.e2.context)
+
+    def test_context_getitem(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        self.assertEqual(self.e1.context["Observer"], set([self.o1, self.o2]))
+        self.assertEqual(self.e1.context["Additional Observer"], set([self.o3]))
+        self.assertEqual(self.e1.context["XXX Additional Observer XXX"], set())
+
+        self.assertEqual(self.e2.context["Observer"], set([self.o2, self.o3]))
+        self.assertEqual(self.e2.context["Additional Observer"], set())
+
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
 

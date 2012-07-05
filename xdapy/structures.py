@@ -379,6 +379,9 @@ class _ContextBySetDict(collections.MutableMapping):
         self.parent.holds_context.update(toadd)
         self.parent.holds_context.difference_update(toremove)
 
+    def __contains__(self, connection_type):
+        return any(ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type)
+
     def __repr__(self):
         return repr({k: self[k] for k in self})
 
