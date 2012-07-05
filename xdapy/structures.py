@@ -603,11 +603,11 @@ class Context(Base):
 
     holder = relationship(Entity,
         primaryjoin=lambda: Context.holder_id==Entity.id,
-        backref=backref("holds_context", collection_class=set, cascade="all"))
+        backref=backref("holds_context", collection_class=set, cascade="all, delete-orphan"))
 
     attachment = relationship(Entity,
         primaryjoin=lambda: Context.attachment_id==Entity.id,
-        backref=backref("attached_by", collection_class=set, cascade="all"))
+        backref=backref("attached_by", collection_class=set, cascade="all, delete-orphan"))
 
 
     @property
