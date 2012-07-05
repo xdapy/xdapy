@@ -312,8 +312,7 @@ class TestContext(Setup):
             self.assertTrue(conn.holder_id in experiment_ids)
             self.assertTrue(conn.attachment_id in observer_ids)
 
-    def test_connections(self):
-        connections = self.m.find_all(Context)
+    def test_context(self):
         self.assertIn(self.o1, self.e1.context["Observer"])
         self.assertIn(self.o2, self.e1.context["Observer"])
         self.assertNotIn(self.o3, self.e1.context["Observer"])
@@ -322,7 +321,16 @@ class TestContext(Setup):
         self.assertIn(self.o2, self.e2.context["Observer"])
         self.assertIn(self.o3, self.e2.context["Observer"])
 
-        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o1 and c.connection_type=="Observer" for c in connections))
+        # check that the Context is correctly stored
+        context = self.m.find_all(Context)
+        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o1 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o2 and c.connection_type=="Observer" for c in context))
+        self.assertFalse(any(c.holder==self.e1 and c.attachment==self.o3 and c.connection_type=="Observer" for c in context))
+        self.assertFalse(any(c.holder==self.e2 and c.attachment==self.o1 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e2 and c.attachment==self.o2 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e2 and c.attachment==self.o3 and c.connection_type=="Observer" for c in context))
+
+        self.assertTrue(len(context), 4)
 
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
