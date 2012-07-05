@@ -2,6 +2,7 @@
 
 Created on Jun 17, 2009
 """
+import operator
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
@@ -353,6 +354,75 @@ class TestContext(Setup):
 
         self.assertEqual(self.e2.context["Observer"], set([self.o2, self.o3]))
         self.assertEqual(self.e2.context["Additional Observer"], set())
+
+    def test_context_delete(self):
+        with self.m.auto_session:
+            del self.e1.context["Observer"]
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 0)
+
+    def test_context_partial_delete(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 5)
+
+        with self.m.auto_session:
+            del self.e1.context["Observer"]
+
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 1)
+        self.assertIn(self.o3, self.e1.context["Additional Observer"])
+
+    def test_context_updates(self):
+        with self.m.auto_session:
+            self.e1.context["Additional Observer"] = [self.o3]
+        self.assertTrue(self.o3 in self.e1.context["Additional Observer"])
+
+        self.assertEqual(self.e2.context, {
+            "Observer": set([self.o2, self.o3])
+        })
+
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].add(self.o3)
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+    def test_context_deletes_key_on_remove(self):
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].remove(self.o3)
+
+        self.assertTrue("O odd" in self.e2.context)
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].remove(self.o1)
+
+        self.assertFalse("O odd" in self.e2.context)
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2])
+        })
+
+    def test_context_errors(self):
+        self.assertRaises(TypeError, operator.setitem, self.e1.context, "A", self.o3)
 
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
