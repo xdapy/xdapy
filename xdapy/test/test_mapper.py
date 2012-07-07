@@ -2,6 +2,7 @@
 
 Created on Jun 17, 2009
 """
+import operator
 from sqlalchemy.exc import CircularDependencyError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
@@ -309,8 +310,161 @@ class TestContext(Setup):
         self.assertTrue(all(observer_ids))
 
         for conn in connections:
-            self.assertTrue(conn.entity_id in experiment_ids)
-            self.assertTrue(conn.connected_id in observer_ids)
+            self.assertTrue(conn.holder_id in experiment_ids)
+            self.assertTrue(conn.attachment_id in observer_ids)
+
+    def test_context(self):
+        self.assertIn(self.o1, self.e1.context["Observer"])
+        self.assertIn(self.o2, self.e1.context["Observer"])
+        self.assertNotIn(self.o3, self.e1.context["Observer"])
+
+        self.assertNotIn(self.o1, self.e2.context["Observer"])
+        self.assertIn(self.o2, self.e2.context["Observer"])
+        self.assertIn(self.o3, self.e2.context["Observer"])
+
+        # check that the Context is correctly stored
+        context = self.m.find_all(Context)
+        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o1 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e1 and c.attachment==self.o2 and c.connection_type=="Observer" for c in context))
+        self.assertFalse(any(c.holder==self.e1 and c.attachment==self.o3 and c.connection_type=="Observer" for c in context))
+        self.assertFalse(any(c.holder==self.e2 and c.attachment==self.o1 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e2 and c.attachment==self.o2 and c.connection_type=="Observer" for c in context))
+        self.assertTrue(any(c.holder==self.e2 and c.attachment==self.o3 and c.connection_type=="Observer" for c in context))
+
+        self.assertTrue(len(context), 4)
+
+    def test_context_contains(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        self.assertTrue("Observer" in self.e1.context)
+        self.assertTrue("Additional Observer" in self.e1.context)
+        self.assertFalse("XXX Additional Observer XXX" in self.e1.context)
+
+        self.assertTrue("Observer" in self.e2.context)
+        self.assertFalse("Additional Observer" in self.e2.context)
+
+    def test_context_getitem(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        self.assertEqual(self.e1.context["Observer"], set([self.o1, self.o2]))
+        self.assertEqual(self.e1.context["Additional Observer"], set([self.o3]))
+        self.assertEqual(self.e1.context["XXX Additional Observer XXX"], set())
+
+        self.assertEqual(self.e2.context["Observer"], set([self.o2, self.o3]))
+        self.assertEqual(self.e2.context["Additional Observer"], set())
+
+    def test_context_delete(self):
+        with self.m.auto_session:
+            del self.e1.context["Observer"]
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 0)
+
+    def test_context_partial_delete(self):
+        with self.m.auto_session:
+            self.e1.attach("Additional Observer", self.o3)
+
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 5)
+
+        with self.m.auto_session:
+            del self.e1.context["Observer"]
+
+        context = self.m.find_all(Context)
+        self.assertTrue(len(context), 1)
+        self.assertIn(self.o3, self.e1.context["Additional Observer"])
+
+    def test_context_updates(self):
+        with self.m.auto_session:
+            self.e1.context["Additional Observer"] = [self.o3]
+        self.assertTrue(self.o3 in self.e1.context["Additional Observer"])
+
+        self.assertEqual(self.e2.context, {
+            "Observer": set([self.o2, self.o3])
+        })
+
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].add(self.o3)
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+        with self.m.auto_session:
+            self.e2.context = {}
+        with self.m.auto_session:
+            self.e2.context["O even"].update([self.o2])
+            self.e2.context["O odd"].update([self.o1])
+            self.e2.context["O odd"].update([self.o1, self.o3])
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+    def test_context_len(self):
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+
+        self.assertEqual(len(self.e2.context), 2)
+        self.assertEqual(len(self.e2.context["O even"]), 1)
+        self.assertEqual(len(self.e2.context["O odd"]), 2)
+        self.assertEqual(len(self.e2.context["O other"]), 0)
+        self.assertEqual(len(self.o1.context), 0)
+
+    def test_context_deletes_key_on_remove(self):
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].remove(self.o3)
+
+        self.assertTrue("O odd" in self.e2.context)
+
+        with self.m.auto_session:
+            self.e2.context["O odd"].remove(self.o1)
+
+        self.assertFalse("O odd" in self.e2.context)
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2])
+        })
+
+    def test_context_errors(self):
+        # cannot set non-iterable
+        self.assertRaises(TypeError, operator.setitem, self.e1.context, "A", self.o3)
+        # cannot delete unknown key
+        self.assertRaises(KeyError, operator.delitem, self.e1.context, "A")
+        # cannot remove non-existent item
+        self.assertRaises(KeyError, lambda: self.e1.context["Observer"].remove(self.o3))
+
+    def test_context_reprs(self):
+        # should not fail
+        str(self.e1.context)
+        repr(self.e1.context)
+
+        str(self.e1.context["Observer"])
+        repr(self.e1.context["Observer"])
+
+        context = self.m.find_all(Context)
+        for ctx in context:
+            str(ctx)
+            repr(ctx)
 
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
@@ -346,7 +500,7 @@ class TestContext(Setup):
         eee1.attach("CCC", ooo2)
         eee2.attach("CCC", ooo1)
 
-        self.assertEqual(len(eee2.connections), 1, "eee2.connections has not been updated.")
+        self.assertEqual(len(eee2.holds_context), 1, "eee2.holds_context has not been updated.")
         # check that connections have been added to session
         self.assertEqual(self.m.find(Context).filter(Context.connection_type=="CCC").count(), 3)
 
@@ -377,7 +531,10 @@ class TestContext(Setup):
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.attachments()), 3)
+        self.assertIn(e1, o1.holders())
+        self.assertIn(e1, o2.holders())
+
+        self.assertEquals(len(e1.attachments()), 2)
 
         self.assertIsNotNone(e1.id)
         self.assertIsNotNone(o1.id)
@@ -410,7 +567,10 @@ class TestContext(Setup):
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
 
-        self.assertEquals(len(e1.attachments()), 3)
+        self.assertIn(e1, o1.holders())
+        self.assertIn(e1, o2.holders())
+
+        self.assertEquals(len(e1.attachments()), 2)
 
         self.assertIsNone(e1.id)
         self.assertIsNone(o1.id)
@@ -425,7 +585,7 @@ class TestContext(Setup):
 
         self.e1.attach("Trial", t1)
 
-        self.assertEqual(self.e1.context, {"Observer": [self.o1, self.o2], "Trial": [t1]})
+        self.assertEqual(self.e1.context, {"Observer": set([self.o1, self.o2]), "Trial": set([t1])})
 
 
 #    def testGetDataMatrix(self):

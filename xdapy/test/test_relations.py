@@ -74,7 +74,7 @@ exp_monorail.attach("C", obs_1)
 exp_monorail.attach("C", obs_2)
 exp_neptune.attach("C", obs_1)
 
-print exp_neptune.connections
+print exp_neptune.holds_context
 
 #exp_neptune.attach("C", obs_1)
 
