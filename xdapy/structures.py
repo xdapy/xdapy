@@ -539,6 +539,29 @@ class Entity(BaseEntity):
 
     @property
     def context(self):
+        """ Accesses this `Entity`’s context.
+
+        The representation of this context is structurally identical to
+        a dict of sets of Entities with the `connection_type` being the key
+        of the dict.
+
+        For example::
+
+            experiment.context == {
+              "Observer": set([observer1, observer2]),
+              "Supervisor": set([supervisor1])
+            }
+
+        All normal Python operations for manipulating this data structure should
+        work transparently and the underlying data should automatically change.
+        This means that the following works as expected::
+
+            experiment.context["Observer"].add(observer3)
+            experiment.context["Observer"].remove(observer1)
+
+            experiment.context["Observer"] == set([observer2, observer3])
+
+        """
         return _ContextBySetDict(self)
 
     @context.setter
