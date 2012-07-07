@@ -406,7 +406,7 @@ class _ContextBySet(collections.MutableSet):
                     in self.parent.holds_context if ctx.connection_type==self.connection_type])
         toadd = set(items).difference(curr)
         self.parent.holds_context.update(
-            [Context(key=self.connection_type, attachment=item) for item in toadd])
+            [Context(connection_type=self.connection_type, attachment=item) for item in toadd])
 
     def add(self, item):
         for ctx in self.parent.holds_context:

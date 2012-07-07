@@ -401,6 +401,18 @@ class TestContext(Setup):
             "O odd": set([self.o1, self.o3])
         })
 
+        with self.m.auto_session:
+            self.e2.context = {}
+        with self.m.auto_session:
+            self.e2.context["O even"].update([self.o2])
+            self.e2.context["O odd"].update([self.o1])
+            self.e2.context["O odd"].update([self.o1, self.o3])
+        self.assertEqual(self.e2.context, {
+            "O even": set([self.o2]),
+            "O odd": set([self.o1, self.o3])
+        })
+
+
     def test_context_deletes_key_on_remove(self):
         with self.m.auto_session:
             self.e2.context = {
