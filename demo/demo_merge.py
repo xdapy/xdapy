@@ -112,8 +112,8 @@ from sqlalchemy.orm.exc import NoResultFound
 def migrate_connections(m1, m2):
     conn1 = m1.find(Context)
     for c1 in conn1:
-        from_unique_id = c1.from_entity.unique_id
-        to_unique_id = c1.to_entity.unique_id
+        from_unique_id = c1.holder.unique_id
+        to_unique_id = c1.attachment.unique_id
         name = c1.connection_type
 
         print from_unique_id, to_unique_id

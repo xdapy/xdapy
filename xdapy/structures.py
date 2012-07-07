@@ -606,15 +606,6 @@ class Context(Base):
         primaryjoin=lambda: Context.attachment_id==Entity.id,
         backref=backref("attached_by", collection_class=set, cascade="all, delete-orphan"))
 
-
-    @property
-    def from_entity(self):
-        return self.back_referenced
-
-    @property
-    def to_entity(self):
-        return self.connected
-
     __tablename__ = 'contexts'
     __table_args__ = (UniqueConstraint(holder_id, attachment_id, connection_type), {})
 
