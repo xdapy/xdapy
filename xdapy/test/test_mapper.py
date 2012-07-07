@@ -426,6 +426,8 @@ class TestContext(Setup):
         self.assertRaises(TypeError, operator.setitem, self.e1.context, "A", self.o3)
         # cannot delete unknown key
         self.assertRaises(KeyError, operator.delitem, self.e1.context, "A")
+        # cannot remove non-existent item
+        self.assertRaises(KeyError, lambda: self.e1.context["Observer"].remove(self.o3))
 
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)

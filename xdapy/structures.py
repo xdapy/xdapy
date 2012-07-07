@@ -408,14 +408,6 @@ class _ContextBySet(collections.MutableSet):
         self.parent.holds_context.update(
             [Context(key=self.connection_type, attachment=item) for item in toadd])
 
-    def remove(self, item):
-        for ctx in self.parent.holds_context:
-            if ctx.connection_type == self.connection_type and ctx.attachment is item:
-                self.parent.holds_context.remove(ctx)
-                break
-        else:
-            raise ValueError("Value not present")
-
     def add(self, item):
         for ctx in self.parent.holds_context:
             if ctx.connection_type == self.connection_type and ctx.attachment is item:
@@ -434,7 +426,7 @@ class _ContextBySet(collections.MutableSet):
 
     def discard(self, item):
         for ctx in self.parent.holds_context:
-            if ctx.key == self.connection_type and ctx.attachment is item:
+            if ctx.connection_type == self.connection_type and ctx.attachment is item:
                 self.parent.holds_context.remove(ctx)
                 break
 
