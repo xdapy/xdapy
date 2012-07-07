@@ -441,6 +441,19 @@ class TestContext(Setup):
         # cannot remove non-existent item
         self.assertRaises(KeyError, lambda: self.e1.context["Observer"].remove(self.o3))
 
+    def test_context_reprs(self):
+        # should not fail
+        str(self.e1.context)
+        repr(self.e1.context)
+
+        str(self.e1.context["Observer"])
+        repr(self.e1.context["Observer"])
+
+        context = self.m.find_all(Context)
+        for ctx in context:
+            str(ctx)
+            repr(ctx)
+
     def test_number_of_connections(self):
         self.assertEqual(self.m.find(Context).count(), 4)
 
