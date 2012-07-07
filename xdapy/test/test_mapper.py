@@ -506,6 +506,9 @@ class TestContext(Setup):
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
 
+        self.assertIn(e1, o1.holders())
+        self.assertIn(e1, o2.holders())
+
         self.assertEquals(len(e1.attachments()), 2)
 
         self.assertIsNotNone(e1.id)
@@ -538,6 +541,9 @@ class TestContext(Setup):
         self.assertIn(e1, o2.holders("CCC"))
         self.assertIn(e1, o1.holders("DDD"))
         self.assertNotIn(e1, o2.holders("DDD"))
+
+        self.assertIn(e1, o1.holders())
+        self.assertIn(e1, o2.holders())
 
         self.assertEquals(len(e1.attachments()), 2)
 
