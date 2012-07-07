@@ -366,6 +366,8 @@ class _ContextBySetDict(collections.MutableMapping):
 
     def __delitem__(self, connection_type):
         toremove = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        if not toremove:
+            raise KeyError(connection_type)
         self.parent.holds_context.difference_update(toremove)
 
     def __getitem__(self, connection_type):
