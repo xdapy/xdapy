@@ -412,6 +412,18 @@ class TestContext(Setup):
             "O odd": set([self.o1, self.o3])
         })
 
+    def test_context_len(self):
+        with self.m.auto_session:
+            self.e2.context = {
+                "O even": [self.o2],
+                "O odd": [self.o1, self.o3]
+            }
+
+        self.assertEqual(len(self.e2.context), 2)
+        self.assertEqual(len(self.e2.context["O even"]), 1)
+        self.assertEqual(len(self.e2.context["O odd"]), 2)
+        self.assertEqual(len(self.e2.context["O other"]), 0)
+        self.assertEqual(len(self.o1.context), 0)
 
     def test_context_deletes_key_on_remove(self):
         with self.m.auto_session:
