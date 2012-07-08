@@ -49,6 +49,14 @@ class TestEntity(unittest.TestCase):
     def test_entities_must_not_contain_underscore(self):
         self.assertRaises(EntityDefinitionError, create_entity, "Some_Entity", {})
 
+    def test_entity_must_not_contain_more_than_one_underscore(self):
+        self.assertRaises(EntityDefinitionError, create_entity, "Some_other_Entity", {})
+
+    def test_may_create_entity_with_correct_hash(self):
+        Experiment = create_entity("Experiment_b95e622546d303f14f7ceaca2e8e316c", declared_params)
+        self.assertEqual(self.Experiment.__name__, Experiment.__name__)
+        self.assertNotEqual(self.Experiment, Experiment)
+
 
 class TestSavedTypes(unittest.TestCase):
     def setUp(self):
