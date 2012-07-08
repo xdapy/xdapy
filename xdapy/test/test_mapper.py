@@ -860,6 +860,11 @@ class TestComplicatedQuery(Setup):
         sessions = self.m.find_with("Session", {"_parent": ("Trial", {"response": "resp%"})})
         self.assertEqual(len(sessions), 5)
 
+        # retrieve all Sessions with parent Trial and response=resp% and rt!=2
+        sessions = self.m.find_with("Session", {"_parent": ("Trial", {"response": "resp%",
+                                                                      "_with": lambda e: e.params["rt"] != 2})})
+        self.assertEqual(len(sessions), 3)
+
     def test_find_by_object(self):
         # find the experiments with observer o1
         experiments = self.m.super_find("Experiment", {("_context", "Observed by"): self.o1})
