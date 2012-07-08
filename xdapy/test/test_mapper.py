@@ -3,7 +3,7 @@
 Created on Jun 17, 2009
 """
 import operator
-from sqlalchemy.exc import CircularDependencyError
+from sqlalchemy.exc import CircularDependencyError, InvalidRequestError
 from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
 from xdapy.structures import Context, create_entity
@@ -121,22 +121,50 @@ class TestMapper(Setup):
         self.m.delete(e)
         self.assertEqual(len(self.m.find_all(Entity)), 1)
 
-    def testSaveAll(self):
-        obs = Observer(name="Max Mustermann", handedness="right", age=26)
-        self.m.save_all(obs)
-
-        self.assertTrue(self.m.find_first(Observer).params["name"] == "Max Mustermann")
-
+    def test_save_and_delete(self):
         e = Experiment(project='YourProject', experimenter="Johny Dony")
         t1 = Trial(rt=189, valid=True, response='right')
         t2 = Trial(rt=189, valid=False, response='right')
+        s1 = Session(count=1)
+        s2 = Session(count=2)
+
+        self.assertEqual(len(self.m.find_all(Entity)), 0)
+        self.assertEqual(len(self.m.find_all(Trial)), 0)
+        self.assertEqual(len(self.m.find_all(Session)), 0)
+
         t1.parent = e
         t2.parent = e
 
-        self.m.save_all(e)
+        t1.children.append(s1)
+        t2.children.append(s2)
 
-        self.assertTrue(len(self.m.find_all(Trial)) == 2)
+        self.assertTrue(s1.parent is not None)
+        self.assertEqual(s1.parent, t1)
 
+        # this saves the whole tree
+        self.m.save(s1)
+
+        self.assertEqual(len(self.m.find_all(Experiment)), 1)
+        self.assertEqual(len(self.m.find_all(Trial)), 2)
+        self.assertEqual(len(self.m.find_all(Session)), 2)
+
+        # t1 is being removed from the tree as well as
+        # all its connections
+        self.m.delete(t1)
+
+        self.assertEqual(len(self.m.find_all(Experiment)), 1)
+        self.assertEqual(len(self.m.find_all(Trial)), 1)
+        self.assertEqual(len(self.m.find_all(Session)), 2)
+
+        self.assertFalse(t1 in e.children)
+        self.assertTrue(t2 in e.children)
+
+        self.assertTrue(s1.parent is None)
+
+        # however, s1 is still a child of t1
+        self.assertTrue(s1 in t1.children)
+        # but we cannot save t1 again
+        self.assertRaises(InvalidRequestError, self.m.save, t1)
 
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)

@@ -90,26 +90,6 @@ class Mapper(object):
             except Exception:
                 raise
 
-    def save_all(self, *args):
-        """
-        Save instances inheriting from `Entity` into database as well as their children.
-
-        Attributes
-        ----------
-        args
-            One or more objects derived from `xdapy.structures.Entity`.
-
-        Raises
-        ------
-        TypeError
-            If the type of an object's attribute is not supported.
-        TypeError
-            If the attribute is None
-        """
-        for arg in args:
-            self.save(arg)
-            self.save_all(*arg.children)
-
     def delete(self, *args):
         """Deletes the objects from the database."""
         with self.auto_session as session:
