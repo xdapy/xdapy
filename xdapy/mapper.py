@@ -83,21 +83,15 @@ class Mapper(object):
             If the attribute is None
         """
         with self.auto_session as session:
-            try:
-                for arg in args:
-                    session.add(arg)
-                    session.flush()
-            except Exception:
-                raise
+            for arg in args:
+                session.add(arg)
+                session.flush()
 
     def delete(self, *args):
         """Deletes the objects from the database."""
         with self.auto_session as session:
-            try:
-                for arg in args:
-                    session.delete(arg)
-            except Exception:
-                raise
+            for arg in args:
+                session.delete(arg)
 
     def create(self, type, *args, **kwargs):
         """Returns an instance of the entity named type."""
