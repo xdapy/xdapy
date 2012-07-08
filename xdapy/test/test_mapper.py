@@ -403,6 +403,12 @@ class TestContext(Setup):
         self.assertTrue(len(context), 1)
         self.assertIn(self.o3, self.e1.context["Additional Observer"])
 
+    def test_context_delete_does_not_delete_entities(self):
+        self.assertEqual(len(self.m.find_all(Observer)), 3)
+        with self.m.auto_session:
+            del self.e1.context["Observer"]
+        self.assertEqual(len(self.m.find_all(Observer)), 3)
+
     def test_context_updates(self):
         with self.m.auto_session:
             self.e1.context["Additional Observer"] = [self.o3]
