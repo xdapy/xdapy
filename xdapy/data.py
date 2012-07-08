@@ -117,7 +117,7 @@ class Data(Base):
         return parameter
 
     def __repr__(self):
-        return "<%s('%s','%s',%s)>" % (self.__class__.__name__, self.key, self.mimetype, self.entity_id)
+        return "<%s('%s', %r, %s)>" % (self.__class__.__name__, self.key, self.mimetype, self.entity_id)
 
 class _DataProxy(object):
     """
