@@ -2,6 +2,8 @@
 
 Created on Jun 17, 2009
 """
+from xdapy.parameters import StringParameter
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 """TODO: Load image into testSetData"""
 
@@ -65,6 +67,17 @@ class TestObjectDict(unittest.TestCase):
         self.assertFalse(self.m.session.is_modified(exp))
         self.assertFalse(exp in self.m.session.dirty)
 
+    def test_param_delete(self):
+        exp = Experiment()
+        self.m.save(exp)
+
+        with self.m.auto_session:
+            exp.params['project'] = "P"
+        self.assertEqual(len(self.m.find_all(StringParameter)), 1)
+
+        with self.m.auto_session:
+            del exp.params['project']
+        self.assertEqual(len(self.m.find_all(StringParameter)), 0)
 
     def testSetItem(self):
         """Test parameter setting"""

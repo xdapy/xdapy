@@ -330,7 +330,7 @@ class Entity(BaseEntity):
 
     _params = relationship(Parameter,
         collection_class=column_mapped_collection(Parameter.name), # FIXME ???
-        cascade="save-update, merge, delete")
+        cascade="all, delete-orphan")
 
     # one to many BaseEntity->Data
     _data = relationship(Data,
