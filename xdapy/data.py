@@ -105,7 +105,7 @@ class Data(Base):
     key = Column('key', String(40))
     mimetype = Column('mimetype', String(40))
 
-    _chunks = relationship(DataChunks, cascade="save-update, merge, delete")
+    _chunks = relationship(DataChunks, cascade="all, delete-orphan")
 
     __tablename__ = 'data'
     __table_args__ = (UniqueConstraint(entity_id, key), {})

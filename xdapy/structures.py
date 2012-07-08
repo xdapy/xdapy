@@ -335,7 +335,7 @@ class Entity(BaseEntity):
     # one to many BaseEntity->Data
     _data = relationship(Data,
         collection_class=column_mapped_collection(Data.key),
-        cascade="save-update, merge, delete")
+        cascade="all, delete-orphan")
 
     @property
     def data(self):

@@ -2,6 +2,7 @@
 
 Created on Jun 17, 2009
 """
+from xdapy.data import DataChunks, Data
 from xdapy.parameters import StringParameter
 
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
@@ -164,8 +165,8 @@ class TestObjectDict(unittest.TestCase):
 
         exp_2.data.update(exp_1.data)
 
-        self.assertEqual(len(exp_2.data), 4)
         self.assertEqual(len(exp_1.data), 3)
+        self.assertEqual(len(exp_2.data), 4)
 
         self.assertEqual(exp_2.data["a"].get_string(), "1")
         self.assertEqual(exp_2.data["b"].get_string(), "1")
@@ -177,6 +178,26 @@ class TestObjectDict(unittest.TestCase):
 
         self.assertEqual(exp_1.data["M"].chunks(), 0)
         self.assertEqual(exp_2.data["M"].chunks(), 0)
+
+        # delete data again
+        with self.m.auto_session:
+            for key in list(exp_1.data):
+                del exp_1.data[key]
+
+        data = self.m.find_all(Data)
+        self.assertEqual(len(data), 4)
+        datachunks = self.m.find_all(DataChunks)
+        self.assertEqual(len(datachunks), 3)
+
+        # delete data again
+        with self.m.auto_session:
+            for key in list(exp_2.data):
+                del exp_2.data[key]
+
+        data = self.m.find_all(Data)
+        self.assertEqual(len(data), 0)
+        datachunks = self.m.find_all(DataChunks)
+        self.assertEqual(len(datachunks), 0)
 
     def testInheritedParams(self):
         class GrandParent(Entity):
