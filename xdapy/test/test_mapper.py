@@ -8,7 +8,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from xdapy import Connection, Mapper, Entity
 from xdapy.structures import Context, create_entity
 from xdapy.errors import InsertionError
-from xdapy.operators import gt, lt, eq
+from xdapy.operators import gt, lt, eq, between, ge
 
 import unittest
 """
@@ -311,9 +311,9 @@ class TestContext(Setup):
         self.e1 = Experiment(project="e1")
         self.e2 = Experiment(project="e2")
 
-        self.o1 = Observer(name="o1")
-        self.o2 = Observer(name="o2")
-        self.o3 = Observer(name="o3")
+        self.o1 = Observer(name="o1", age=20)
+        self.o2 = Observer(name="o2", age=25)
+        self.o3 = Observer(name="o3", age=30)
 
         self.e1.attach("Observer", self.o1)
         self.e1.attach("Observer", self.o2)
@@ -621,6 +621,17 @@ class TestContext(Setup):
 
         self.assertEqual(self.e1.context, {"Observer": set([self.o1, self.o2]), "Trial": set([t1])})
 
+    def test_find_related(self):
+        res = self.m.find_related("Experiment", ("Observer", {"age": between(20, 30)}))
+        self.assertEqual(set(res), set([self.e1, self.e2]))
+        res = self.m.find_related("Experiment", ("Observer", {"age": between(22, 30)}))
+        self.assertEqual(set(res), set([self.e1, self.e2]))
+        res = self.m.find_related("Experiment", ("Observer", {"age": between(26, 30)}))
+        self.assertEqual(set(res), set([self.e2]))
+        res = self.m.find_related("Experiment", ("Observer", {"age": ge(30)}))
+        self.assertEqual(set(res), set([self.e2]))
+        res = self.m.find_related("Experiment", ("Observer", {"age": lt(15)}))
+        self.assertEqual(set(res), set())
 
 #    def testGetDataMatrix(self):
 #        e1 = Experiment(project='MyProject', experimenter="John Doe")
@@ -758,6 +769,7 @@ class TestComplicatedQuery(Setup):
         e2 = Experiment(project="E2", experimenter="X1")
         self.e2 = e2
         e3 = Experiment(project="E3")
+        self.e3 = e3
 
         t1 = Trial(rt=1)
         self.t1 = t1
@@ -813,6 +825,11 @@ class TestComplicatedQuery(Setup):
         # find the experiments with observer Observer(name="A")
         experiments = self.m.super_find("Experiment", {("_context", "Observed by"): ("Observer", {"name": "A"})})
         self.assertEqual(set(experiments), set([self.e1, self.e2]))
+
+        # find the experiments with observer Observer(name="A") or Observer(name="B")
+        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): {"_any": [("Observer", {"name": "A"}),
+                                                                                              ("Observer", {"name": "C"})]}})
+        self.assertEqual(set(experiments), set([self.e1, self.e2, self.e3]))
 
     def test_find_by_object(self):
         # find the experiments with observer o1

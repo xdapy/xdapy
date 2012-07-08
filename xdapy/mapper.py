@@ -317,9 +317,26 @@ class Mapper(object):
         return self.find(entity).filter(BaseEntity.parent==None).all()
 
     def find_related(self, entity, related):
+        """ Returns all entities of type `entity`
+        which have an attachment relation to `related`::
+
+            mapper.find_related("Experiment", ("Observer", {"age": lt(15)}))
+
+        finds all entities of type `Experiment` which have an attachment of
+        type `Observer` (the `connection_type` does not matter) with an
+        parameter `age` less than 15.
+
+        Parameters
+        ----------
+        entity : string or class
+            The entity to search for
+        related : tuple
+            (entity, filter) tuple which is used to search the attachment.
+        """
+        entity = self.entity_by_name(entity)
         the_set = set()
         for e in self.find(related[0], related[1]):
-            for rel in e.attachments():
+            for rel in e.holders():
                 if rel.__class__ == entity and rel not in the_set:
                     the_set.add(rel)
         return list(the_set)
