@@ -181,11 +181,9 @@ class EntityMeta(DeclarativeMeta):
             raise AttributeError("Entity class '%s' must have 'declared_params' attribute." % name)
         return calculate_polymorphic_name(name, declared_params)
 
-
     def __new__(cls, name, bases, attrs):
         name = cls._calculate_polymorphic_name(name, bases, attrs)
         return DeclarativeMeta.__new__(cls, name, bases, attrs)
-
 
     def __init__(cls, name, bases, attrs):
         cls.__original_class_name__ = name
@@ -553,8 +551,7 @@ class _ContextBySetDict(collections.MutableMapping):
         self.parent.holds_context.difference_update(toremove)
 
     def __getitem__(self, connection_type):
-        return _ContextBySet(self.parent, connection_type,
-            [ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        return _ContextBySet(self.parent, connection_type)
 
     def __setitem__(self, connection_type, value):
         current = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
@@ -573,7 +570,7 @@ class _ContextBySetDict(collections.MutableMapping):
         return repr(dict(self))
 
 class _ContextBySet(collections.MutableSet):
-    def __init__(self, parent, connection_type, items):
+    def __init__(self, parent, connection_type):
         self.connection_type = connection_type
         self.parent = parent
 
