@@ -175,8 +175,8 @@ class TestMapper(Setup):
         obs.data['otherredata'].put("""(0, 3, 6, 8)""")
         self.m.save(obs)
 
-        obs = Observer(name="Max Mustermann")
-        obs_by_object = self.m.find_first(obs)
+        new_obs = Observer(name="Max Mustermann")
+        obs_by_object = self.m.find_first(new_obs)
 
         obs_by_object = self.m.find_by_id(Observer, id=1)
 
@@ -188,6 +188,11 @@ class TestMapper(Setup):
         self.m.save(Observer(name="Max Mustermann", handedness="left", age=29))
         self.assertTrue(len(self.m.find_all(Observer(name="Max Mustermann"))) > 1)
         self.assertRaises(NoResultFound, self.m.find_by_id, Observer, 3)
+
+        unique_id = obs.unique_id
+        self.assertEqual(self.m.find_by_unique_id(unique_id), obs)
+        self.assertRaises(NoResultFound, self.m.find_by_unique_id, "lkjlkjlkjl")
+
 
     def testEntityByName(self):
         self.assertEqual(Observer, self.m.entity_by_name(Observer))
