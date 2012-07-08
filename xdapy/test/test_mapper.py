@@ -661,29 +661,23 @@ class TestGetDataMatrix(Setup):
 
         self.m.save(e1, e2, o1, o2, o3)
 
-        #all objects are root
         self.assertUnorderedEqual(self.m.get_data_matrix(Experiment, {'Observer': ['age']}),
                                   [{"age": 26}, {"age": 38}, {"age": 40}])
-#        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
-#        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
-#
-#        #make sure the correct data is retrieved
-#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age']}),
-#                                                [[26L], [38L]]))
-#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}),
-#                                                [[38L], [40]]))
-#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age', 'name']}),
-#                                                [[38, "Susanne Sorgenfrei"], [40, 'Susi Sorgen']]))
-#        self.assertTrue(listequal(self.m.get_data_matrix([Experiment(project='MyProject')], {'Observer':['age', 'name']}),
-#                                                [[26, "Max Mustermann"], [38, "Susanne Sorgenfrei"]]))
-#
-#        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
-#                                                 {'Experiment':['project'], 'Observer':['name']}),
-#                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-#                                                  ['YourProject', "Susi Sorgen"]]))
-        self.assertUnorderedEqual(self.m.get_data_matrix(Observer(handedness='left'), {'Observer':['name'], 'Experiment':['project']}),
-                                                 [{'project': 'MyProject'}, {'name': "Susanne Sorgenfrei"},
-                                                  {'project': 'YourProject'}, {'name': "Susi Sorgen"}])
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment(project='YourProject'), {'Observer':['age']}),
+                                  [{"age": 40}])
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment(), {'Observer':['age']}),
+                                  [{"age": 26}, {"age": 38}, {"age": 40}])
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment(project='MyProject'), {'Observer':['age']}),
+                                  [{"age": 26}, {"age":38}])
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment(project='YourProject'), {'Observer':['age', 'name']}),
+                                  [{"age":40, "name":'Susi Sorgen'}])
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment(project='MyProject'), {'Observer':['age', 'name']}),
+                                  [{"age": 26, "name":"Max Mustermann"}, {"age":38, "name": "Susanne Sorgenfrei"}])
+
+        self.assertUnorderedEqual(self.m.get_data_matrix(Observer(handedness='left'),
+                                                         {'Experiment':['project'], 'Observer':['name']}),
+                                  [{'name': 'Susanne Sorgenfrei'}, {'project': 'YourProject'},
+                                   {'name': 'Susi Sorgen'}, {'project': 'MyProject'}])
 
 #
 #    def testRegisterParameter(self):
