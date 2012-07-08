@@ -788,11 +788,11 @@ class TestComplicatedQuery(Setup):
         e3 = Experiment(project="E3")
         self.e3 = e3
 
-        t1 = Trial(rt=1)
+        t1 = Trial(rt=1, response="resp_0")
         self.t1 = t1
-        t2 = Trial(rt=2)
-        t3 = Trial(rt=3)
-        t4 = Trial(rt=4)
+        t2 = Trial(rt=2, response="resp_1")
+        t3 = Trial(rt=3, response="noresp")
+        t4 = Trial(rt=4, response="resp_1")
 
         s1_1 = Session(count=1, category1=0)
         self.s1_1 = s1_1
@@ -847,6 +847,18 @@ class TestComplicatedQuery(Setup):
         experiments = self.m.super_find("Experiment", {("_context", "Observed by"): {"_any": [("Observer", {"name": "A"}),
                                                                                               ("Observer", {"name": "C"})]}})
         self.assertEqual(set(experiments), set([self.e1, self.e2, self.e3]))
+
+    def test_find_with(self):
+        # we can also do parent relations with find_with
+        sessions = self.m.find_with("Session", {"_parent": ("Trial", {"rt": gt(2)})})
+        # there should be two sessions with Trial parent and Trial.rt > 2: s3_1 and s4_1
+        self.assertEqual(len(sessions), 2)
+        counts = set([s.params["count"] for s in sessions])
+        self.assertEqual(set([5, 6]), counts)
+
+        # retrieve all Sessions with parent Trial and response=resp%
+        sessions = self.m.find_with("Session", {"_parent": ("Trial", {"response": "resp%"})})
+        self.assertEqual(len(sessions), 5)
 
     def test_find_by_object(self):
         # find the experiments with observer o1
