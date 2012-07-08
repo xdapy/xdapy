@@ -205,6 +205,76 @@ class TestObjectDict(unittest.TestCase):
         self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
 
 
+class TestStrJsonParams(unittest.TestCase):
+    def setUp(self):
+        self.connection = Connection.test()
+        self.connection.create_tables()
+        self.m = Mapper(self.connection)
+        self.m.register(Experiment)
+
+    def tearDown(self):
+        self.connection.drop_tables()
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
+
+    def test_access(self):
+        exp = Experiment(project="MyProject", int_value=20)
+        self.assertEqual(exp.str_params["project"], "MyProject")
+        self.assertEqual(exp.json_params["project"], "MyProject")
+
+        self.assertEqual(exp.str_params["int_value"], "20")
+        self.assertEqual(exp.json_params["int_value"], 20)
+
+    def test_setter(self):
+        exp = Experiment()
+        exp.str_params["project"] = "MyProject"
+        exp.str_params["int_value"] = "50"
+
+        self.assertEqual(exp.params["project"], "MyProject")
+        self.assertEqual(exp.params["int_value"], 50)
+
+        exp.str_params["project"] = "My other project"
+        exp.str_params["int_value"] = 70
+
+        self.assertEqual(exp.params["project"], "My other project")
+        self.assertEqual(exp.params["int_value"], 70)
+
+    def test_set_none(self):
+        exp = Experiment(project="MyProject", int_value=20)
+        def set_str():
+            exp.str_params["project"] = None
+        self.assertRaises(ValueError, set_str)
+
+        def set_json():
+            exp.json_params["project"] = None
+        self.assertRaises(ValueError, set_json)
+
+    def test_set_deletion(self):
+        exp = Experiment(project="MyProject", int_value=20, experimenter="No Name")
+        del exp.str_params["project"]
+        self.assertRaises(KeyError, operator.getitem, exp.str_params, "project")
+        self.assertRaises(KeyError, operator.getitem, exp.params, "project")
+
+        del exp.str_params["int_value"]
+        self.assertRaises(KeyError, operator.getitem, exp.str_params, "int_value")
+        self.assertRaises(KeyError, operator.getitem, exp.params, "int_value")
+
+        # experimenter unchanged
+        self.assertEqual(exp.params, {"experimenter": "No Name"})
+
+    def test_len(self):
+        exp = Experiment(project="MyProject", int_value=20, experimenter="No Name")
+        self.assertEqual(len(exp.str_params), 3)
+        self.assertEqual(len(exp.json_params), 3)
+
+    def test_str_repr(self):
+        exp = Experiment(project="MyProject", int_value=20, experimenter="No Name")
+        str(exp.str_params)
+        str(exp.json_params)
+        repr(exp.str_params)
+        repr(exp.json_params)
+
+
 class TestInheritedParams(unittest.TestCase):
     def setUp(self):
         self.connection = Connection.test()

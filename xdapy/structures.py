@@ -307,7 +307,7 @@ class _StrParams(collections.MutableMapping):
         return len(self.owning.params)
 
     def __delitem__(self, key):
-        del self.owning.param[key]
+        del self.owning.params[key]
 
     def __iter__(self):
         return iter(self.owning.params)
