@@ -30,6 +30,25 @@ from xdapy.errors import EntityDefinitionError, InsertionError, MissingSessionEr
 from xdapy.utils.algorithms import gen_uuid, hash_dict
 
 
+def calculate_polymorphic_name(name, declared_params):
+    split_name = name.split('_')
+    if len(split_name) > 2:
+        raise EntityDefinitionError("Entity class must not contain more than one underscore.")
+    elif len(split_name) == 2:
+        # Try, whether the second part is a correct hash.
+        the_hash = hash_dict(declared_params)
+        if split_name[1] == the_hash:
+            return name
+        else:
+            raise EntityDefinitionError("Entity name has incorrect hash after underscore.")
+
+    # No underscore. Good!
+    # Create hash from sorted declared_params
+    the_hash = hash_dict(declared_params)
+
+    return name + "_" + the_hash
+
+
 class BaseEntity(Base):
     """
     The class `BaseEntity` is mapped on the table 'entities'. The name column
@@ -51,6 +70,29 @@ class BaseEntity(Base):
 
     #: The database-backed unique_id column.
     _unique_id = Column('uniqueid', String(60), index=True, unique=True)
+
+    # has one parent
+    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'),
+        doc="The database-backed parent_id field.")
+    children = relationship("BaseEntity", backref=backref("parent", remote_side=[id]),
+        doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
+
+    __tablename__ = 'entities' #: The db table name.
+
+    #: Subclasses of `BaseEntity` should differ in their `_type` column.
+    __mapper_args__ = {'polymorphic_on': _type}
+
+    @property
+    def type(self):
+        """
+        Getter property for the database-backed `_type` field, leaving out the type hash.
+
+        Returns
+        -------
+        type: string
+            The type of the `Entity`.
+        """
+        return self._type.split('_')[0]
 
     @synonym_for("_unique_id")
     @property
@@ -78,114 +120,14 @@ class BaseEntity(Base):
         """
         return gen_uuid()
 
-    @property
-    def type(self):
-        """
-        Getter property for the database-backed `_type` field, leaving out the type hash.
-
-        Returns
-        -------
-        type: string
-            The type of the `Entity`.
-        """
-        return self._type.split('_')[0]
-
-    # has one parent
-    parent_id = Column('parent_id', Integer, ForeignKey('entities.id'),
-            doc="The database-backed parent_id field.")
-    children = relationship("BaseEntity", backref=backref("parent", remote_side=[id]),
-            doc="The children of this Entity. Note that adding a child (obviously) changes the child's parent.")
-
-    def ancestors(self):
-        """ Returns a list of all parent and grand-parent entities.
-        """
-        node = self
-        parents = []
-        while node.parent:
-            node = node.parent
-            if node in parents:
-                raise DataInconsistencyError("Circular reference")
-            parents.append(node)
-        return parents
-
-    def siblings(self):
-        """ Returns a list of all children and siblings.
-        """
-        children = set()
-        children.update(self.children)
-        for child in self.children:
-            children.update(child.siblings())
-        return children
-
-    __tablename__ = 'entities' #: The db table name.
-
-    #: Subclasses of `BaseEntity` should differ in their `_type` column.
-    __mapper_args__ = {'polymorphic_on': _type}
-
-    _params = relationship(Parameter,
-            collection_class=column_mapped_collection(Parameter.name), # FIXME ???
-            cascade="save-update, merge, delete")
-
-    # one to many BaseEntity->Data
-    _data = relationship(Data,
-            collection_class=column_mapped_collection(Data.key),
-            cascade="save-update, merge, delete")
-
-    @property
-    def data(self):
-        """ Accessor property for associated data. Wraps a `xdapy.data._DataAssoc` instance.
-
-        Examples
-        --------
-        >>> obj = SomeObject()
-        >>> mapper.save(obj)  # object must be in session before data may be used
-        >>> obj.data
-        {}
-        >>> obj.data["data_key"].put("random string")
-        >>> obj.data["data_key"]
-        DataProxy(mimetype=None, chunks=1, size=13)
-        >>> obj.data["data_key"].get_string()
-        "random string"
-        >>> obj.data.keys()
-        [u"data_key"]
-        """
-        if not hasattr(self, "__data_assoc"):
-            self.__data_assoc = _DataAssoc(self)
-        return self.__data_assoc
-
     @validates('_type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
             raise TypeError("Argument must be a string")
         return e_name
 
-    def __init__(self, type):
-        """This method should never be called directly.
-
-        Raises
-        ------
-        Exception
-        """
-        raise Exception("BaseEntity.__init__ should not be called directly.")
-
     def _attributes(self):
         return {'type': self.type, 'id': self.id, 'unique_id': self.unique_id}
-
-    def to_json(self, full=False):
-        json = self._attributes()
-        if full:
-            json["param"] = dict(self.str_params)
-            data = []
-            for key, val in self.data.iteritems():
-                data.append({'id': val.get_data().id,
-                              'mimetype': val.mimetype,
-                              'name': key,
-                              'content-length': val.size()})
-            json["data"] = data
-        return json
-
-    def __repr__(self):
-        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.unique_id)
 
     def _session(self):
         """ Returns the session which this object belongs to.
@@ -195,8 +137,21 @@ class BaseEntity(Base):
             raise MissingSessionError("Entity '%r' has no associated session." % self)
         return session
 
+    def __init__(self, type):
+        """ This method should never be called directly.
+
+        Raises
+        ------
+        Exception
+        """
+        raise Exception("BaseEntity.__init__ should not be called directly.")
+
+    def __repr__(self):
+        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.unique_id)
+
+
 @event.listens_for(BaseEntity, "before_insert", propagate=True)
-def gen_default_unique_id(mapper, connection, instance):
+def _gen_default_unique_id(mapper, connection, instance):
     """
     This gets called before insertion and looks if a
     value for the _unique_id field has been provided.
@@ -209,7 +164,12 @@ def gen_default_unique_id(mapper, connection, instance):
             raise ValueError("Empty value %r in default_fun for %r" % (default_value, instance))
         instance._unique_id = default_value
 
+
 class EntityMeta(DeclarativeMeta):
+    """ Metaclass for `Entity`. The purpose of the metaclass is to
+    change the internal type name of the `Entity` in order to be used
+    as a `polymorphic_identity` in SQLAlchemy.
+    """
     @staticmethod
     def _calculate_polymorphic_name(name, bases, attrs):
         if not "Entity" in [bscls.__name__ for bscls in bases]:
@@ -354,83 +314,6 @@ class _StrParams(collections.MutableMapping):
     def __iter__(self):
         return iter(self.owning.params)
 
-class _ContextBySetDict(collections.MutableMapping):
-    def __init__(self, parent):
-        self.parent = parent
-
-    def __iter__(self):
-        return iter(self.keys())
-
-    def keys(self):
-        return list(set(ctx.connection_type for ctx in self.parent.holds_context))
-
-    def __delitem__(self, connection_type):
-        toremove = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
-        if not toremove:
-            raise KeyError(connection_type)
-        self.parent.holds_context.difference_update(toremove)
-
-    def __getitem__(self, connection_type):
-        return _ContextBySet(self.parent, connection_type,
-            [ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
-
-    def __setitem__(self, connection_type, value):
-        current = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
-        toremove = set([ctx for ctx in current if ctx.attachment not in value])
-        toadd = set([Context(connection_type=connection_type,attachment=v) for v in value if v not in current])
-        self.parent.holds_context.update(toadd)
-        self.parent.holds_context.difference_update(toremove)
-
-    def __contains__(self, connection_type):
-        return any(ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type)
-
-    def __repr__(self):
-        return repr({k: self[k] for k in self})
-
-    def __len__(self):
-        return len(self.keys())
-
-
-class _ContextBySet(collections.MutableSet):
-
-    def __init__(self, parent, connection_type, items):
-        self.connection_type = connection_type
-        self.parent = parent
-
-    def __iter__(self):
-        return iter([ctx.attachment for ctx
-                     in self.parent.holds_context if ctx.connection_type == self.connection_type])
-
-    def update(self, items):
-        curr = set([ctx.attachment for ctx
-                    in self.parent.holds_context if ctx.connection_type==self.connection_type])
-        toadd = set(items).difference(curr)
-        self.parent.holds_context.update(
-            [Context(connection_type=self.connection_type, attachment=item) for item in toadd])
-
-    def add(self, item):
-        for ctx in self.parent.holds_context:
-            if ctx.connection_type == self.connection_type and ctx.attachment is item:
-                break
-        else:
-            self.parent.holds_context.add(Context(connection_type=self.connection_type, attachment=item))
-
-    def __repr__(self):
-        return repr(set(self))
-
-    def __contains__(self, item):
-        return item in iter(self)
-
-    def __len__(self):
-        return sum(1 for _ in iter(self))
-
-    def discard(self, item):
-        for ctx in self.parent.holds_context:
-            if ctx.connection_type == self.connection_type and ctx.attachment is item:
-                self.parent.holds_context.remove(ctx)
-                break
-
-
 class Entity(BaseEntity):
     """Entity is the base class for all entity object definitions."""
     #: We specify our special metaclass `xdapy.structures.EntityMeta`.
@@ -444,6 +327,50 @@ class Entity(BaseEntity):
         self._unique_id = _unique_id
 
         self._set_items_from_arguments(kwargs)
+
+    _params = relationship(Parameter,
+        collection_class=column_mapped_collection(Parameter.name), # FIXME ???
+        cascade="save-update, merge, delete")
+
+    # one to many BaseEntity->Data
+    _data = relationship(Data,
+        collection_class=column_mapped_collection(Data.key),
+        cascade="save-update, merge, delete")
+
+    @property
+    def data(self):
+        """ Accessor property for associated data. Wraps a `xdapy.data._DataAssoc` instance.
+
+        Examples
+        --------
+        >>> obj = SomeObject()
+        >>> mapper.save(obj)  # object must be in session before data may be used
+        >>> obj.data
+        {}
+        >>> obj.data["data_key"].put("random string")
+        >>> obj.data["data_key"]
+        DataProxy(mimetype=None, chunks=1, size=13)
+        >>> obj.data["data_key"].get_string()
+        "random string"
+        >>> obj.data.keys()
+        [u"data_key"]
+        """
+        if not hasattr(self, "__data_assoc"):
+            self.__data_assoc = _DataAssoc(self)
+        return self.__data_assoc
+
+    def to_json(self, full=False):
+        json = self._attributes()
+        if full:
+            json["param"] = dict(self.str_params)
+            data = []
+            for key, val in self.data.iteritems():
+                data.append({'id': val.get_data().id,
+                             'mimetype': val.mimetype,
+                             'name': key,
+                             'content-length': val.size()})
+            json["data"] = data
+        return json
 
     @property
     def json_params(self):
@@ -486,8 +413,26 @@ class Entity(BaseEntity):
             if v is not None:
                 self.params[n] = v
 
-    def to_json(self, full=False):
-        return super(Entity, self).to_json(full)
+    def ancestors(self):
+        """ Returns a list of all parent and grand-parent entities.
+        """
+        node = self
+        parents = []
+        while node.parent:
+            node = node.parent
+            if node in parents:
+                raise DataInconsistencyError("Circular reference")
+            parents.append(node)
+        return parents
+
+    def siblings(self):
+        """ Returns a list of all children and siblings.
+        """
+        children = set()
+        children.update(self.children)
+        for child in self.children:
+            children.update(child.siblings())
+        return children
 
     def __repr__(self):
         return "{cls}(id={id!s},unique_id={unique_id!s})".format(cls=self.type, id=self.id, unique_id=self.unique_id)
@@ -591,23 +536,79 @@ def create_entity(name, declared_params):
         name = str(name)
     return type(name, (Entity,), {'declared_params': declared_params})
 
-def calculate_polymorphic_name(name, declared_params):
-    split_name = name.split('_')
-    if len(split_name) > 2:
-        raise EntityDefinitionError("Entity class must not contain more than one underscore.")
-    elif len(split_name) == 2:
-        # Try, whether the second part is a correct hash.
-        the_hash = hash_dict(declared_params)
-        if split_name[1] == the_hash:
-            return name
+class _ContextBySetDict(collections.MutableMapping):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def keys(self):
+        return list(set(ctx.connection_type for ctx in self.parent.holds_context))
+
+    def __delitem__(self, connection_type):
+        toremove = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        if not toremove:
+            raise KeyError(connection_type)
+        self.parent.holds_context.difference_update(toremove)
+
+    def __getitem__(self, connection_type):
+        return _ContextBySet(self.parent, connection_type,
+            [ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+
+    def __setitem__(self, connection_type, value):
+        current = set([ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type])
+        toremove = set([ctx for ctx in current if ctx.attachment not in value])
+        toadd = set([Context(connection_type=connection_type,attachment=v) for v in value if v not in current])
+        self.parent.holds_context.update(toadd)
+        self.parent.holds_context.difference_update(toremove)
+
+    def __contains__(self, connection_type):
+        return any(ctx for ctx in self.parent.holds_context if ctx.connection_type == connection_type)
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __repr__(self):
+        return repr(dict(self))
+
+class _ContextBySet(collections.MutableSet):
+    def __init__(self, parent, connection_type, items):
+        self.connection_type = connection_type
+        self.parent = parent
+
+    def __iter__(self):
+        return iter([ctx.attachment for ctx
+                     in self.parent.holds_context if ctx.connection_type == self.connection_type])
+
+    def update(self, items):
+        curr = set([ctx.attachment for ctx
+                    in self.parent.holds_context if ctx.connection_type==self.connection_type])
+        toadd = set(items).difference(curr)
+        self.parent.holds_context.update(
+            [Context(connection_type=self.connection_type, attachment=item) for item in toadd])
+
+    def add(self, item):
+        for ctx in self.parent.holds_context:
+            if ctx.connection_type == self.connection_type and ctx.attachment is item:
+                break
         else:
-            raise EntityDefinitionError("Entity name has incorrect hash after underscore.")
+            self.parent.holds_context.add(Context(connection_type=self.connection_type, attachment=item))
 
-    # No underscore. Good!
-    # Create hash from sorted declared_params
-    the_hash = hash_dict(declared_params)
+    def discard(self, item):
+        for ctx in self.parent.holds_context:
+            if ctx.connection_type == self.connection_type and ctx.attachment is item:
+                self.parent.holds_context.remove(ctx)
+                break
 
-    return name + "_" + the_hash
+    def __contains__(self, item):
+        return item in iter(self)
+
+    def __len__(self):
+        return sum(1 for _ in iter(self))
+
+    def __repr__(self):
+        return repr(set(self))
 
 class Context(Base):
     """
