@@ -2,6 +2,7 @@
 
 Created on Jun 17, 2009
 """
+import operator
 from xdapy.data import DataChunks, Data
 from xdapy.parameters import StringParameter
 
@@ -199,7 +200,19 @@ class TestObjectDict(unittest.TestCase):
         datachunks = self.m.find_all(DataChunks)
         self.assertEqual(len(datachunks), 0)
 
-    def testInheritedParams(self):
+    def testAssignDataTooEarly(self):
+        exp = Experiment()
+        self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
+
+
+class TestInheritedParams(unittest.TestCase):
+    def setUp(self):
+        self.connection = Connection.test()
+        self.connection.create_tables()
+        self.m = Mapper(self.connection)
+        self.m.register(Experiment)
+
+
         class GrandParent(Entity):
             declared_params = {
                 "A1": "string",
@@ -221,12 +234,22 @@ class TestObjectDict(unittest.TestCase):
                 "A6": "float"
             }
 
-        gparent = GrandParent(A1="GP", A2="GP", A3=300)
-        parent = Parent(A1=100)
-        child = Child(A1="C", A4=500, A5=0.5)
+        self.gparent = GrandParent(A1="GP", A2="GP", A3=300)
+        self.parent = Parent(A1=100)
+        self.child = Child(A1="C", A4=500, A5=0.5)
 
-        child.parent = parent
-        parent.parent = gparent
+        self.child.parent = self.parent
+        self.parent.parent = self.gparent
+
+    def tearDown(self):
+        self.connection.drop_tables()
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
+
+    def test_access(self):
+        gparent = self.gparent
+        parent = self.parent
+        child = self.child
 
         self.assertEqual(child.inherited_params, {"A1": "C", "A2": "GP", "A3": 300, "A4": 500, "A5": 0.5})
         self.assertEqual(child.unique_params, {"A2": "GP", "A3": 300, "A5": 0.5})
@@ -256,10 +279,25 @@ class TestObjectDict(unittest.TestCase):
             child.unique_params["A1"]
         self.assertRaises(KeyError, access_non_unique)
 
+    def test_access_failure(self):
+        self.assertRaises(KeyError, operator.getitem, self.child.unique_params, "unknown")
+        self.assertRaises(KeyError, operator.getitem, self.child.inherited_params, "unknown")
 
-    def testAssignDataTooEarly(self):
-        exp = Experiment()
-        self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
+    def test_len(self):
+        self.assertEqual(len(self.child.inherited_params), 5)
+        self.assertEqual(len(self.parent.inherited_params), 3)
+        self.assertEqual(len(self.gparent.inherited_params), 3)
+
+        self.assertEqual(len(self.child.unique_params), 3)
+        self.assertEqual(len(self.parent.unique_params), 2)
+        self.assertEqual(len(self.gparent.unique_params), 3)
+
+    def test_str_repr(self):
+        # should not fail
+        str(self.child.inherited_params)
+        str(self.child.unique_params)
+        repr(self.child.inherited_params)
+        repr(self.child.unique_params)
 
 
 if __name__ == "__main__":

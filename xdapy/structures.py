@@ -265,7 +265,7 @@ class _InheritedParams(collections.Mapping):
         return iter(keys)
 
     def __len__(self):
-        return len(self.__iter__())
+        return sum(1 for _ in self)
 
     def __repr__(self):
         return dict((k, v) for k, v in self.iteritems()).__repr__()
