@@ -11,6 +11,8 @@ from xdapy.errors import InsertionError
 from xdapy.operators import gt, lt, eq, between, ge
 
 import unittest
+from xdapy.utils.algorithms import listequal
+
 """
 TODO: Real test for create_tables
 As of Juli 7, 2010: 4Errors
@@ -633,18 +635,35 @@ class TestContext(Setup):
         res = self.m.find_related("Experiment", ("Observer", {"age": lt(15)}))
         self.assertEqual(set(res), set())
 
-#    def testGetDataMatrix(self):
-#        e1 = Experiment(project='MyProject', experimenter="John Doe")
-#        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
-#        o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
-#
-#        e2 = Experiment(project='YourProject', experimenter="John Doe")
-#        o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
-#
-#        self.m.save(e1, e2, o1, o2, o3)
-#
-#        #all objects are root
-#        self.assertEqual(self.m.get_data_matrix([], {'Observer':['age']}), [[26], [38], [40]])
+class TestGetDataMatrix(Setup):
+    def setUp(self):
+        super(TestGetDataMatrix, self).setUp()
+
+    def assertUnorderedEqual(self, list1, list2):
+        try:
+            return self.assertTrue(listequal(list1, list2))
+        except AssertionError:
+            print list1, list2
+            raise
+
+
+    def testGetDataMatrix(self):
+        e1 = Experiment(project='MyProject', experimenter="John Doe")
+        o1 = Observer(name="Max Mustermann", handedness="right", age=26)
+        o2 = Observer(name="Susanne Sorgenfrei", handedness='left', age=38)
+
+        e2 = Experiment(project='YourProject', experimenter="John Doe")
+        o3 = Observer(name="Susi Sorgen", handedness='left', age=40)
+
+        e1.attach("Observer", o1)
+        e1.attach("Observer", o2)
+        e2.attach("Observer", o3)
+
+        self.m.save(e1, e2, o1, o2, o3)
+
+        #all objects are root
+        self.assertUnorderedEqual(self.m.get_data_matrix(Experiment, {'Observer': ['age']}),
+                                  [{"age": 26}, {"age": 38}, {"age": 40}])
 #        self.assertEqual(self.m.get_data_matrix([Experiment(project='YourProject')], {'Observer':['age']}), [])
 #        self.assertEqual(self.m.get_data_matrix([Experiment()], {'Observer':['age']}), [])
 #
@@ -662,10 +681,9 @@ class TestContext(Setup):
 #                                                 {'Experiment':['project'], 'Observer':['name']}),
 #                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
 #                                                  ['YourProject', "Susi Sorgen"]]))
-#        self.assertTrue(listequal(self.m.get_data_matrix([Observer(handedness='left')],
-#                                                 {'Observer':['name'], 'Experiment':['project']}),
-#                                                 [['MyProject', "Susanne Sorgenfrei"], ['YourProject', "Susanne Sorgenfrei"],
-#                                                  ['YourProject', "Susi Sorgen"]]))
+        self.assertUnorderedEqual(self.m.get_data_matrix(Observer(handedness='left'), {'Observer':['name'], 'Experiment':['project']}),
+                                                 [{'project': 'MyProject'}, {'name': "Susanne Sorgenfrei"},
+                                                  {'project': 'YourProject'}, {'name': "Susi Sorgen"}])
 
 #
 #    def testRegisterParameter(self):

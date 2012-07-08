@@ -348,7 +348,7 @@ class Mapper(object):
     def find_by_unique_id(self, unique_id):
         return self.find(BaseEntity).filter(BaseEntity._unique_id==unique_id).one()
 
-    def get_data_matrix(self, conditions, items, include=None):
+    def get_data_matrix(self, entity, items, include=None):
         """ Finds related items for the entity which satisfies condition
 
         Parameters
@@ -357,44 +357,43 @@ class Mapper(object):
             list of entities relations which should be included
                 - "PARENT":           parent entities
                 - "CHILDREN":         child entities
-                - "CONTEXT":          context entities
-                - "CONTEXT_REVERSED": reversed context entities
+                - "ATTACHMENTS":          context entities
+                - "HOLDERS": reversed context entities
                 - "ALL":              all related entities
         """
         if include is None:
             include = ["ALL"]
         if "ALL" in include:
-            include = ["PARENT", "CHILDREN", "CONTEXT", "CONTEXT_REVERSED"]
+            include = ["PARENT", "CHILDREN", "ATTACHMENTS", "HOLDERS"]
 
-        # first get all entities which match the conditions
-        entities = []
-        for condition in conditions:
-            entities += self.find_all(condition)
+        # first get all entities
+        entities = self.find_all(entity)
+
+        # get the related entities for each match
+        related = set(entities)
+        for entity in entities:
+            if "PARENT" in include:
+                related.update(entity.ancestors())
+            if "CHILDREN" in include:
+                related.update(entity.siblings())
+            if "ATTACHMENTS" in include:
+                related.update(entity.attachments())
+            if "HOLDERS" in include:
+                related.update(entity.holders())
 
         matrix = []
 
-        for entity in entities:
-            # get the related entities for each match
-            related = set(entities)
-            for entity in entities:
-                if "PARENT" in include:
-                    related.update(entity.ancestors())
-                if "CHILDREN" in include:
-                    related.update(entity.siblings())
-                if "CONTEXT" in include:
-                    related.update(entity.attachments())
-                if "CONTEXT_REVERSED" in include:
-                    related.update(entity.holders())
+        for rel in related:
+            for rel_entity, params in items.iteritems():
+                if not rel.type == rel_entity:
+                    # not interested in this class
+                    continue
 
-            row = {}
-            for rel in related:
-                if rel.__class__ in items:
-                    for param in items[rel.__class__]:
-                        if not rel.__class__.__name__ in row:
-                            row[rel.__class__.__name__] = {}
-                        row[rel.__class__.__name__][param] = rel.params[param]
-                if row and row not in matrix:
-                    matrix.append(row)
+                row = {}
+                for param in params:
+                    row[param] = rel.params[param]
+
+                matrix.append(row)
 
         return matrix
 
