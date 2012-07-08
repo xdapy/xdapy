@@ -54,21 +54,42 @@ class Mapper(object):
 
     @property
     def auto_session(self):
-        """
-        Convenience wrapper for `xdapy.connection.Connection.auto_session`.
+        """ Convenience wrapper for `xdapy.connection.Connection.auto_session`.
+
+        Sometimes it may be necessary to use auto committing blocks of code,
+        which are automatically discarded in case of an error and
+        automatically committed in case of success. For example,
+        in the following parameter assignment, it may not be obvious
+        *when* data is actually written to the database::
+
+            entity.params["some param"] = 1000
+            # may be committed whenever SQLAlchemy feels like it
+
+        Using an `auto_session` makes this more transparently::
+
+            with mapper.auto_session:
+                entity.params["some param"] = 1000
+                # ...
+            # will be committed at the end of the with statement
+
+        If an error is raised inside the ``with``, no commit will be made.
         """
         return self.connection.auto_session
 
     @property
     def session(self):
-        """
-        Convenience wrapper for `xdapy.connection.Connection.session`.
+        """ Convenience wrapper for `xdapy.connection.Connection.session`.
         """
         return self.connection.session
 
     def save(self, *args):
-        """
-        Save instances inheriting from `Entity` into database.
+        """ Save instances inheriting from `Entity` (or any other SQLAlchemy structure)
+        into database.
+
+        .. note::
+
+            Any related `Entity`\s are also going to be saved (added to the
+            session). This includes parent–child and context relations.
 
         Attributes
         ----------
@@ -88,7 +109,19 @@ class Mapper(object):
                 session.flush()
 
     def delete(self, *args):
-        """Deletes the objects from the database."""
+        """ Deletes the objects from the database.
+
+        .. note::
+
+            This will not delete any `Entity`’s parent or children nodes
+            from the database. However, all references to the `Entity`
+            will be removed.
+
+        Attributes
+        ----------
+        args
+            One or more objects to be deleted from the session.
+        """
         with self.auto_session as session:
             for arg in args:
                 session.delete(arg)
@@ -207,7 +240,7 @@ class Mapper(object):
         return and_(*and_clause)
 
     def _mk_entity_filter(self, entity, filter=None):
-        """Returns the appropriate entity class, and a filter dict."""
+        """ Returns the appropriate entity class, and a filter dict."""
         # TODO Rename this function
         if filter is None:
             filter = {}
@@ -269,14 +302,12 @@ class Mapper(object):
                 return query
 
     def find_first(self, entity, filter=None, options=None):
-        """
-        Convenience method for ``find(...).first()``.
+        """ Convenience method for ``find(...).first()``.
         """
         return self.find(entity, filter, options).first()
 
     def find_all(self, entity, filter=None, options=None):
-        """
-        Convenience method for ``find(...).all()``.
+        """ Convenience method for ``find(...).all()``.
         """
         return self.find(entity, filter, options).all()
 
