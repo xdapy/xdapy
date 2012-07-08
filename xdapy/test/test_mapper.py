@@ -4,7 +4,7 @@ Created on Jun 17, 2009
 """
 import operator
 from sqlalchemy.exc import CircularDependencyError, InvalidRequestError
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, StaleDataError
 from xdapy import Connection, Mapper, Entity
 from xdapy.structures import Context, create_entity
 from xdapy.errors import InsertionError
@@ -165,6 +165,8 @@ class TestMapper(Setup):
         self.assertTrue(s1 in t1.children)
         # but we cannot save t1 again
         self.assertRaises(InvalidRequestError, self.m.save, t1)
+        # and neither can we delete it more than once
+        self.assertRaises(StaleDataError, self.m.delete, t1)
 
     def testLoad(self):
         obs = Observer(name="Max Mustermann", handedness="right", age=26)
