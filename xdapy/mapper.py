@@ -558,6 +558,9 @@ class Mapper(object):
             for entity_name, declared_params in mapper.entities_from_db():
                 mapper.register_type(entity_name, declared_params)
 
+        Of course this will not add any additional methods or variables
+        to the entity instances.
+
         Returns
         -------
             list of tuples (entity_name, declared_params)
@@ -580,7 +583,6 @@ class Mapper(object):
 
         sorted_roots = sorted(roots, _by_entity_type)
         root_groups = itertools.groupby(roots, _by_entity_type)
-
 
 
     def __repr__(self):

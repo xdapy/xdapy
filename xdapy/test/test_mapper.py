@@ -123,6 +123,16 @@ class TestMapper(Setup):
         self.m.delete(e)
         self.assertEqual(len(self.m.find_all(Entity)), 1)
 
+    def test_find_registered_entities(self):
+        entity_classes = [Experiment, Observer, Trial, Session]
+        entities_in_db = self.m.entities_from_db()
+        self.assertEqual(len(entities_in_db), len(entity_classes))
+        self.assertTrue(listequal(
+            [(e.__name__, e.declared_params) for e in entity_classes],
+            entities_in_db
+        ))
+
+
     def test_save_and_delete(self):
         e = Experiment(project='YourProject', experimenter="Johny Dony")
         t1 = Trial(rt=189, valid=True, response='right')
