@@ -123,7 +123,7 @@ class BaseEntity(Base):
     @validates('_type')
     def validate_name(self, key, e_name):
         if not isinstance(e_name, str):
-            raise TypeError("Argument must be a string")
+            raise ValueError("Argument must be a string, is: %r." % e_name)
         return e_name
 
     def _attributes(self):
@@ -144,10 +144,10 @@ class BaseEntity(Base):
         ------
         Exception
         """
-        raise Exception("BaseEntity.__init__ should not be called directly.")
+        raise TypeError("BaseEntity.__init__ should not be called directly.")
 
     def __repr__(self):
-        return "<BaseEntity('%s','%s','%s')>" % (self.id, self.type, self.unique_id)
+        return "{cls}(id={id!s}, unique_id={unique_id!s})".format(cls=self.type, id=self.id, unique_id=self.unique_id)
 
 
 @event.listens_for(BaseEntity, "before_insert", propagate=True)
@@ -208,6 +208,7 @@ class EntityMeta(DeclarativeMeta):
         cls.__mapper_args__ = {'polymorphic_identity': cls.__name__}
 
         super(EntityMeta, cls).__init__(name, bases, attrs)
+
 
 class _InheritedParams(collections.Mapping):
     """ Immutable association dict for inherited parameters.
@@ -311,6 +312,7 @@ class _StrParams(collections.MutableMapping):
 
     def __iter__(self):
         return iter(self.owning.params)
+
 
 class Entity(BaseEntity):
     """Entity is the base class for all entity object definitions."""
@@ -433,7 +435,7 @@ class Entity(BaseEntity):
         return children
 
     def __repr__(self):
-        return "{cls}(id={id!s},unique_id={unique_id!s})".format(cls=self.type, id=self.id, unique_id=self.unique_id)
+        return "{cls}(id={id!s}, unique_id={unique_id!s})".format(cls=self.type, id=self.id, unique_id=self.unique_id)
 
     def __str__(self):
         items  = itertools.chain([('id', self.id)], self.params.iteritems())
@@ -514,6 +516,7 @@ class Entity(BaseEntity):
                      for item in itertools.chain(v)])
         self.holds_context.update(toadd)
         self.holds_context.difference_update(toremove)
+
 
 def create_entity(name, declared_params):
     """Creates a dynamic subclass of `Entity` which makes it possible
@@ -658,7 +661,7 @@ class ParameterDeclaration(Base):
 
     Raises
     ------
-    TypeError
+    ValueError
         Raised, if arguments aren't strings or type not in list.
     """
 
@@ -683,13 +686,13 @@ class ParameterDeclaration(Base):
     @validates('parameter_name', 'entity_name')
     def validate_parameter_name(self, key, name):
         if not isinstance(name, basestring):
-            raise TypeError("Argument '%s' must be a string" % key)
+            raise ValueError("Argument '%s' must be a string" % key)
         return name
 
     @validates('parameter_type')
     def validate_parameter_type(self, key, p_type):
         if not isinstance(p_type, basestring) or p_type not in parameter_ids:
-            raise TypeError(("Argument 'parameter_type' must one of the " +
+            raise ValueError(("Argument 'parameter_type' must one of the " +
                              "following strings: " +
                              ", ".join(parameter_ids)))
         return p_type

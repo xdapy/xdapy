@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 __authors__ = ['"Rike-Benjamin Schuppner" <rikebs@debilski.de>']
 
 from xdapy import Connection, Mapper, Entity
-from xdapy.structures import create_entity
+from xdapy.structures import create_entity, BaseEntity
 from xdapy.errors import EntityDefinitionError
 import unittest
 
@@ -32,7 +32,10 @@ class TestEntity(unittest.TestCase):
             declared_params = declared_params
         
         self.Experiment = Experiment
-        self.ExperimentalProject = ExperimentalProject 
+        self.ExperimentalProject = ExperimentalProject
+
+    def test_BaseEntity_raises(self):
+        self.assertRaises(TypeError, BaseEntity.__init__, "")
     
     def test_same_entity_has_same_hash(self):
         class Experiment(Entity):
