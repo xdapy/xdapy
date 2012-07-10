@@ -585,6 +585,3 @@ class Mapper(object):
 
     def __repr__(self):
         return "Mapper(%r)" % self.connection
-
-if __name__ == "__main__":
-    pass

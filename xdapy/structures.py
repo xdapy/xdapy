@@ -694,6 +694,3 @@ class ParameterDeclaration(Base):
                              ", ".join(parameter_ids)))
         return p_type
 
-if __name__ == "__main__":
-    pass
-

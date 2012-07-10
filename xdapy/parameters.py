@@ -519,7 +519,3 @@ def find_accepting_class(value):
         if pc.accepts(value):
             return pc
     raise ValueError("Value not accepted by any class")
-
-if __name__ == '__main__':
-    pass
-
