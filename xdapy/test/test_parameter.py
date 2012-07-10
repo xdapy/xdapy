@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper
+from xdapy.errors import StringConversionError
 
 from xdapy.parameters import parameter_for_type
 
@@ -33,7 +34,40 @@ class TestParameter(unittest.TestCase):
             for val in vals:
                 param_class = parameter_for_type(type)
                 param_val = param_class("test", val)
-                assert val == param_class.from_string(param_val.value_string)
+                self.assertEqual(val, param_class.from_string(param_val.value_string))
+                # testing str and repr as well
+                str(param_val)
+                repr(param_val)
+
+    def test_parameter_failures(self):
+        from datetime import datetime, date, time
+        values = {
+            "datetime": ["2011-01-01"],
+            "time": ["12:32 "],
+            "date": ["2011-01-01-", datetime(2011, 1, 1, 12, 32, 11), "2011-01-01H12:32:11"],
+            "integer": ["112", date(2011, 1, 1)],
+            "float": [11, "11", None],
+            "boolean": ["Untrue", None],
+            "string": [999, None]}
+
+        for type, vals in values.iteritems():
+            for val in vals:
+                param_class = parameter_for_type(type)
+                self.assertRaises(TypeError, param_class, "test", val)
+
+        values = {
+            "datetime": ["2011-01-01"],
+            "time": ["12:32 "],
+            "date": ["2011-01-01-", datetime(2011, 1, 1, 12, 32, 11), "2011-01-01H12:32:11"],
+            "integer": ["112", date(2011, 1, 1)],
+            "float": [11, "11", None],
+            "boolean": ["Untrue", None]
+        }
+
+        for type, vals in values.iteritems():
+            for val in vals:
+                param_class = parameter_for_type(type)
+                self.assertRaises(StringConversionError, param_class.from_string, "test")
 
 if __name__ == '__main__':
     unittest.main()

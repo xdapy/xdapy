@@ -35,16 +35,6 @@ class Parameter(Base):
     type = Column('type', String(20), nullable=False,
             doc="The type of the parameter.")
 
-    def typed_class(self):
-        """
-
-        TODO: This class is unused. Is it needed?
-        """
-        try:
-            return parameter_for_type(self.type)
-        except KeyError:
-            return Parameter
-
     __tablename__ = 'parameters'
     __table_args__ = (UniqueConstraint(entity_id, name), {})
     #: Type is the polymorphic parameter.
@@ -69,9 +59,6 @@ class Parameter(Base):
         """
         raise Exception("Parameter.__init__ should not be called directly.")
 
-    def __repr__(self):
-        return "<%s(%s,'%s')>" % (self.__class__.__name__, self.id, self.name)
-
     @property
     def value_string(self):
         """Return the value as a string.
@@ -92,6 +79,11 @@ class Parameter(Base):
         """Creates a new parameter instance with the correct type."""
         cls = find_accepting_class(value)
         return cls(name, value)
+
+    def __repr__(self):
+        return ("%s(id=%r, name=%r, value=%r)" %
+                 (self.__class__.__name__, self.id, self.name, self.value_string))
+
 
 class StringParameter(Parameter):
     """
@@ -145,9 +137,6 @@ class StringParameter(Parameter):
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
-
 
 class IntegerParameter(Parameter):
     """
@@ -200,9 +189,6 @@ class IntegerParameter(Parameter):
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return "<%s(%s,'%s',%s)>" % (self.__class__.__name__, self.id, self.name, self.value_string)
-
 
 class FloatParameter(Parameter):
     """
@@ -221,7 +207,7 @@ class FloatParameter(Parameter):
         try:
             return float(value)
         except ValueError:
-            raise StringConversionError("Could not convert value '}' to float.".format(value))
+            raise StringConversionError("Could not convert value '{0}' to float.".format(value))
 
     @property
     def value_json(self):
@@ -255,9 +241,6 @@ class FloatParameter(Parameter):
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
-
 
 class DateParameter(Parameter):
     """
@@ -273,7 +256,7 @@ class DateParameter(Parameter):
 
     @classmethod
     def from_string(cls, value):
-        if isinstance(value, date):
+        if isinstance(value, date) and value.timetuple()[3:6] == (0, 0, 0):
             return value
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
@@ -319,9 +302,6 @@ class DateParameter(Parameter):
         """
         self.name = name
         self.value = value
-
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class TimeParameter(Parameter):
@@ -379,9 +359,6 @@ class TimeParameter(Parameter):
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
-
 
 class DateTimeParameter(Parameter):
     """
@@ -437,9 +414,6 @@ class DateTimeParameter(Parameter):
         """
         self.name = name
         self.value = value
-
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 
 class BooleanParameter(Parameter):
@@ -506,8 +480,6 @@ class BooleanParameter(Parameter):
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return "<%s(%s,'%s','%s')>" % (self.__class__.__name__, self.id, self.name, self.value_string)
 
 #: The classes/tables which store the parameters.
 _parameter_classes = [
