@@ -3,7 +3,7 @@
 from xdapy import Connection, Mapper
 from xdapy.errors import StringConversionError
 
-from xdapy.parameters import parameter_for_type
+from xdapy.parameters import parameter_for_type, find_accepting_class
 
 import unittest
 
@@ -61,13 +61,31 @@ class TestParameter(unittest.TestCase):
             "date": ["2011-01-01-", datetime(2011, 1, 1, 12, 32, 11), "2011-01-01H12:32:11"],
             "integer": ["112", date(2011, 1, 1)],
             "float": [11, "11", None],
-            "boolean": ["Untrue", None]
+            "boolean": ["Untrue", None],
+            "string": []
         }
 
         for type, vals in values.iteritems():
             for val in vals:
                 param_class = parameter_for_type(type)
                 self.assertRaises(StringConversionError, param_class.from_string, "test")
+
+    def test_find_accepting_class(self):
+        from datetime import datetime, date, time
+        values = {
+            "datetime": [datetime(2011, 1, 1, 12, 32, 11)],
+            "time": [time(12, 32, 11)],
+            "date": [date(2011, 1, 1)],
+            "integer": [112, 20010213322],
+            "float": [11.2, 200.10213322],
+            "string": [u"Kleiner Text", u"äöü", u"Юникод"]}
+        # does not work for boolean
+
+        for type, vals in values.iteritems():
+            for val in vals:
+                self.assertEqual(find_accepting_class(val)("", val).type, type)
+
+        self.assertRaises(ValueError, find_accepting_class, [])
 
 if __name__ == '__main__':
     unittest.main()
