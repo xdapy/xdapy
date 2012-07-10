@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """Unittest for objects
 
 Created on Jun 17, 2009
 """
+from datetime import date, time, datetime
 import operator
 from xdapy.data import DataChunks, Data
 from xdapy.parameters import StringParameter
@@ -369,6 +372,60 @@ class TestInheritedParams(unittest.TestCase):
         repr(self.child.inherited_params)
         repr(self.child.unique_params)
 
+class MultiEntity(Entity):
+    declared_params = {
+        "datetime": "datetime",
+        "time": "time",
+        "date": "date",
+        "integer": "integer",
+        "float": "float",
+        "boolean": "boolean",
+        "string": "string"
+    }
+
+class TestParamsReload(unittest.TestCase):
+    def setUp(self):
+        self.connection = Connection.test()
+        self.connection.create_tables()
+        self.m = Mapper(self.connection)
+        self.m.register(Experiment)
+
+        self.good_params = {
+            "datetime": [datetime(2011, 1, 1, 12, 32, 11)],
+            "time": [time(12, 32, 11)],
+            "date": [date(2011, 1, 1)],
+            "integer": [112, 20010213322],
+            "float": [11.2, 200.10213322],
+            "boolean": [True, False],
+            "string": [u"Kleiner Text", u"äöü", u"Юникод"]}
+
+    def tearDown(self):
+        self.connection.drop_tables()
+        # need to dispose manually to avoid too many connections error
+        self.connection.engine.dispose()
+
+    def test_param_reprs(self):
+        e = MultiEntity()
+        for key, vals in self.good_params.iteritems():
+            for val in vals:
+                e.params[key] = val
+                self.assertEqual(e.params[key], val)
+
+                json_val = e.json_params[key]
+                e.json_params[key] = json_val
+                self.assertEqual(e.params[key], val)
+
+                # setting from real value works as well
+                e.json_params[key] = val
+                self.assertEqual(e.params[key], val)
+
+                json_val = e.str_params[key]
+                e.str_params[key] = json_val
+                self.assertEqual(e.params[key], val)
+
+                # setting from real value works as well
+                e.str_params[key] = val
+                self.assertEqual(e.params[key], val)
 
 if __name__ == "__main__":
     unittest.main()

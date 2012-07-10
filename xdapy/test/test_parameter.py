@@ -3,7 +3,7 @@
 from xdapy import Connection, Mapper
 from xdapy.errors import StringConversionError
 
-from xdapy.parameters import parameter_for_type, find_accepting_class
+from xdapy.parameters import parameter_for_type, find_accepting_class, Parameter, StringParameter
 
 import unittest
 
@@ -18,6 +18,12 @@ class TestParameter(unittest.TestCase):
         self.connection.drop_tables()
         # need to dispose manually to avoid too many connections error
         self.connection.engine.dispose()
+
+    def test_init_fails(self):
+        self.assertRaises(TypeError, Parameter, ("some name"))
+
+    def test_bad_name(self):
+        self.assertRaises(ValueError, StringParameter, 123, "value")
     
     def test_parameters(self):
         from datetime import datetime, date, time
@@ -83,6 +89,7 @@ class TestParameter(unittest.TestCase):
 
         for type, vals in values.iteritems():
             for val in vals:
+                self.assertEqual(Parameter.create("", val).type, type)
                 self.assertEqual(find_accepting_class(val)("", val).type, type)
 
         self.assertRaises(ValueError, find_accepting_class, [])

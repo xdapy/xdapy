@@ -46,7 +46,7 @@ class Parameter(Base):
             parameter = unicode(parameter)
         else:
             if not isinstance(parameter, unicode):
-                raise TypeError("Argument must be unicode or string")
+                raise ValueError("Argument must be unicode or string")
 
         return parameter
 
@@ -57,7 +57,7 @@ class Parameter(Base):
         ------
         Exception
         """
-        raise Exception("Parameter.__init__ should not be called directly.")
+        raise TypeError("Parameter.__init__ should not be called directly.")
 
     @property
     def value_string(self):
