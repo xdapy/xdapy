@@ -450,18 +450,18 @@ class Entity(BaseEntity):
     def print_tree(self):
         """Prints a graphical representation of the entity and its parents and grand-parents."""
         parents = self.ancestors()
-        for p in parents:
+        for p in reversed(parents):
             print "+-", p
-            for c in p.connections:
-                print "|", "+-", "has a", c.connection_type, c.attachments
-            for c in p.back_references:
-                print "|", "+-", "belongs to", c.holders
+            for c in p.holds_context:
+                print "|", "+-", "has a", c.connection_type, c.attachment
+            for c in p.attached_by:
+                print "|", "+-", "belongs to", c.holder
             print "|"
-        print "+-", self
-        for c in self.connections:
-            print " ", "+-", "has a", c.connection_type, c.attachments
-        for c in self.back_references:
-            print " ", "+-", "belongs to", c.holders
+        print "x-", self
+        for c in self.holds_context:
+            print " ", "+-", "has a", c.connection_type, c.attachment
+        for c in self.attached_by:
+            print " ", "+-", "belongs to", c.holder
 
     def attach(self, connection_type, connection_object):
         if connection_object in self.context[connection_type]:

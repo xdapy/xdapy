@@ -70,11 +70,28 @@ oooo = Observer()
 eeee.attach("Obs", oooo)
 
 
-exp_monorail.attach("C", obs_1)
-exp_monorail.attach("C", obs_2)
-exp_neptune.attach("C", obs_1)
+exp_monorail.attach("Observer", obs_1)
+exp_monorail.attach("Observer", obs_2)
+exp_neptune.attach("Observer", obs_1)
 
-print exp_neptune.holds_context
+
+# test print
+exp_monorail.info()
+print ""
+exp_neptune.info()
+print ""
+obs_1.info()
+print ""
+trial1_1.info()
+
+# test print
+exp_monorail.print_tree()
+print ""
+exp_neptune.print_tree()
+print ""
+obs_1.print_tree()
+print ""
+trial1_1.print_tree()
 
 #exp_neptune.attach("C", obs_1)
 
