@@ -6,6 +6,7 @@ Created on Jun 17, 2009
 """
 from datetime import date, time, datetime
 import operator
+import xdapy
 from xdapy.data import DataChunks, Data
 from xdapy.parameters import StringParameter
 
@@ -206,6 +207,40 @@ class TestObjectDict(unittest.TestCase):
     def testAssignDataTooEarly(self):
         exp = Experiment()
         self.assertRaises(MissingSessionError, exp.data['default'].put, "2")
+
+    def test_large_data(self):
+        exp_1 = Experiment()
+
+        self.m.save(exp_1)
+
+        old_chunk_size = xdapy.data.DATA_CHUNK_SIZE
+        xdapy.data.DATA_CHUNK_SIZE = 10
+
+        data = "0123456789ABCDEF" * 100
+
+        exp_1.data['alphabet'].put(data)
+        exp_1.data['alphabet2'].put(data)
+
+        chunk_ids = exp_1.data['alphabet'].chunk_ids()
+        chunk_ids2 = exp_1.data['alphabet2'].chunk_ids()
+        self.assertEqual(len(chunk_ids), 160)
+        self.assertEqual(len(chunk_ids2), 160)
+        self.assertEqual(chunk_ids, range(1, 161))
+        self.assertEqual(chunk_ids2, range(161, 321))
+
+        chunk_index = exp_1.data['alphabet'].chunk_index()
+        chunk_index2 = exp_1.data['alphabet2'].chunk_index()
+        self.assertEqual(len(chunk_index), 160)
+        self.assertEqual(len(chunk_index2), 160)
+        self.assertEqual(chunk_index, range(1, 161))
+        self.assertEqual(chunk_index2, range(1, 161))
+
+        self.assertEqual(exp_1.data['alphabet'].size(), 1600)
+
+        chunks = exp_1.data['alphabet'].get_data()._chunks
+        self.assertTrue(all(chunk.length == xdapy.data.DATA_CHUNK_SIZE for chunk in chunks))
+
+        xdapy.data.DATA_CHUNK_SIZE = old_chunk_size
 
 
 class TestStrJsonParams(unittest.TestCase):
