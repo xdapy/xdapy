@@ -21,6 +21,7 @@ Contents:
     Database Tables <tables>
     Python API <api/index>
     I/O formats <io_formats>
+    Migration <migration>
 
 Indices and tables
 ==================
