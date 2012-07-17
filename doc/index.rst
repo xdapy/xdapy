@@ -8,7 +8,7 @@ xdapy
 Python framework for object storage
 -----------------------------------
 
-Fork on github: https://github.com/Debilski/xdapy
+Fork on github: https://github.com/xdapy/xdapy
 
 Contents:
 
