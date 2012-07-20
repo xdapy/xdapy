@@ -55,14 +55,14 @@ print set(str(o.parent) for o in m.find_all("Session"))
 from xdapy.operators import gt, lt
 
 #trials = m.find_with("Session", {"_parent": ("Experiment", {"project": "%E1%"})})
-trials = m.super_find("Session", {"_parent": ("Trial", {"count": gt(2)})})
+trials = m.find_complex("Session", {"_parent": ("Trial", {"count": gt(2)})})
 
 print "T", trials
 
 
 print "---"
 
-trials = m.super_find("Session", {"_id": lambda id: id*id < 300,
+trials = m.find_complex("Session", {"_id": lambda id: id*id < 300,
     "_parent":
         {"_any":
         [
