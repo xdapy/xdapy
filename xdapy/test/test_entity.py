@@ -133,14 +133,14 @@ class TestUniqueId(unittest.TestCase):
 
     def test_unique_id(self):
         user = NameEntity(first_name="David", last_name="Persaud")
-        self.assertIsNone(user._unique_id)
+        self.assertTrue(user._unique_id is None)
         self.m.save(user)
         self.assertEqual(user.unique_id, "David Persaud")
 
         # does not work twice
 
         user2 = NameEntity(first_name="David", last_name="Persaud")
-        self.assertIsNone(user2._unique_id)
+        self.assertTrue(user2._unique_id is None)
         self.assertRaises(IntegrityError, self.m.save, user2)
         # setting it manually
         user2._unique_id = "David Persaud (II)"
@@ -150,19 +150,19 @@ class TestUniqueId(unittest.TestCase):
 
     def test_auto_gen_unique_id(self):
         user = NameEntityAutoId(first_name="David", last_name="Persaud")
-        self.assertIsNone(user._unique_id)
+        self.assertTrue(user._unique_id is None)
         self.m.save(user)
         # it is something completely different
-        self.assertIsNotNone(user._unique_id)
+        self.assertTrue(user._unique_id is not None)
         self.assertNotEqual(user.unique_id, "David Persaud")
 
         # does work twice
         
         user2 = NameEntityAutoId(first_name="David", last_name="Persaud")
-        self.assertIsNone(user2._unique_id)
+        self.assertTrue(user2._unique_id is None)
         self.m.save(user2)
         # it is something completely different
-        self.assertIsNotNone(user2._unique_id)
+        self.assertTrue(user2._unique_id is not None)
         self.assertNotEqual(user2.unique_id, "David Persaud")
 
         self.assertNotEqual(user._unique_id, user2._unique_id)

@@ -359,13 +359,13 @@ class TestContext(Setup):
             self.assertTrue(conn.attachment_id in observer_ids)
 
     def test_context(self):
-        self.assertIn(self.o1, self.e1.context["Observer"])
-        self.assertIn(self.o2, self.e1.context["Observer"])
-        self.assertNotIn(self.o3, self.e1.context["Observer"])
+        self.assertTrue(self.o1 in self.e1.context["Observer"])
+        self.assertTrue(self.o2 in self.e1.context["Observer"])
+        self.assertTrue(self.o3 not in self.e1.context["Observer"])
 
-        self.assertNotIn(self.o1, self.e2.context["Observer"])
-        self.assertIn(self.o2, self.e2.context["Observer"])
-        self.assertIn(self.o3, self.e2.context["Observer"])
+        self.assertTrue(self.o1 not in self.e2.context["Observer"])
+        self.assertTrue(self.o2 in self.e2.context["Observer"])
+        self.assertTrue(self.o3 in self.e2.context["Observer"])
 
         # check that the Context is correctly stored
         context = self.m.find_all(Context)
@@ -418,7 +418,7 @@ class TestContext(Setup):
 
         context = self.m.find_all(Context)
         self.assertTrue(len(context), 1)
-        self.assertIn(self.o3, self.e1.context["Additional Observer"])
+        self.assertTrue(self.o3 in self.e1.context["Additional Observer"])
 
     def test_context_delete_does_not_delete_entities(self):
         self.assertEqual(len(self.m.find_all(Observer)), 3)
@@ -569,30 +569,30 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.attachments())
-        self.assertIn(o2, e1.attachments())
+        self.assertTrue(o1 in e1.attachments())
+        self.assertTrue(o2 in e1.attachments())
 
-        self.assertIn(o1, e1.attachments("CCC"))
-        self.assertIn(o2, e1.attachments("CCC"))
-        self.assertIn(o1, e1.attachments("DDD"))
-        self.assertNotIn(o2, e1.attachments("DDD"))
+        self.assertTrue(o1 in e1.attachments("CCC"))
+        self.assertTrue(o2 in e1.attachments("CCC"))
+        self.assertTrue(o1 in e1.attachments("DDD"))
+        self.assertTrue(o2 not in e1.attachments("DDD"))
 
-        self.assertIn(e1, o1.holders("CCC"))
-        self.assertIn(e1, o2.holders("CCC"))
-        self.assertIn(e1, o1.holders("DDD"))
-        self.assertNotIn(e1, o2.holders("DDD"))
+        self.assertTrue(e1 in o1.holders("CCC"))
+        self.assertTrue(e1 in o2.holders("CCC"))
+        self.assertTrue(e1 in o1.holders("DDD"))
+        self.assertTrue(e1 not in o2.holders("DDD"))
 
-        self.assertIn(e1, o1.holders())
-        self.assertIn(e1, o2.holders())
+        self.assertTrue(e1 in o1.holders())
+        self.assertTrue(e1 in o2.holders())
 
         self.assertEquals(len(e1.attachments()), 2)
 
-        self.assertIsNotNone(e1.id)
-        self.assertIsNotNone(o1.id)
-        self.assertIsNotNone(o2.id)
-        self.assertIsNotNone(e1.unique_id)
-        self.assertIsNotNone(o1.unique_id)
-        self.assertIsNotNone(o2.unique_id)
+        self.assertTrue(e1.id is not None)
+        self.assertTrue(o1.id is not None)
+        self.assertTrue(o2.id is not None)
+        self.assertTrue(e1.unique_id is not None)
+        self.assertTrue(o1.unique_id is not None)
+        self.assertTrue(o2.unique_id is not None)
 
     def test_connections_must_be_unique_without_session(self):
         e1 = Experiment()
@@ -605,30 +605,30 @@ class TestContext(Setup):
         e1.attach("DDD", o1)
         e1.attach("CCC", o2)
 
-        self.assertIn(o1, e1.attachments())
-        self.assertIn(o2, e1.attachments())
+        self.assertTrue(o1 in e1.attachments())
+        self.assertTrue(o2 in e1.attachments())
 
-        self.assertIn(o1, e1.attachments("CCC"))
-        self.assertIn(o2, e1.attachments("CCC"))
-        self.assertIn(o1, e1.attachments("DDD"))
-        self.assertNotIn(o2, e1.attachments("DDD"))
+        self.assertTrue(o1 in e1.attachments("CCC"))
+        self.assertTrue(o2 in e1.attachments("CCC"))
+        self.assertTrue(o1 in e1.attachments("DDD"))
+        self.assertTrue(o2 not in e1.attachments("DDD"))
 
-        self.assertIn(e1, o1.holders("CCC"))
-        self.assertIn(e1, o2.holders("CCC"))
-        self.assertIn(e1, o1.holders("DDD"))
-        self.assertNotIn(e1, o2.holders("DDD"))
+        self.assertTrue(e1 in o1.holders("CCC"))
+        self.assertTrue(e1 in o2.holders("CCC"))
+        self.assertTrue(e1 in o1.holders("DDD"))
+        self.assertTrue(e1 not in o2.holders("DDD"))
 
-        self.assertIn(e1, o1.holders())
-        self.assertIn(e1, o2.holders())
+        self.assertTrue(e1 in o1.holders())
+        self.assertTrue(e1 in o2.holders())
 
         self.assertEquals(len(e1.attachments()), 2)
 
-        self.assertIsNone(e1.id)
-        self.assertIsNone(o1.id)
-        self.assertIsNone(o2.id)
-        self.assertIsNone(e1.unique_id)
-        self.assertIsNone(o1.unique_id)
-        self.assertIsNone(o2.unique_id)
+        self.assertTrue(e1.id is None)
+        self.assertTrue(o1.id is None)
+        self.assertTrue(o2.id is None)
+        self.assertTrue(e1.unique_id is None)
+        self.assertTrue(o1.unique_id is None)
+        self.assertTrue(o2.unique_id is None)
 
     def test_special_context_method(self):
         t1 = Trial()
