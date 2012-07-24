@@ -3,6 +3,8 @@
 """\
 This module wraps the input and output functionality.
 """
+import os
+import errno
 
 __docformat__ = "restructuredtext"
 
@@ -129,11 +131,14 @@ class JsonIO(IO):
         json_string = json.dumps(json_data, indent=2)
         return json_string
 
-    def write_file(self, objs, fileobj):
-        json_data = self.write_json(objs)
-        return json.dump(json_data, fileobj, indent=2)
+    def write_file(self, objs, filename):
+        data_folder = filename + ".data"
 
-    def write_json(self, objs):
+        json_data = self.write_json(objs, data_folder=data_folder)
+        with open(filename, mode='w') as fileobj:
+            return json.dump(json_data, fileobj, indent=2)
+
+    def write_json(self, objs, data_folder=None):
         types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_entities]
 
         relations = []
@@ -172,9 +177,18 @@ class JsonIO(IO):
 
         objects = []
         for obj in visited_objs:
+            data_dict = {}
+            for key, data in obj.data.iteritems():
+                file_name = self.write_data(data_folder, obj.unique_id, key, data)
+                data_dict[key] = {
+                    "file": file_name,
+                    "mimetype": data.mimetype
+                }
+
             json_obj = {
                 "type": obj.type,
-                "parameters": dict(obj.json_params)
+                "parameters": dict(obj.json_params),
+                "data": data_dict
             }
             objects.append(json_obj)
 
@@ -183,6 +197,19 @@ class JsonIO(IO):
             "objects": objects,
             "relations": relations
         }
+
+    def write_data(self, data_folder, object_ident, key, data):
+        folder = os.path.join(data_folder, object_ident)
+        try:
+            os.makedirs(folder)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+        filename = os.path.join(data_folder, object_ident, key)
+        with open(filename, mode='w') as f:
+            data.get(f)
+
+        return filename
 
 
     def _iter_types(self, types):
@@ -199,7 +226,7 @@ class JsonIO(IO):
             }
 
     def _iter_objects(self, objects):
-        valid_keys = ["id", "unique_id", "type", "parameters", "children"]
+        valid_keys = ["id", "unique_id", "type", "parameters", "children", "data"]
 
         for obj in objects:
             unknown_keys = check_superfluous_keys(obj, valid_keys)
@@ -211,7 +238,8 @@ class JsonIO(IO):
                 "unique_id": obj.get("unique_id"),
                 "type": obj.get("type"),
                 "params": obj.get("parameters") or {},
-                "children": obj.get("children") or []
+                "children": obj.get("children") or [],
+                "data": obj.get("data") or {}
             }
 
     def _iter_relations(self, relations):
@@ -249,7 +277,21 @@ class JsonIO(IO):
 
             if obj["unique_id"]:
                 mapping["unique_id:" + obj["unique_id"]] = entity_obj
+
             self.mapper.save(entity_obj)
+
+            for key, value in obj["data"].iteritems():
+                if value.get("file") and (value.get("inline") or value.get("encoding")):
+                    raise ValueError("Both file and inline given.")
+
+                if value.get("file"):
+                    with open(value["file"]) as f:
+                        entity_obj.data[key].put(f, mimetype=value.get("mimetype"))
+                elif value.get("inline"):
+                    encoding = value["encoding"]
+                    data = recode[encoding].decode(value["inline"])
+                    entity_obj.data[key].put(data, mimetype=value.get("mimetype"))
+
 
             # handle potential children
             if obj["children"]:
