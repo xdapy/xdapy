@@ -8,7 +8,7 @@ xdapy
 Python framework for object storage
 -----------------------------------
 
-Fork on github: https://github.com/Debilski/xdapy
+Fork on github: https://github.com/xdapy/xdapy
 
 Contents:
 
@@ -21,6 +21,8 @@ Contents:
     Database Tables <tables>
     Python API <api/index>
     I/O formats <io_formats>
+    Migration <migration>
+    Development Info <development>
 
 Indices and tables
 ==================

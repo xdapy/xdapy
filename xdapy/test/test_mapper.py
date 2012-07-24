@@ -835,26 +835,26 @@ class TestComplicatedQuery(Setup):
         self.m.save(e1, e2, e3, t1, t2, t3, t4, s1_1, s1_2, s2_1, s2_2, s3_1, s4_1)
 
     def test_simple(self):
-        sessions = self.m.super_find("Session", {"_parent": ("Trial", {"rt": gt(2)})})
+        sessions = self.m.find_complex("Session", {"_parent": ("Trial", {"rt": gt(2)})})
         # there should be two sessions with Trial parent and Trial.rt > 2: s3_1 and s4_1
         self.assertEqual(len(sessions), 2)
         counts = set([s.params["count"] for s in sessions])
         self.assertEqual(set([5, 6]), counts)
 
         # find the experiment with the child trial(rt=3)
-        experiment = self.m.super_find("Experiment", {"_child": ("Trial", {"rt": eq(3)})})[0]
+        experiment = self.m.find_complex("Experiment", {"_child": ("Trial", {"rt": eq(3)})})[0]
         self.assertEqual(experiment, self.e2)
         
         # find the trial with child session(count=1)
-        trial = self.m.super_find("Trial", {"_child": ("Session", {"count": eq(1)})})[0]
+        trial = self.m.find_complex("Trial", {"_child": ("Session", {"count": eq(1)})})[0]
         self.assertEqual(trial, self.t1)
 
         # find the experiments with observer Observer(name="A")
-        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): ("Observer", {"name": "A"})})
+        experiments = self.m.find_complex("Experiment", {("_context", "Observed by"): ("Observer", {"name": "A"})})
         self.assertEqual(set(experiments), set([self.e1, self.e2]))
 
         # find the experiments with observer Observer(name="A") or Observer(name="B")
-        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): {"_any": [("Observer", {"name": "A"}),
+        experiments = self.m.find_complex("Experiment", {("_context", "Observed by"): {"_any": [("Observer", {"name": "A"}),
                                                                                               ("Observer", {"name": "C"})]}})
         self.assertEqual(set(experiments), set([self.e1, self.e2, self.e3]))
 
@@ -877,7 +877,7 @@ class TestComplicatedQuery(Setup):
 
     def test_find_by_object(self):
         # find the experiments with observer o1
-        experiments = self.m.super_find("Experiment", {("_context", "Observed by"): self.o1})
+        experiments = self.m.find_complex("Experiment", {("_context", "Observed by"): self.o1})
         self.assertEqual(set(experiments), set([self.e1, self.e2]))
 
     def test_complicated(self):
@@ -885,12 +885,12 @@ class TestComplicatedQuery(Setup):
         # Session.params['count'] should be even
         param_check = {"count": lambda count: count % 2 == 0}
 
-        sessions = self.m.super_find("Session", param_check)
+        sessions = self.m.find_complex("Session", param_check)
         self.assertEqual(len(sessions), 3)
 
         # Two sessions should have a count <= 3 and category1 == 0
         with_check = {"_with": lambda entity: entity.params['count'] <= 3 and entity.params['category1'] == 0}
-        sessions = self.m.super_find("Session", with_check)
+        sessions = self.m.find_complex("Session", with_check)
         self.assertEqual(len(sessions), 2)
         counts = set([s.params["count"] for s in sessions])
         self.assertEqual(set([1, 3]), counts)
@@ -908,10 +908,10 @@ class TestComplicatedQuery(Setup):
             }
         }
 
-        sessions = self.m.super_find("Session", parent_check)
+        sessions = self.m.find_complex("Session", parent_check)
         self.assertEqual(len(sessions), 5)
 
-        sessions = self.m.super_find("Session", dict(
+        sessions = self.m.find_complex("Session", dict(
             param_check.items() + with_check.items() + parent_check.items()))
         self.assertEqual(len(sessions), 0) # TODO Prepare a better test and example
 

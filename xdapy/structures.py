@@ -466,17 +466,48 @@ class Entity(BaseEntity):
             print " ", "+-", "belongs to", c.holder
 
     def attach(self, connection_type, connection_object):
+        """ Attaches an entity to this entity’s context dict.
+
+        Examples
+        --------
+        >>> experiment.attach("Observer", obs1)
+        >>> "Observer" in experiment.context
+        True
+        >>> obs1 in experiment.context["Observer"]
+        True
+
+        Parameters
+        ----------
+        connection_type : string
+            The type of the connection.
+        connection_object : entity object
+            The entity to attach
+        """
         if connection_object in self.context[connection_type]:
             raise InsertionError("{0} already has a '{1}' connection to {2}".format(self, connection_type, connection_object))
         self.context[connection_type].add(connection_object)
 
     def attachments(self, connection_type=None):
+        """ Returns all attachments to this entity.
+
+        Parameters
+        ----------
+        connection_type : string, optional
+            Restricts the output to the specified `connection_type`
+        """
         if connection_type:
             return self.context[connection_type]
         else:
             return set(item for sublist in self.context.values() for item in sublist)
 
     def holders(self, connection_type=None):
+        """ Returns all entities which hold this entity as an attachment.
+
+        Parameters
+        ----------
+        connection_type : string, optional
+            Restricts the output to the specified `connection_type`
+        """
         if connection_type:
             return set(ctx.holder for ctx in self.attached_by if ctx.connection_type==connection_type)
         else:

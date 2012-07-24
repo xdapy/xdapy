@@ -467,9 +467,9 @@ class Mapper(object):
 
         return FindHelper((entity, filter)).search()
 
-    def super_find(self, entity, the_filter=None):
+    def find_complex(self, entity, the_filter=None):
         """
-        super_find is able to search for structured data, including sub-queries
+        find_complex is able to search for structured data, including sub-queries
         where either one or all sub-items are being checked for a certain property.
         """
         proxy = SearchProxy((entity, the_filter))

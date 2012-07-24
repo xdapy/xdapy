@@ -28,8 +28,8 @@ trials = m.find_with("Trial", {"_id": lambda id: id*id < 300,
     "_with": lambda entity: entity.id != 10})
 
 
-# super_find is more powerful but does not use SQLAlchemy
-trials2 = m.super_find("Trial", {"_id": lambda id: id*id < 300,
+# find_complex is more powerful but does not use SQLAlchemy
+trials2 = m.find_complex("Trial", {"_id": lambda id: id*id < 300,
     "_any": [{"_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "%Alex%"})})}, # %Alex% will not work
              {"_parent": ("Session", {"_id": lt(300), "_parent": ("Observer", {"name": "Alexander"})})}
     ],
