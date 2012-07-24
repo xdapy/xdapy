@@ -38,3 +38,36 @@ Therefore, all that is left to do is::
 .. _Sphinx: http://sphinx.pocoo.org/
 .. _github.com/xdapy/xdapy.github.com: https://github.com/xdapy/xdapy.github.com
 
+
+Commit Markers
+--------------
+
+Commits should be marked. Declare both functionality and area.
+
+Functionality Markers
++++++++++++++++++++++
+
+:``BF`` or ``FIX``: bug fix
+:``RF``: refactoring
+:``NF``: new feature
+:``ENH``: enhancement of an existing feature/facility
+:``BW``: addresses backward-compatibility
+:``OPT``: optimization
+:``BK``: breaks something and/or tests fail
+:``FO``: code formatting (adding spaces etc.)
+:``PL``: making pylint happier
+
+Code Area Markers
++++++++++++++++++
+
+:``DOC``: documentation
+:``UT``: unit tests
+:``BLD``: build-system, setup.py
+:``GIT``: repository mods, e.g. .gitconfig .gitattributes
+
+Example
++++++++
+
+``DOC/ENH: add initial README.md``
+
+
