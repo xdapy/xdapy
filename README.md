@@ -3,7 +3,7 @@
 
 *A Python database wrapper.*
 
-☞ [Documentation on github] (http://debilski.github.com/xdapy/)
+☞ [Documentation on github] (http://xdapy.github.com/)
 
 Prerequisites
 -------------
