@@ -105,11 +105,11 @@ class JsonIO(IO):
         json_data = json.loads(jsonstr)
         return self.read_json(json_data)
 
-    def read_file(self, fileobj, data_folder=None):
-        filename = fileobj.name
-        data_folder = data_folder or filename + ".data"
+    def read_file(self, file_name, data_folder=None):
+        data_folder = data_folder or file_name + ".data"
 
-        json_data = json.load(fileobj)
+        with open(file_name, mode="r") as fileobj:
+            json_data = json.load(fileobj)
         return self.read_json(json_data, data_folder=data_folder)
 
     def read_json(self, json_data, data_folder=None):
@@ -135,12 +135,12 @@ class JsonIO(IO):
         json_string = json.dumps(json_data, indent=2)
         return json_string
 
-    def write_file(self, objs, fileobj, data_folder=None):
-        filename = fileobj.name
-        data_folder = data_folder or filename + ".data"
+    def write_file(self, objs, file_name, data_folder=None):
+        data_folder = data_folder or file_name + ".data"
 
         json_data = self.write_json(objs, data_folder=data_folder)
-        return json.dump(json_data, fileobj, indent=2)
+        with open(file_name, mode="wx") as fileobj:
+            return json.dump(json_data, fileobj, indent=2)
 
     def write_json(self, objs, data_folder=None):
         types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_entities]
@@ -211,7 +211,7 @@ class JsonIO(IO):
             if e.errno != errno.EEXIST:
                 raise
         filename = os.path.join(data_folder, object_ident, key)
-        with open(filename, mode='w') as f:
+        with open(filename, mode="wx") as f:
             data.get(f)
 
         return os.path.relpath(filename, data_folder)
