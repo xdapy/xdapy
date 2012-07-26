@@ -105,11 +105,14 @@ class JsonIO(IO):
         json_data = json.loads(jsonstr)
         return self.read_json(json_data)
 
-    def read_file(self, fileobj):
-        json_data = json.load(fileobj)
-        return self.read_json(json_data)
+    def read_file(self, fileobj, data_folder=None):
+        filename = fileobj.name
+        data_folder = data_folder or filename + ".data"
 
-    def read_json(self, json_data):
+        json_data = json.load(fileobj)
+        return self.read_json(json_data, data_folder=data_folder)
+
+    def read_json(self, json_data, data_folder=None):
         types = json_data.get("types") or []
         objects = json_data.get("objects") or []
         relations = json_data.get("relations") or []
@@ -118,11 +121,12 @@ class JsonIO(IO):
         with self.mapper.auto_session as session:
             self.add_types(types)
 
-            db_objects, mapping = self.add_objects(objects)
+            db_objects, mapping = self.add_objects(objects, data_folder=data_folder)
             self.add_relations(relations, mapping)
 
             for obj in db_objects:
                 self.mapper.save(obj)
+
 
             return db_objects
 
@@ -131,12 +135,12 @@ class JsonIO(IO):
         json_string = json.dumps(json_data, indent=2)
         return json_string
 
-    def write_file(self, objs, filename):
-        data_folder = filename + ".data"
+    def write_file(self, objs, fileobj, data_folder=None):
+        filename = fileobj.name
+        data_folder = data_folder or filename + ".data"
 
         json_data = self.write_json(objs, data_folder=data_folder)
-        with open(filename, mode='w') as fileobj:
-            return json.dump(json_data, fileobj, indent=2)
+        return json.dump(json_data, fileobj, indent=2)
 
     def write_json(self, objs, data_folder=None):
         types = [{"type": t.__original_class_name__, "parameters": t.declared_params} for t in self.mapper.registered_entities]
@@ -181,15 +185,16 @@ class JsonIO(IO):
             for key, data in obj.data.iteritems():
                 file_name = self.write_data(data_folder, obj.unique_id, key, data)
                 data_dict[key] = {
-                    "file": file_name,
-                    "mimetype": data.mimetype
+                    "file": file_name
                 }
+                if data.mimetype is not None:
+                    data_dict[key]["mimetype"] = data.mimetype
 
-            json_obj = {
-                "type": obj.type,
-                "parameters": dict(obj.json_params),
-                "data": data_dict
-            }
+            json_obj = dict(obj._attributes())
+            json_obj["parameters"] = dict(obj.json_params)
+            if data_dict:
+                json_obj["data"] = data_dict
+
             objects.append(json_obj)
 
         return {
@@ -209,7 +214,7 @@ class JsonIO(IO):
         with open(filename, mode='w') as f:
             data.get(f)
 
-        return filename
+        return os.path.relpath(filename, data_folder)
 
 
     def _iter_types(self, types):
@@ -256,7 +261,7 @@ class JsonIO(IO):
                     logger.info("Adding type %r.", type["type"])
                     self.mapper.register_type(type["type"], type["parameters"])
 
-    def add_objects(self, objects):
+    def add_objects(self, objects, data_folder=None):
         mapping = {}
         db_objects = []
 
@@ -285,7 +290,11 @@ class JsonIO(IO):
                     raise ValueError("Both file and inline given.")
 
                 if value.get("file"):
-                    with open(value["file"]) as f:
+                    if data_folder is not None:
+                        file_name = os.path.join(data_folder, value["file"])
+                    else:
+                        file_name = value["file"]
+                    with open(file_name) as f:
                         entity_obj.data[key].put(f, mimetype=value.get("mimetype"))
                 elif value.get("inline"):
                     encoding = value["encoding"]

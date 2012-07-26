@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import json
+import tempfile
 import unittest
+import os
+from sqlalchemy.exc import IntegrityError
 
 from xdapy import Connection, Mapper
 from xdapy.io import JsonIO
 from xdapy.errors import InvalidInputError
+from xdapy.structures import Entity
 
 class TestJson(unittest.TestCase):
     def setUp(self):
@@ -152,4 +157,51 @@ class TestJson(unittest.TestCase):
         self.assertEqual(len(objs), 5)
         roots = self.mapper.find_roots()
         self.assertEqual(set([roots[0].params["s"], roots[1].params["s"]]), set(["parent1", "parent2"]))
+
+    def test_data_export(self):
+        class SomeEntity(Entity):
+            declared_params = {"some_value": "string"}
+
+        obj = SomeEntity()
+        self.mapper.register(SomeEntity)
+        self.mapper.save(obj)
+
+        data_to_save = [("some key", "ABCDE", None),
+                        ("some other key", "ABCDEFGHIJ", "text")]
+
+        for (key, value, mimetype) in data_to_save:
+            obj.data[key].put(value)
+            if mimetype:
+                obj.data[key].mimetype = mimetype
+
+        # we create a named temporary file and just hope
+        # there is no conflict with the autodetected folder name
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            jio = JsonIO(self.mapper, add_new_types=True)
+            jio.write_file(self.mapper.find_roots(), tmpfile)
+
+            # check that file has been written:
+            for (data_key, data_value, data_mimetype) in data_to_save:
+                data_file = os.path.join(tmpfile.name + ".data", obj.unique_id, data_key)
+                with open(data_file) as df:
+                    self.assertEqual(df.read(), data_value)
+
+            # reset tmpfile
+            tmpfile.seek(0)
+            json_obj = json.load(tmpfile)
+            #print json_obj
+
+            tmpfile.seek(0)
+            jio_2 = JsonIO(self.mapper)
+            self.assertRaises(IntegrityError, jio_2.read_file, tmpfile)
+
+            self.mapper.delete(*self.mapper.find_roots())
+            tmpfile.seek(0)
+            jio_2 = JsonIO(self.mapper)
+            jio_2.read_file(tmpfile)
+
+            obj_in_db = self.mapper.find_first(SomeEntity)
+            for (data_key, data_value, data_mimetype) in data_to_save:
+                self.assertEqual(obj_in_db.data[data_key].get_string(), data_value)
+                self.assertEqual(obj_in_db.data[data_key].mimetype, data_mimetype)
 
