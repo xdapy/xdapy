@@ -262,7 +262,9 @@ class DateParameter(Parameter):
             return datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
             raise StringConversionError("Could not convert value '{0}' to date.".format(value))
-
+        except TypeError:
+            raise StringConversionError("Could not convert value '{0}' to date.".format(value))
+      
     @property
     def value_string(self):
         return datetime.strftime(self.value, "%Y-%m-%d")
@@ -324,7 +326,8 @@ class TimeParameter(Parameter):
             return datetime.strptime(value, "%H:%M:%S").time()
         except ValueError:
             raise StringConversionError("Could not convert value '{0}' to time.".format(value))
-
+        except TypeError:
+            raise StringConversionError("Could not convert to time.".format(value))
     @property
     def value_string(self):
         return time.strftime(self.value, "%H:%M:%S")
@@ -380,7 +383,9 @@ class DateTimeParameter(Parameter):
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
         except ValueError:
             raise StringConversionError("Could not convert value '{0}' to datetime.".format(value))
-
+        except TypeError:
+            raise StringConversionError("Could not convert  to datetime.".format(value))
+    
     @property
     def value_string(self):
         return datetime.strftime(self.value, "%Y-%m-%dT%H:%M:%S")
