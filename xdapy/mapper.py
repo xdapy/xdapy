@@ -516,7 +516,7 @@ class Mapper(object):
 
     def is_registered(self, name, declared_params):
         polymorphic_name = calculate_polymorphic_name(name, declared_params)
-        return polymorphic_name in self.registered_entities
+        return polymorphic_name in (t.__name__ for t in self.registered_entities)
 
     def register_type(self, name, declared_params):
         new_type = create_entity(name, declared_params=declared_params)
