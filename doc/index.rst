@@ -22,7 +22,7 @@ Contents:
     Python API <api/index>
     I/O formats <io_formats>
     Migration <migration>
-    Development Info <development>
+    Developer Information <development>
 
 Indices and tables
 ==================
