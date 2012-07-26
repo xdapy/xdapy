@@ -177,7 +177,8 @@ class Connection(object):
         if not filename:
             filename = cls.DEFAULT_CONFIG_PATH
         filename = path.expanduser(filename)
-        if not path.isfile(filename):
+        
+        if not path.isfile(filename) and profile != cls.TEST_PROFILE:
             raise ConfigurationError('the engine ini file does not exist. please create file \n'\
                                      ' ~/.xdapy/engine.ini with following content and replace \n'\
                                      'with your settings: \n\n'\
