@@ -1,8 +1,8 @@
-Development information
-=======================
+Developer information
+=====================
 
-Building the documentation
---------------------------
+Publishing the documentation
+----------------------------
 
 The documentation is built using `Sphinx`_ and published on github. In order to make the publishing process as easy as possible, we have included a shell script ``./commit-doc-tree.sh`` which automatically builds the documentation and creates a commit in a dedicated branch containing only the relevant data.
 

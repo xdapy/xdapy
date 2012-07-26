@@ -158,15 +158,15 @@ class JsonIO(IO):
             for child in obj.children:
                 unvisited_objs.add(child)
 
-            for connection in obj.connections:
+            for ctx in obj.holds_context:
                 relation = {
                     "relation": "context",
-                    "name": connection.connection_type,
+                    "name": ctx.connection_type,
                     "from": "unique_id:" + obj.unique_id,
-                    "to": "unique_id:" + connection.attachments.unique_id
+                    "to": "unique_id:" + ctx.attachment.unique_id
                 }
                 relations.append(relation)
-                unvisited_objs.add(connection.attachments)
+                unvisited_objs.add(ctx.attachment)
 
             visited_objs.add(obj)
 
