@@ -66,7 +66,7 @@ The test profile will only be used for the tests.
 The in-memory SQLite database from this example is the same option as when no test profile is specified. 
 A third profile is applied with the demo code. This way, the database that will be used in the real application is not touched. 
 If you wish to use Xdapy with PostgreSQL, then the tests should be rerun with an PostgreSQL database. 
-Otherwise, the installation is finished and you can skip the next paragraph.
+Otherwise, you can skip the next paragraph and continue with step 3.
 
 Test with PostreSQL
 -------------------
@@ -83,5 +83,17 @@ Then, adapt the `engine.ini`::
 	[test]
 	url =  postgresql://user:pass@host/testdbname
 
-and finally rerun the tests as described above.
+and finally rerun the tests as described above. 
 
+Setup Step 3
+------------
+At this point the general setup is running. 
+You will only need to create the initial database table structure, and to do so you actually use Xdapy for the first time. ::
+
+	from xdapy import Connection
+
+	connection = Connection.profile("demo") # use demo profile
+	connection.create_tables()
+
+The example creates the tables for the "demo" profile. The same needs to be done for the default profile.
+Now, the installation is finished and the database can be used. 
