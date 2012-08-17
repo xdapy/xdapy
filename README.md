@@ -3,6 +3,8 @@
 
 *A Python database wrapper.*
 
+[![Build Status](https://secure.travis-ci.org/xdapy/xdapy.png?branch=devel)](http://travis-ci.org/xdapy/xdapy)
+
 ☞ [Documentation on github] (http://xdapy.github.com/)
 
 Prerequisites
