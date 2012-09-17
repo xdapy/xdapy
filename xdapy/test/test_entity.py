@@ -60,6 +60,28 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(self.Experiment.__name__, Experiment.__name__)
         self.assertNotEqual(self.Experiment, Experiment)
 
+    def test_set_type(self):
+        class E0(Entity):
+            declared_params = {
+                "q": "integer"
+            }
+
+        class E1(Entity):
+            declared_params = {
+                "q": "integer",
+                "q1": "integer"
+            }
+
+        e0 = E0(q=100)
+        self.assertEqual(e0._type, E0.__name__)
+
+        self.assertRaises(TypeError, setattr, e0, "_type", 100)
+
+        e0._type = E0
+        self.assertEqual(e0._type, E0.__name__)
+
+        e0._type = E1
+        self.assertEqual(e0._type, E1.__name__)
 
 class TestSavedTypes(unittest.TestCase):
     def setUp(self):

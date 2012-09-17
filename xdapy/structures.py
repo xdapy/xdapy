@@ -121,10 +121,17 @@ class BaseEntity(Base):
         return gen_uuid()
 
     @validates('_type')
-    def validate_name(self, key, e_name):
-        if not isinstance(e_name, str):
-            raise ValueError("Argument must be a string, is: %r." % e_name)
-        return e_name
+    def validate_type(self, key, e_type):
+        if isinstance(e_type, basestring):
+            return e_type
+
+        try:
+            if issubclass(e_type, Entity):
+                return e_type.__mapper_args__['polymorphic_identity']
+        except TypeError:
+            pass
+
+        raise TypeError("Argument must be a string or subclass of Entity, is: %r." % e_type)
 
     def _attributes(self):
         return {'type': self.type, 'id': self.id, 'unique_id': self.unique_id}
@@ -322,7 +329,8 @@ class Entity(BaseEntity):
     def __init__(self, _unique_id=None, **kwargs):
         # We are here in init because we are a completely new object
         # Hence, the _type (our polymorphic_identity) has not been set yet.
-        self._type = self.__mapper_args__['polymorphic_identity'] # which should be self.__class__.__name__
+        self._type = self.__class__ # evaluated to self.__mapper_args__['polymorphic_identity']
+                                    # which should be self.__class__.__name__
 
         self._unique_id = _unique_id
 
