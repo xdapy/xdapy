@@ -196,7 +196,7 @@ class EntityMeta(DeclarativeMeta):
             try:
                 parameter_type = cls.declared_params[k]
             except KeyError:
-                raise KeyError("%s has no key '%s'." % (cls.__original_class_name__, k))
+                raise KeyError("%s has no parameter with key '%s'." % (cls.__original_class_name__, k))
 
             # get the correct parameter class
             parameter_class = parameter_for_type(parameter_type)
