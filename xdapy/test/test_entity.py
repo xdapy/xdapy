@@ -60,6 +60,24 @@ class TestEntity(unittest.TestCase):
         self.assertEqual(self.Experiment.__name__, Experiment.__name__)
         self.assertNotEqual(self.Experiment, Experiment)
 
+    def test_entity_without_declared_params(self):
+        def no_declared_params():
+            class NoParamsEntity(Entity):
+                pass
+            return NoParamsEntity
+
+        self.assertRaises(AttributeError, no_declared_params)
+
+    def test_entity_with_inknown_declared_params(self):
+        def bad_declared_params():
+            class BadParamsEntity(Entity):
+                declared_params = {
+                    "some_p": "unknown"
+                }
+            return BadParamsEntity
+
+        self.assertRaises(ValueError, bad_declared_params)
+
     def test_set_type(self):
         class E0(Entity):
             declared_params = {

@@ -186,6 +186,11 @@ class EntityMeta(DeclarativeMeta):
             declared_params = attrs["declared_params"]
         except KeyError:
             raise AttributeError("Entity class '%s' must have 'declared_params' attribute." % name)
+
+        for val in declared_params.values():
+            if val not in parameter_ids:
+                raise ValueError("Unknown parameter identifier '%s' in 'declared_params' attribute." % val)
+
         return calculate_polymorphic_name(name, declared_params)
 
     def __new__(cls, name, bases, attrs):
