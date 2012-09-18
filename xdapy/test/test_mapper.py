@@ -1022,8 +1022,16 @@ class TestTypeMagic(unittest.TestCase):
         self.assertEqual(len(version_1), 7)
         self.assertTrue(all(type(v)==int for v in version_1))
 
+        # we cannot rebrand directly:
+        self.assertRaises(ValueError, self.m.rebrand, MyEntity1, MyEntity3)
+
+        # do the rebranding
         self.m.rebrand(MyEntity1, MyEntity2a, after=change_version_string_add_date)
+
+        # still won’t work to do this directly
+        self.assertRaises(ValueError, self.m.rebrand, MyEntity2a, MyEntity3)
         self.m.rebrand(MyEntity2a, MyEntity2b)
+
         self.m.rebrand(MyEntity2b, MyEntity3, after=change_version_string)
 
         self.assertEqual(len(self.m.find(MyEntity1).all()), 0)
@@ -1032,6 +1040,7 @@ class TestTypeMagic(unittest.TestCase):
         version_3 = [e.params["version"] for e in self.m.find(MyEntity3)]
         self.assertEqual(len(version_3), 7)
         self.assertTrue(all(isinstance(v, basestring) for v in version_3))
+
 
 
 if __name__ == "__main__":
