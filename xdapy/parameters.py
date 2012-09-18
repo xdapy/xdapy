@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 Provide a centralised typed key–value store.
 """
 

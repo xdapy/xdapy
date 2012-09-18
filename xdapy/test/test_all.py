@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """A one line summary of the module or script, terminated by a period.
 
 Created on Aug 31, 2009

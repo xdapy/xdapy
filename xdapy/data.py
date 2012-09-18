@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
+Classes for binary data storage.
 """
 
 __docformat__ = "restructuredtext"

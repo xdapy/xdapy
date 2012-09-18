@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 This module provides the code to access a database on an abstract level.
 
 Created on Jun 17, 2009

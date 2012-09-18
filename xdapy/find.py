@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 Provides a proxy to search complicated queries.
 
 """

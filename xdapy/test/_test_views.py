@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """Unittest for views
 
 Created on Jun 17, 2009
 """
+
 __authors__ = ['"Hannah Dold" <hannah.dold@mailbox.tu-berlin.de>']
 
 from pickle import dumps, loads

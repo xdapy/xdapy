@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 This module wraps the input and output functionality.
 """
 import os

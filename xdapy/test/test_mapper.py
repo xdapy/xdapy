@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Unittest for  proxy
 
 Created on Jun 17, 2009

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 The `Connection` module is used to establish a connection to the database and
 takes care of creating the database tables.
 """

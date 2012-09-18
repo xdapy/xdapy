@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """A collection of general algorithms
 
 Created on Jul 30, 2009

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 Provides exceptions used in this module.
 
 Created on Jun 23, 2009

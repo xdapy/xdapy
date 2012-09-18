@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 Defines some operators for filter expressions.
 
 The expressions can be used in a query context to restrict the

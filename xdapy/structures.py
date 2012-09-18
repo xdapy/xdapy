@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""\
+"""
 Contains the classes which are used to store the Entity meta data.
 
 **TODO** Figure out what to do with global variable base

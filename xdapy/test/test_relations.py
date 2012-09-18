@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from xdapy import Connection, Mapper, Entity
 
