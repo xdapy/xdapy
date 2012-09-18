@@ -5,7 +5,10 @@
 
 xdapy
 =====
-Python framework for object storage
+
+Xdapy is the intermediate layer between application and database. 
+On the one hand Xdapy knows about the database structure and where the database is located. 
+It manages a Python framework for object storage
 -----------------------------------
 
 Fork on github: https://github.com/xdapy/xdapy
@@ -17,6 +20,7 @@ Contents:
 
     Introduction <intro>
     Installation <install>
+    Data Model <datamodel>
     Usage <usage>
     Database Tables <tables>
     Python API <api/index>
