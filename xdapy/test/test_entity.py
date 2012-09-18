@@ -101,6 +101,26 @@ class TestEntity(unittest.TestCase):
         e0._type = E1
         self.assertEqual(e0._type, E1.__name__)
 
+    def test_simple_type_change_does_not_work(self):
+        # (though it would be nice if it did)
+        class E0(Entity):
+            declared_params = {
+                "q": "integer"
+            }
+
+        class E1(Entity):
+            declared_params = {
+                "q": "integer",
+                "q1": "integer"
+            }
+
+        e0 = E0(q=100)
+        e0._type = E1
+
+        e0.params["q"] = 0
+        self.assertRaises(KeyError, e0.params.__setitem__, "q1", 0)
+
+
 class TestSavedTypes(unittest.TestCase):
     def setUp(self):
 

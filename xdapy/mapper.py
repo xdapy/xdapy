@@ -20,6 +20,9 @@ from xdapy.find import SearchProxy
 
 from sqlalchemy.sql import or_, and_
 
+import logging
+logger = logging.getLogger(__name__)
+
 """
 TODO: Load: what happens if more attributes given as saved in database
 TODO: Save: what happens if similar object with more or less but otherwise the same
@@ -583,6 +586,45 @@ class Mapper(object):
 
         sorted_roots = sorted(roots, _by_entity_type)
         root_groups = itertools.groupby(roots, _by_entity_type)
+
+    def rebrand(self, old_entity_type, new_entity_type, before=None, after=None):
+        """ Changes all occurrences from `old_entity_type`
+        to `new_entity_type`.
+        """
+        # check that the entities are compatible:
+        # ie. no parameter changes its type
+        incompatibles = dict((key, (oldv, newv))
+            for key, oldv in old_entity_type.declared_params.iteritems()
+            for newv in (new_entity_type.declared_params.get(key),)
+            if newv and oldv != newv)
+
+        if incompatibles:
+            info = ""
+            for (key, (oldv, newv)) in incompatibles.iteritems():
+                info += "\n    Parameter %r changed from %r to %r." % (key, oldv, newv)
+            raise ValueError("Incompatible parameter lists:" + info)
+
+        if before:
+            for obj in self.find(old_entity_type):
+                obj.params = before(obj, obj.params)
+
+        objs = []
+        entity_ids = []
+        with self.auto_session as session:
+            for old_obj in self.find(old_entity_type):
+                objs.append(old_obj)
+                entity_ids.append(old_obj.id)
+                logger.debug("Changing type of %r from %r to %r." % (old_obj, old_obj._type, new_entity_type))
+                old_obj._type = new_entity_type #.__mapper_args__['polymorphic_identity']
+
+        self.session.identity_map.prune()
+
+        for obj in objs:
+            self.session.expunge(obj)
+
+        if after:
+            for obj in self.find(new_entity_type).filter(BaseEntity.id.in_(entity_ids)):
+                obj.params = after(obj, obj.params)
 
 
     def __repr__(self):
