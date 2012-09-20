@@ -102,15 +102,15 @@ There we will be more concrete and provide Python code and technical remarks.
 The code examples do not use the zoo data model, but a very simplified data model for experimental data. 
 The following example explains the logic of the experimental data model. 
 
+.. _example2:
 
 Science example
 ---------------
 
-
 How can all the data about an experiment including
 annotations be structured? To approach this
 question we will inspect a typical visual psychophysics experiment. 
-An observer sits in front of a monitor
+An observer sits in front of the monitor
 and holds a response box in her hands. A stimulus is presented 
 on the screen and depending on the task, the observer
 presses a button. A computer controls stimulus presentation
@@ -119,7 +119,7 @@ context. The observer participates in a full experiment which
 probably requires that the person observes several sessions
 likely at different days. During a session the observer sees
 many stimuli and a single repetition of stimulus presentation
-with response is called a trial. For subsequent analysis, all
+with response is called a trial. For its subsequent analysis, all
 information present in the scene should be stored as annotations
 in addition to the data. Temporal, material, or logical
 units—such as the observer, the equipment, the experimental
@@ -128,3 +128,37 @@ annotations and data into clusters. The objects emerge out
 of these clusters. Moreover, most experiments have an inherent,
 hierarchical structure. A trial, for example, belongs to a
 session within an experiment. 
+
+.. figure:: images/hierExp.png
+
+At some point, we may want to add annotations related to, say, the observer of a certain experiment. 
+Maybe his or her age and some other attributes. An observer might participate in several experiments and most likely 
+several observers participate in an experiment. If we want to keep the structure unambiguous, we can not simply insert 
+an observer object into the hierarchy. It needs to stay outside the experimental hierarchy and is simply attached to 
+an object in the hierarchy. The same strategy is used for the stimuli.
+
+.. figure:: images/fullhierExp.png
+
+The most general annotations that could be added at the highest level with the experiment could embrace:
+
+Experiment
+..........
+========  =======  ===========  ==========
+project   author   date         identifier
+========  =======  ===========  ==========
+visual    John Jo  12.12.2012   5005
+auditory  Max Yes  04.05.2010   1001
+========  =======  ===========  ==========
+
+
+
+The next section explains:
+
+* how the objects in the hierarchy are represented as Xdapy structures.
+
+* how the two different types of connections - in the hierarchy or the attachments - are created. 
+
+* how objects are stored or loaded.
+
+* how a search in the database is performed. 
+

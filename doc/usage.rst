@@ -8,7 +8,7 @@ Opening a connection
 
 In order to access a database, we need to create a mapper::
 
-    mapper = xdapy.Mapper("postgresql://user:pass@host/dbname")
+    postgresql_mapper = xdapy.Mapper("postgresql://user:pass@host/dbname")
 
 we may also connect to a SQLite database::
 
@@ -18,72 +18,170 @@ or even to a memory-based database for testing::
 
     memory_mapper = xdapy.Mapper("sqlite://")
 
+The mapper can also access the profiles in the initialization file defined during the installation.  
+In this case a connection is explicitly created and passed to the mapper::
 
-Creating a model
-----------------
+	from xdapy import Connection, Mapper
+	
+	connection = Connection.profile("demo")
+	mapper = Mapper(connection)
+	
 
-We now need to define a structure which holds our data. For example, let’s assume we’d like to keep track of certain experiments::
+Define and create an object
+---------------------------
+
+We now need to define a structure which holds our data. We use the data model from the :ref:`example2` and create the first structure::
 
     class Experiment(xdapy.Entity):
         declared_params = {
-          'ident': 'int',
+          'identifier': 'int',
           'project': 'string',
-          'supervisor': 'string',
-          'observer': 'string',
+          'author': 'author',
           'date': 'date'
         }
 
-We have created a subclass of `xdapy.Entity` and added a special structure ``declared_params`` to it. In ``declared_params`` we have to specify all the parameters we want to store for this `Entity`. Also, we have to specify the type for the respective parameters. This is mainly needed for SQL storage but also provides us with a minimal type checking system.
-
+We have created a subclass of `xdapy.Entity` and added a special structure ``declared_params`` to it. 
+In ``declared_params`` we have to specify all the parameters we want to store for this `Entity`. 
+Also, we have to specify the type for the respective parameters. 
 The ``declared_params`` structure is evaluated during the creation of the class itself (read: metaclass) and automatically sets some more attributes on `Entity`.
+This is mainly needed for SQL storage but also provides us with a minimal type checking system.
+Without a type checking, the database could save a parameter called `project` or `proect` and would not complain about a difference. 
+During a search for the keyword `project`, the wrongly spelled parameter could not be found. 
+Since the parameter declarations are permanently stored during the object registration, an `Exception` is raised if a misspelled parameter is stored. 
+That also means that no other parameter, except for the declared ones, can be stored with an object.
 
-We can now try to instantiate and use our `Experiment`::
+However, Xdapy does not enforce that each parameter from the declared parameters dictionary is defined in every object instance.
+If such an enforcement is desired, it needs to be implement in the application. 
 
-    experiment = Experiment(project="The failed experiment project")
-    experiment.params["ident"] = 5005
-    experiment.params["supervisor"] = "No name"
+
+Every use of Xdapy requires a registration of the objects in the mapper. 
+With the registration the parameter declarations are stored in the database as triplets containing the class name of the object, parameter name, and parameter type.
+The registration process is a security step to ensure compatibility between different applications of Xdapy::
+
+	mapper.register(Experiment)
+
+If the object class definitions are stored in a file, say objects.py, then they can simply be imported and registered in the mapper. 
+It is therefore not necessary to rewrite the object definitions with every use.
+
+We can now instantiate and use our `Experiment`. 
+Parameters are either added inside the ``__init__`` method or accessed and changed through the ``params`` dict::
+
+    experiment = Experiment(project="visual")
+    experiment.params["identifier"] = 5005
+    experiment.params["author"] = "John Jo"
     experiment.params["date"] = datetime.now()
 
-Parameters may be accessed and changed through the ``params`` dict. Additionally, for convenience, parameters may also be added inside the ``__init__`` method.
-
-Using our mapper, we may also save it to the database::
+Using the mapper, we save the object to the database::
 
     mapper.save(experiment)
 
 
-Connecting entities
--------------------
+Build an object hierarchy
+-------------------------
 
-At some point, we may want to add metadata related to, say, the observer of a certain experiment. Maybe his or her age or some other attribute. Rather than adding this as a separate parameter to the experiment, one could consider creating another entity::
+To show how the hierarchical connections are made, let us first define more object classes and register them::
+	
+	#Define object classes
+	class Session(xdapy.Entity):
+	    declared_params = {
+	    'count': 'integer',
+	    'date': 'date',
+	    'experimentalcondition': 'string',
+	    }
+	
+	class Trial(xdapy.Entity):
+	    declared_params = {
+	    'count': 'integer',
+	    'stimulus': 'integer',
+	    'answercorrect': 'boolean'
+	    }
+	
+	#Register
+	mapper.register(Session)
+	mapper.register(Trial)
+	
+Then, we create instances of the objects::
+ 	
+ 	s1 = Session(count=1, date=datetime.date.today(), experimentalcondition='outline')
+	s2 = Session(count=2, date=datetime.date.today(), experimentalcondition='filled')
+	
+	t1 = Trial(count=1, stimulus=20, answercorrect=True)
+	t2 = Trial(count=2, stimulus=36, answercorrect=True)
+	t3 = Trial(count=3, stimulus=8, answercorrect=False)
+	t4 = Trial(count=4, stimulus=87, answercorrect=False)
+	t5 = Trial(count=5, stimulus=26, answercorrect=True)
+	t6 = Trial(count=6, stimulus=74, answercorrect=True)
+	t7 = Trial(count=7, stimulus=20, answercorrect=False)
+	t8 = Trial(count=8, stimulus=16, answercorrect=True)
+	t9 = Trial(count=9, stimulus=96, answercorrect=False)
+	t10 = Trial(count=10, stimulus=36, answercorrect=True)
 
-    class Observer(xdapy.Entity):
-        declared_params = {
-            'age': 'int',
-            'name': 'string',
-            'handedness': 'string'
-        }
+Finally, the relationships among the objects will be defined through parent and child definitions. 
+There are several equivalent ways to define relations::
+	
+	
+	s2.parent = experiment
+	
+	experiment.children.append(s1)
+	s1.children.append(t1)
+	s1.children.append(t2)
+	
+	s2.children += [t3,t4,t5,t6,t7,t8,t9,t10]
+	
+	#Save all relations 
+	mapper.save(experiment)
 
-    observer = Observer(name="Unknown Observer")
+It should be enough to save the highest object in the hierarchy and the relations and children are saved with it. 
+The connections we just created result in this tree:
 
-We can then *connect* or *attach* this observer to all experiments::
+.. figure:: images/exampleExp.png
 
-    experiment.attach("Observer", observer)
+ 
+Attach entities
+---------------
+Now the annotations about the observer that participated in the first session are *connect* or *attach*::
+	
+	class Observer(Entity):
+	    declared_params = {
+	    'name': 'string',
+	    'birthyear': 'integer',
+	    'initials': 'string',
+	    'handedness': 'string',
+	    'glasses': 'boolean'
+	    }
+	    
+    observer = Observer(name="Clara Sight", initials="CS", handedness="right", glasses=False, birthyear=1989)
+
+    s1.attach("Observer", observer)
 
     // or, alternatively
 
-    experiment.context["Observer"].add(observer)
+    s1.context["Observer"].add(observer)
 
+Please note, that when attaching an entity to another, a label is provided with it. In this example the label is "Observer". 
+This label will be used during searches.
 
 Adding data
 -----------
 
-Adding binary data often needs special handling, since it potentially large data sets should not be automatically retrieved and loaded into memory from the database. Therefore, a special data API is integrated, acting on the `Entity.data` property::
+A last critical feature that belongs to the creation and storage of objects is to add data such as:
 
-    experiment.data["dataset #1"].put(data)
-    experiment.data["dataset #2"].put(more_data)
+* files
 
-*xdapy* takes care of splitting the data into smaller chunks which do not flood the memory and which are saved to the database right away. Consequently, the data should not be retrieved and loaded into memory but directly saved to a file::
+* raw data
+
+* binary data in general
+ 
+For example you might want to store a file containing the project proposal and its goals with the experiment.
+Adding binary data often needs special handling, since it potentially large data sets should not be automatically retrieved and loaded into memory from the database. 
+Therefore, a special data API is integrated, acting on the `Entity.data` property::
+
+    experiment.data["project proposal"].put(data)
+    experiment.data["dataset #1"].put(more_data)
+
+*Xdapy* takes care of splitting the data into smaller chunks which do not flood the memory and which are saved to the database right away. 
+Consequently, the data should not be retrieved and loaded into memory but directly saved to a file::
 
     with open(save_to, 'w') as f:
-        experiment.data["dataset #1"].get(f)
+        experiment.data["project proposal"].get(f)
 
