@@ -1,9 +1,6 @@
 The data model
 ==============
 
-Zoo example
------------
-
 Conceptual idea for using xdapy:
 
 1) save a whole scene not only single events
@@ -11,12 +8,14 @@ Conceptual idea for using xdapy:
 3) supplement other informations to be attached to that hierarchy.
 4) turn into xdapy structures. 
 
+Zoo example
+-----------
 To illustrate the idea with an example from outside experimental science, think of a zoo. 
-This zoo has animals from two continents, Africa and Australia, and six species. 
-For each continent a specific house was build. The African building contains lions, giraffes, zebras and hippos. 
-The Australian house koala bears and kangaroos. Maria, the zoo manager employs two zookeepers, Susan and Stefan. 
+This zoo has animals from two continents, Africa and Australia, and four species. 
+For each continent a specific house was build. The African building contains lions and giraffes. 
+The Australian house koala bears and kangaroos. Maria, the zoo manager employs two zookeepers, Susann and Stefan. 
 To keep track of the animal a zoo database is created. 
-Susan and Stefan can use the database for example to estimate the amount of food they need to order or 
+Susann and Stefan can use the database for example to estimate the amount of food they need to order or 
 to keep track of the animals' health records. 
 
 1)
@@ -25,108 +24,83 @@ These properties cluster into logical groups which we isolate and label with a n
 Here, the clusters could be called: zoo for very general informations,
 buildings for the two animal houses, species for a species' general properties, animal for the distinct properties of one specific animal and person for the information about the people working at the zoo.
 This is a possible list of clusters for the zoo example with their label and properties.
-
-=============  	============  
-zoo       
+ 
+zoo
+...       
 =============  	============
-opening hours	9.00h-18.00h
-city			Berlin
+opening hours	city
+=============  	============
+9.00h-18.00h 	Berlin
 =============  	============
 
+house		
+.....
+===========  ===========  ====
+continent    temperature  area
+===========  ===========  ====
+Africa       28 degree C  2 ha
+Australia    25 degree C  1 ha
+===========  ===========  ====
 
-===========  ===========
-building		
-===========  ===========
-continent	 Africa
-temperature	 28 degree C
-area		 2 ha
-===========  =========== 
-
-
-============  =========  ==========  ==========  ==========
 species	
-============  =========  ==========  ==========	 ==========
-type          Lion       Giraffe     Kangaroos   Koala bear
-diet          carnivore  vegetarian  vegetarian  vegetarian
-foot demand   4 kg       2 kg        1 kg        0.5 kg
-water demand  1 l        3 l         1 l         0.8 l
-============  =========  ==========  ==========	 ==========
+.......
+============  ==========  ===========  ============
+type          diet        foot demand  water demand
+============  ==========  ===========  ============
+Lion          carnivore   4 kg         1 l
+Giraffe       vegetarian  2 kg         3 l 
+Kangaroos     vegetarian  1 kg         0.8 l
+Koala bear    vegetarian  0.5 kg       0.5 l
+============  ==========  ===========  ============
 
-
-
-=============  	=============   ==============  =============  	=============
 animal		
+......
 =============  	=============   ==============  =============  	=============
-name            Zumba           Kula            ...             ...
-weight          1000kg          50kg
-birthday        12.03.1995      06.07.2008
-birthplace      Serengeti       Ayers Rock
-gender          male            female
-=============  	=============   ============== 	=============  	=============
+name            weight          birthday        birthplace      gender
+=============  	=============   ==============  =============  	=============
+Zumba           1000 kg         12.03.1995      Serengeti       male
+Kula            50 kg           06.07.2008      Ayers Rock      female
+Muri            200 kg          01.03.2012      Berlin          female
+Jumper          180 kg          25.12.2003      London          male
+=============  	=============   ==============  =============  	=============
 
 
-
-=============  	=============   ============== 	==============
 person
+......
 =============  	=============   ============== 	==============
-name            Susan           Stefan          Maria
-job             zookeeper       zookeeper       manager
-birthyear       1983            1976            1973
-gender          female          male            female
+name            job             birthyear       gender
+=============  	=============   ============== 	==============
+Susann          zookeeper       1983            female
+Stefan          zookeeper       1976            male
+Maria           manager         1973            female
 =============  	=============   ============== 	==============
 
 2)
-Next we determine a hierarchical order of the clusters:
+Next we determine a hierarchical order of the clusters.
 
-zoo					
-|					
-house				
-|					
-species				
-|					
-animal	
-
-The tree that results from that hierarchy looks like this:
-
-Berlin zoo
-|					\
-Africa building		Australia building
-|		\			|		\
-Lion	Giraffe		Koala	Kangaroos
-|					|
-Zumba				Kula
-	
-
-
-
-zoo					Berlin zoo
-|					|					\
-house				Africa building		Australia building
-|					|		\			|		\
-species				Lion	Giraffe		Koala	Kangaroos
-|					|					|
-animal				Zumba				Kula
+.. figure:: images/hierZoo.png
 
 3)
 The hierarchy is missing the persons that work at the zoo.
-Susan is responsible for the lions and koalas and Stefan for giraffes and kangaroos.
+Stefan is responsible for the lions and koala bears and Susann for giraffes and kangaroos.
 The zookeepers can not simply be incorporated into the hierarchy. 
 Wherever we were to put them in the hierarchy, they would occur repeatedly.
 That is why we attach them to the hierarchy at the level they would occur. 
 As our zookeepers are responsible for several species, the manager is responsible for the whole zoo. 
  
-zoo	-- manager			
-|					
-house				
-|					
-species	-- keeper			
-|					
-animal				
-	
+ .. figure:: images/fullhierZoo.png
+ 
+ 
+The tree of objects that follows from above hierarchy looks like this:
+
+.. figure:: images/exampleZoo.png
+ 
 4) 
 After having isolated the critical clusters and properties, we would have to turn them into structures that Xdapy understands. 
-How Xdapy represents the clusters will be explained in the next section with a second example. 
+How this is done is explained in the section on Xdapy's :ref:`usage`. 
 There we will be more concrete and provide Python code and technical remarks. 
+The code examples do not use the zoo data model, but a very simplified data model for experimental data. 
+The following example explains the logic of the experimental data model. 
 
 
 Science example
