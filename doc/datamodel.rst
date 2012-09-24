@@ -12,7 +12,7 @@ Zoo example
 -----------
 To illustrate the idea with an example from outside experimental science, think of a zoo. 
 This zoo has animals from two continents, Africa and Australia, and four species. 
-For each continent a specific house was build. The African building contains lions and giraffes. 
+For the animals of each continent a house was build. The African building contains lions and giraffes. 
 The Australian house koala bears and kangaroos. Maria, the zoo manager employs two zookeepers, Susann and Stefan. 
 To keep track of the animal a zoo database is created. 
 Susann and Stefan can use the database for example to estimate the amount of food they need to order or 
