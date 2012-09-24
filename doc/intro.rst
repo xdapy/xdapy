@@ -24,3 +24,6 @@ and without loosing information that may become important in future.
 
 To use Xdapy you only need to know Python, follow the installation description and create your data model. 
 
+Please be aware that Xdapy is not a completed project and is still being under development. 
+Feel free to develop additional functionalities yourself or help with the documentation (see the :ref:`developer-information`)
+
