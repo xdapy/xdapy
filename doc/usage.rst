@@ -141,7 +141,7 @@ Attach entities
 ---------------
 Now the annotations about the observer that participated in the first session are *connect* or *attach*::
 	
-	class Observer(Entity):
+	class Observer(xdapy.Entity):
 	    declared_params = {
 	    'name': 'string',
 	    'birthyear': 'integer',
@@ -150,13 +150,14 @@ Now the annotations about the observer that participated in the first session ar
 	    'glasses': 'boolean'
 	    }
 	    
-    observer = Observer(name="Clara Sight", initials="CS", handedness="right", glasses=False, birthyear=1989)
+    cs = Observer(name="Clara Sight", initials="CS", handedness="right", glasses=False, birthyear=1989)
+    tt = Observer(name="Tom Token", initials="TT", handedness="right", glasses=True, birthyear=1978)
 
-    s1.attach("Observer", observer)
+    s1.attach("Observer", cs)
 
     // or, alternatively
 
-    s1.context["Observer"].add(observer)
+    s2.context["Observer"].add(tt)
 
 Please note, that when attaching an entity to another, a label is provided with it. In this example the label is "Observer". 
 This label will be used during searches.
@@ -173,7 +174,7 @@ A last critical feature that belongs to the creation and storage of objects is t
 * binary data in general
  
 For example you might want to store a file containing the project proposal and its goals with the experiment.
-Adding binary data often needs special handling, since it potentially large data sets should not be automatically retrieved and loaded into memory from the database. 
+Adding binary data often needs special handling, since its potentially large data sets should not be automatically retrieved and loaded into memory from the database. 
 Therefore, a special data API is integrated, acting on the `Entity.data` property::
 
     experiment.data["project proposal"].put(data)
@@ -185,3 +186,39 @@ Consequently, the data should not be retrieved and loaded into memory but direct
     with open(save_to, 'w') as f:
         experiment.data["project proposal"].get(f)
 
+Load objects from the database
+------------------------------
+
+Assuming that all sessions of two Experiment e1 and e2 were
+recorded and stored, the question is how to extract the data
+from the database for analysis. There are several possibilities
+to query the database. The simplest options are the mapper
+methods find_all and find_first::
+	
+	o = m.find_first(Observer, filter={"birthyear": range(1970, 1985)})
+	print o.params
+	
+	o = m.find_all(Observer, filter={"initials": ["%S%"]})
+	print o[0].params
+	
+	>>>>{u'birthyear': 1978, u'initials': u'TT', u'handedness': u'right', u'name': u'Tom Token', u'glasses': True}
+	>>>>{u'birthyear': 1989, u'initials': u'CS', u'handedness': u'right', u'name': u'Clara Sight', u'glasses': False}
+	
+Query the database
+------------------
+Admittedly, the syntax of complex searches is not easy to
+read. We therefore recommend to encapsulate repeatedly used searches in regular Python methods
+
+The following procedure lists the stimulus number and response of the trials from the outline condition in the visual experiment 
+in which observer CS responded correctly. 	::
+
+	sessions = mapper.find_complex("Session",
+	                       {("_context", "Observer"): {"_any": [("Observer",{"initials": "CS"})]},
+						   "_parent":("Experiment",{"project":"vision"}),
+						   "experimentalcondition":"outline"})
+	trials = m.find_complex("Trial",{"_parent": {"_any": sessions}})
+	for trial in trials:
+		print trial.params["stimulus"], trial.params["answercorrect"]
+	
+	>>>> 20 True
+	>>>> 36 True
